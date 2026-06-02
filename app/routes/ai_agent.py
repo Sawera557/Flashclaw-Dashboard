@@ -1,0 +1,328 @@
+import json
+
+from flask import Blueprint, request, jsonify, Response, stream_with_context
+from flask_jwt_extended import jwt_required, get_jwt_identity
+
+from app import db
+from app.models.user import User
+from app.models.lead import Lead, GeneratedEmail
+from app.services.scoring import get_groq_client, score_lead_via_groq
+
+ai_bp = Blueprint('ai', __name__)
+
+
+@ai_bp.route('/api/ai/chat', methods=['POST'])
+@jwt_required()
+def ai_chat():
+    """Streaming AI chat endpoint using Groq SSE."""
+    current_user_id = get_jwt_identity()
+    user = User.query.get(int(current_user_id))
+    if not user:
+        return jsonify({'error': 'User not found'}), 404
+
+    data = request.get_json() or {}
+    messages = data.get('messages', [])
+
+    if not messages:
+        return jsonify({'error': 'Messages array is required'}), 400
+
+    # System prompt for Lead Hunter
+    system_prompt = {
+        'role': 'system',
+        'content': (
+            'You are Lead Hunter AI, an expert sales assistant. You help SDRs and sales teams '
+            'find leads, craft outreach emails, analyze ICP fit, and provide sales strategy advice. '
+            'Be concise, actionable, and data-driven. When asked to write emails, personalize them. '
+            'When analyzing leads, focus on buying signals. You can help with cold email copy, '
+            'LinkedIn messages, follow-up sequences, ICP definitions, and outreach strategy.'
+        ),
+    }
+
+    full_messages = [system_prompt] + messages
+
+    client = get_groq_client()
+
+    def generate():
+        if not client:
+            yield 'data: {"error": "GROQ_API_KEY not configured"}\n\n'
+            yield 'data: [DONE]\n\n'
+            return
+
+        try:
+            completion = client.chat.completions.create(
+                model='mixtral-8x7b-32768',
+                messages=full_messages,
+                temperature=0.7,
+                max_tokens=2048,
+                stream=True,
+            )
+
+            for chunk in completion:
+                if chunk.choices[0].delta.content:
+                    content = chunk.choices[0].delta.content
+                    yield f'data: {json.dumps({"text": content})}\n\n'
+
+            yield 'data: [DONE]\n\n'
+        except Exception as e:
+            yield f'data: {json.dumps({"error": str(e)})}\n\n'
+            yield 'data: [DONE]\n\n'
+
+    return Response(
+        stream_with_context(generate()),
+        mimetype='text/event-stream',
+        headers={
+            'Cache-Control': 'no-cache',
+            'Connection': 'keep-alive',
+            'X-Accel-Buffering': 'no',
+        },
+    )
+
+
+@ai_bp.route('/api/ai/generate-email', methods=['POST'])
+@jwt_required()
+def generate_email():
+    """Generate a personalized email for a lead."""
+    current_user_id = get_jwt_identity()
+    user = User.query.get(int(current_user_id))
+    if not user:
+        return jsonify({'error': 'User not found'}), 404
+
+    data = request.get_json() or {}
+    lead_data = data.get('lead', {})
+    email_type = data.get('type', 'cold')
+    lead_id = data.get('lead_id')
+
+    if not lead_data:
+        return jsonify({'error': 'Lead data is required'}), 400
+
+    prompt = _build_email_prompt(lead_data, email_type)
+
+    client = get_groq_client()
+    if not client:
+        # Fallback template-based generation
+        return _generate_template_email(lead_data, email_type, user.id, lead_id)
+
+    try:
+        completion = client.chat.completions.create(
+            model='mixtral-8x7b-32768',
+            messages=[{'role': 'user', 'content': prompt}],
+            temperature=0.7,
+            max_tokens=1024,
+            response_format={'type': 'json_object'},
+        )
+        result = json.loads(completion.choices[0].message.content)
+    except Exception as e:
+        return _generate_template_email(lead_data, email_type, user.id, lead_id)
+
+    subject = result.get('subject', '')[:500]
+    body = result.get('body', '')
+
+    # Save to database if lead_id provided
+    if lead_id:
+        gen_email = GeneratedEmail(
+            lead_id=lead_id,
+            user_id=user.id,
+            email_type=email_type,
+            subject=subject,
+            body=body,
+            model='mixtral-8x7b-32768',
+        )
+        db.session.add(gen_email)
+        db.session.commit()
+
+    return jsonify({
+        'subject': subject,
+        'body': body,
+    })
+
+
+def _build_email_prompt(lead_data, email_type):
+    """Build the prompt for email generation."""
+    name = f"{lead_data.get('first_name', '')} {lead_data.get('last_name', '')}".strip()
+    company = lead_data.get('company', '')
+    title = lead_data.get('job_title', '')
+    industry = lead_data.get('industry', '')
+    pain_points = lead_data.get('pain_points', '')
+
+    type_guidance = {
+        'cold': 'A first-touch cold outreach email. Keep it short (3-5 sentences), personalized, with a clear value proposition. Don\'t ask for a meeting in the first email.',
+        'followup': 'A follow-up email to someone you already reached out to. Reference the previous email, add new value, and include a soft CTA.',
+        'linkedin': 'A LinkedIn connection request message (300 chars max) or InMail. Brief, professional, and personalized.',
+        'sequence': 'Generate an email sequence: subjects and bodies for 3 emails (initial, follow-up, break-up). Return as JSON with keys sequence.[0-2].subject and sequence.[0-2].body.',
+    }
+
+    guidance = type_guidance.get(email_type, type_guidance['cold'])
+
+    return f"""Write a personalized {email_type} email for this lead:
+
+Name: {name}
+Company: {company}
+Title: {title}
+Industry: {industry}
+Pain points: {pain_points}
+
+Guidance: {guidance}
+
+Return ONLY valid JSON: {{"subject": "...", "body": "..."}}"""
+
+
+def _generate_template_email(lead_data, email_type, user_id, lead_id):
+    """Fallback template-based email generation."""
+    name = f"{lead_data.get('first_name', '')} {lead_data.get('last_name', '')}".strip()
+    first_name = lead_data.get('first_name', 'there')
+    company = lead_data.get('company', 'your company')
+    title = lead_data.get('job_title', '')
+
+    templates = {
+        'cold': {
+            'subject': f'Quick question about {company}',
+            'body': (
+                f"Hi {first_name},\n\n"
+                f"I noticed you're the {title} at {company}. "
+                f"I've been working with similar companies to improve their sales pipeline "
+                f"and thought you might find this relevant.\n\n"
+                f"Would you be open to a 10-minute chat to see if there's a fit?\n\n"
+                f"Best,\n[Your Name]"
+            ),
+        },
+        'followup': {
+            'subject': f'Re: Quick question about {company}',
+            'body': (
+                f"Hi {first_name},\n\n"
+                f"I wanted to follow up on my previous email. "
+                f"I know things get busy — just wanted to check if improving "
+                f"your outreach pipeline is a priority right now?\n\n"
+                f"No worries either way.\n\n"
+                f"Best,\n[Your Name]"
+            ),
+        },
+        'linkedin': {
+            'subject': 'LinkedIn connection',
+            'body': (
+                f"Hi {first_name}, I've been following {company}'s work in the space. "
+                f"Would love to connect and share ideas."
+            ),
+        },
+        'sequence': {
+            'subject': f'Sales outreach for {company}',
+            'body': (
+                f"Email 1 (Initial):\n"
+                f"Subject: Quick question about {company}\n\n"
+                f"Hi {first_name}, I noticed you're the {title} at {company}...\n\n"
+                f"Email 2 (Follow-up):\n"
+                f"Subject: Re: Quick question about {company}\n\n"
+                f"Hi {first_name}, following up on my previous email...\n\n"
+                f"Email 3 (Break-up):\n"
+                f"Subject: Should I close your file?\n\n"
+                f"Hi {first_name}, I haven't heard back so I'll assume timing isn't right..."
+            ),
+        },
+    }
+
+    template = templates.get(email_type, templates['cold'])
+
+    if lead_id:
+        gen_email = GeneratedEmail(
+            lead_id=lead_id,
+            user_id=user_id,
+            email_type=email_type,
+            subject=template['subject'][:500],
+            body=template['body'],
+            model='template-fallback',
+        )
+        db.session.add(gen_email)
+        db.session.commit()
+
+    return jsonify(template)
+
+
+@ai_bp.route('/api/ai/score-lead', methods=['POST'])
+@jwt_required()
+def ai_score_lead():
+    """Score a lead using AI based on ICP criteria."""
+    current_user_id = get_jwt_identity()
+    user = User.query.get(int(current_user_id))
+    if not user:
+        return jsonify({'error': 'User not found'}), 404
+
+    data = request.get_json() or {}
+    lead_data = data.get('lead', {})
+    icp = data.get('icp', {})
+
+    if not lead_data:
+        return jsonify({'error': 'Lead data is required'}), 400
+
+    result = score_lead_via_groq(lead_data, icp)
+
+    # Update lead in DB if lead_id provided
+    lead_id = data.get('lead_id')
+    if lead_id:
+        lead = Lead.query.filter_by(id=lead_id, workspace_id=user.workspace_id).first()
+        if lead:
+            lead.lead_score = result['score']
+            lead.icp_match = result['icp_match']
+            lead.score_reason = result['reason']
+            db.session.commit()
+
+    return jsonify(result)
+
+
+@ai_bp.route('/api/ai/parse-linkedin', methods=['POST'])
+@jwt_required()
+def parse_linkedin_notes():
+    """Parse raw LinkedIn activity notes into structured activities using AI."""
+    current_user_id = get_jwt_identity()
+    user = User.query.get(int(current_user_id))
+    if not user:
+        return jsonify({'error': 'User not found'}), 404
+
+    data = request.get_json() or {}
+    raw_text = data.get('text', '')
+
+    if not raw_text:
+        return jsonify({'error': 'Text to parse is required'}), 400
+
+    client = get_groq_client()
+    if not client:
+        return jsonify({
+            'activities': [
+                {'lead_name': 'Unknown', 'activity_type': 'dm_sent',
+                 'activity_date': '', 'notes': raw_text[:200], 'source': 'ai_dump'}
+            ]
+        })
+
+    prompt = f"""Parse these raw LinkedIn activity notes into structured activities.
+
+RAW NOTES:
+{raw_text}
+
+Activity types can be: connection_sent, connection_accepted, dm_sent, reply_received,
+interested, not_interested, meeting_booked, followup_sent, profile_viewed.
+
+Extract lead name, company, activity type, date, and clean notes.
+
+Return ONLY valid JSON: {{"activities": [{{"lead_name": "...", "company": "...", "linkedin_url": "", "activity_type": "...", "activity_date": "...", "notes": "..."}}]}}"""
+
+    try:
+        completion = client.chat.completions.create(
+            model='mixtral-8x7b-32768',
+            messages=[{'role': 'user', 'content': prompt}],
+            temperature=0.2,
+            response_format={'type': 'json_object'},
+            max_tokens=2000,
+        )
+        result = json.loads(completion.choices[0].message.content)
+        activities = result.get('activities', [])
+
+        # Mark source
+        for activity in activities:
+            activity['source'] = 'ai_dump'
+
+        return jsonify({'activities': activities})
+    except Exception as e:
+        return jsonify({
+            'activities': [
+                {'lead_name': 'Unknown', 'activity_type': 'dm_sent',
+                 'activity_date': '', 'notes': raw_text[:200], 'source': 'ai_dump'}
+            ]
+        })
