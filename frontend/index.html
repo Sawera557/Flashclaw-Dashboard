@@ -850,7 +850,7 @@ tr:last-child td{border-bottom:none}
 </div>
 
 <script>
-const API_BASE = 'https://betty-leader-lights-heated.trycloudflare.com';
+const API_BASE = window.location.hostname === 'localhost' ? '/api' : 'http://43.130.41.150:5000/api';
 let authToken = localStorage.getItem('lhai_token') || null;
 let useDemo = false;
 let activeStreamReader = null;
