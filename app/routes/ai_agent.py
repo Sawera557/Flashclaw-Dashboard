@@ -7,6 +7,7 @@ from app import db
 from app.models.user import User
 from app.models.lead import Lead, GeneratedEmail
 from app.services.scoring import get_groq_client, score_lead_via_groq
+from app.services.hubspot_service import build_context_summary, search_owner_by_name, get_deals_for_owner, HubSpotError
 
 ai_bp = Blueprint('ai', __name__)
 

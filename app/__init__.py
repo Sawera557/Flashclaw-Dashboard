@@ -31,6 +31,7 @@ def create_app(config_name='dev'):
     from app.routes.analytics import analytics_bp
     from app.routes.admin import admin_bp
     from app.routes.gmail import gmail_bp
+    from app.routes.hubspot import hubspot_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(leads_bp)
@@ -39,6 +40,7 @@ def create_app(config_name='dev'):
     app.register_blueprint(analytics_bp)
     app.register_blueprint(admin_bp)
     app.register_blueprint(gmail_bp)
+    app.register_blueprint(hubspot_bp)
 
     # Create tables and seed demo data on first run
     with app.app_context():
@@ -52,6 +54,14 @@ def create_app(config_name='dev'):
             'version': '1.0.0',
             'status': 'running',
         }
+
+    @app.route('/app')
+    @app.route('/dashboard')
+    def serve_frontend():
+        import os
+        from flask import send_from_directory
+        frontend_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'frontend')
+        return send_from_directory(frontend_dir, 'index.html')
 
     @app.route('/api/health')
     def health():
