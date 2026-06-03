@@ -1,0 +1,1869 @@
+<!DOCTYPE html>
+<html lang="en">
+<!-- build: 1780509777 -->
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lead Hunter AI — SDR Operating System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Sora:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0a0b0f;
+  --surface: #12141a;
+  --card: #181b24;
+  --hover: #1e2230;
+  --border: #232738;
+  --text: #e8eaf0;
+  --text-sec: #8b90a5;
+  --text-muted: #5a5f78;
+  --accent: #7c6dfa;
+  --accent-hover: #9588f5;
+  --accent-glow: rgba(124,109,250,0.15);
+  --success: #3ecf8e;
+  --warning: #f5a623;
+  --danger: #f5485a;
+  --radius: 10px;
+  --radius-sm: 6px;
+  --radius-lg: 14px;
+  --shadow: 0 2px 12px rgba(0,0,0,0.3);
+  --sidebar-w: 240px;
+  --topbar-h: 64px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Sora',-apple-system,sans-serif;background:var(--bg);color:var(--text);overflow-x:hidden;min-height:100vh}
+
+/* Login */
+#login-view{display:flex;align-items:center;justify-content:center;min-height:100vh;background:var(--bg)}
+.login-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:48px 40px;width:420px;max-width:92vw;box-shadow:var(--shadow)}
+.login-card h1{font-size:26px;margin-bottom:4px;display:flex;align-items:center;gap:12px}
+.login-card .sub{color:var(--text-sec);font-size:14px;margin-bottom:28px}
+.login-card label{display:block;font-size:13px;color:var(--text-sec);margin-bottom:6px}
+.login-card input{width:100%;padding:12px 14px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:14px;margin-bottom:16px;outline:none;transition:border-color .2s}
+.login-card input:focus{border-color:var(--accent)}
+.login-card .btn-primary{width:100%;padding:12px;font-size:15px;margin-top:8px}
+.login-error{display:none;padding:12px 16px;background:rgba(245,72,90,.1);border:1px solid rgba(245,72,90,.3);border-radius:var(--radius-sm);color:var(--danger);font-size:13px;margin-bottom:12px}
+.demo-creds{margin-top:20px;padding:12px;background:var(--card);border-radius:var(--radius-sm);font-size:12px;color:var(--text-muted);text-align:center;font-family:'JetBrains Mono',monospace}
+
+.btn-primary{background:var(--accent);border:none;color:#fff;padding:10px 22px;border-radius:var(--radius-sm);font-family:'Sora',sans-serif;font-weight:600;font-size:14px;cursor:pointer;transition:background .2s,transform .1s}
+.btn-primary:hover{background:var(--accent-hover)}
+.btn-primary:active{transform:scale(.97)}
+.btn-primary:disabled{opacity:.5;cursor:not-allowed}
+.btn-secondary{background:var(--card);border:1px solid var(--border);color:var(--text);padding:8px 16px;border-radius:var(--radius-sm);font-family:'Sora',sans-serif;font-weight:500;font-size:13px;cursor:pointer;transition:background .2s}
+.btn-secondary:hover{background:var(--hover)}
+.btn-sm{padding:5px 12px;font-size:12px;border-radius:var(--radius-sm);border:none;cursor:pointer;font-family:'Sora',sans-serif;font-weight:500;transition:opacity .2s}
+.btn-sm:hover{opacity:.8}
+.btn-danger{background:var(--danger);border:none;color:#fff;padding:6px 12px;border-radius:var(--radius-sm);font-family:'Sora',sans-serif;font-weight:500;font-size:12px;cursor:pointer}
+.btn-danger:hover{opacity:.85}
+
+#app-view{display:none;min-height:100vh}
+
+/* Sidebar */
+.sidebar{width:var(--sidebar-w);background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;position:fixed;top:0;left:0;height:100vh;z-index:100}
+.sidebar-brand{padding:20px 20px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;font-weight:700;font-size:18px}
+.sidebar-brand .logo-icon{width:32px;height:32px;background:var(--accent);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;color:#fff;font-weight:800}
+.sidebar-nav{flex:1;padding:8px 10px;overflow-y:auto}
+.nav-section{font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;padding:12px 12px 6px;font-weight:600}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:var(--radius-sm);cursor:pointer;color:var(--text-sec);font-size:13px;font-weight:500;transition:all .15s;margin-bottom:2px}
+.nav-item:hover{background:var(--hover);color:var(--text)}
+.nav-item.active{background:var(--accent-glow);color:var(--accent)}
+.nav-item .nav-icon{font-size:16px;width:22px;text-align:center}
+.sidebar-footer{padding:12px 16px;border-top:1px solid var(--border);font-size:12px;color:var(--text-muted)}
+.sidebar-footer .logout-btn{background:none;border:none;color:var(--text-muted);cursor:pointer;font-family:'Sora',sans-serif;font-size:12px;padding:4px 0;display:block;margin-top:4px;transition:color .2s}
+.sidebar-footer .logout-btn:hover{color:var(--danger)}
+
+.main-area{margin-left:var(--sidebar-w);flex:1;display:flex;flex-direction:column}
+.topbar{height:var(--topbar-h);display:flex;align-items:center;justify-content:space-between;padding:0 28px;border-bottom:1px solid var(--border);background:var(--surface)}
+.topbar h2{font-size:18px;font-weight:600}
+.topbar .sub{font-size:12px;color:var(--text-muted);margin-top:2px}
+.content-area{flex:1;padding:24px 28px;overflow-y:auto}
+.tab-content{display:none}
+.tab-content.active{display:block}
+
+/* Cards */
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:16px;margin-bottom:24px}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;box-shadow:var(--shadow)}
+.stat-card .stat-label{font-size:12px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+.stat-card .stat-value{font-size:28px;font-weight:700;font-family:'JetBrains Mono',monospace}
+.stat-card .stat-change{font-size:12px;margin-top:4px}
+.stat-card .stat-change.up{color:var(--success)}
+.stat-card .stat-change.down{color:var(--danger)}
+
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;box-shadow:var(--shadow)}
+
+/* Table */
+.table-container{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;overflow-x:auto}
+table{width:100%;border-collapse:collapse}
+th,td{text-align:left;padding:12px 16px;font-size:13px}
+th{background:var(--card);color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px;font-size:11px;border-bottom:1px solid var(--border)}
+td{border-bottom:1px solid var(--border);color:var(--text-sec)}
+tr:last-child td{border-bottom:none}
+
+.badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;font-family:'JetBrains Mono',monospace}
+.badge-high{background:rgba(62,207,142,.15);color:var(--success)}
+.badge-med{background:rgba(245,166,35,.15);color:var(--warning)}
+.badge-low{background:rgba(245,72,90,.15);color:var(--danger)}
+.badge-new{background:rgba(124,109,250,.15);color:var(--accent)}
+.badge-contacted{background:rgba(62,207,142,.15);color:var(--success)}
+.badge-qualified{background:rgba(245,166,35,.15);color:var(--warning)}
+.badge-linkedin{background:rgba(10,102,194,.15);color:#5b8def}
+.badge-referral{background:rgba(62,207,142,.15);color:var(--success)}
+.badge-web{background:rgba(124,109,250,.15);color:var(--accent)}
+.badge-email{background:rgba(245,166,35,.15);color:var(--warning)}
+.badge-manual{background:rgba(90,95,120,.15);color:var(--text-muted)}
+
+/* Score bar */
+.score-bar{display:flex;align-items:center;gap:8px}
+.score-bar .sb-track{flex:1;height:6px;background:var(--card);border-radius:3px;overflow:hidden}
+.score-bar .sb-fill{height:100%;border-radius:3px;transition:width .5s ease}
+
+/* Timeline */
+.timeline{position:relative;padding-left:20px}
+.timeline::before{content:'';position:absolute;left:6px;top:0;bottom:0;width:2px;background:var(--border)}
+.timeline-item{position:relative;padding:0 0 20px 20px}
+.timeline-item::before{content:'';position:absolute;left:-15px;top:6px;width:10px;height:10px;border-radius:50%;background:var(--accent);border:2px solid var(--bg)}
+.timeline-item .time{font-size:11px;color:var(--text-muted);font-family:'JetBrains Mono',monospace}
+.timeline-item .desc{font-size:14px;margin-top:2px;color:var(--text)}
+.timeline-item .meta{font-size:12px;color:var(--text-sec);margin-top:2px}
+
+/* Activity */
+.activity-feed{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px}
+.activity-item{display:flex;gap:12px;padding:12px 0;border-bottom:1px solid var(--border)}
+.activity-item:last-child{border-bottom:none}
+.activity-icon{width:36px;height:36px;border-radius:50%;background:var(--card);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:16px}
+.activity-body{flex:1}
+.activity-body .act-title{font-size:14px;color:var(--text)}
+.activity-body .act-meta{font-size:12px;color:var(--text-muted);margin-top:2px}
+
+/* Q-log buttons */
+.qlog-btn{padding:6px 14px;background:var(--card);border:1px solid var(--border);border-radius:20px;color:var(--text-sec);font-size:12px;cursor:pointer;transition:all .15s;font-family:'Sora',sans-serif}
+.qlog-btn:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-glow)}
+
+/* Filters */
+.filter-bar{display:flex;flex-wrap:wrap;gap:12px;margin-bottom:16px;align-items:center}
+.filter-bar input,.filter-bar select{padding:8px 12px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-family:'Sora',sans-serif;font-size:13px;outline:none}
+.filter-bar input{flex:1;min-width:200px}
+.filter-bar input:focus,.filter-bar select:focus{border-color:var(--accent)}
+.pagination{display:flex;justify-content:center;align-items:center;gap:8px;margin-top:16px}
+.pagination button{background:var(--card);border:1px solid var(--border);color:var(--text-sec);padding:6px 12px;border-radius:var(--radius-sm);cursor:pointer;font-size:13px}
+.pagination button:hover{background:var(--hover)}
+.pagination button:disabled{opacity:.4;cursor:default}
+.pagination .page-info{font-size:13px;color:var(--text-muted)}
+
+/* Chat */
+.chat-container{display:flex;flex-direction:column;height:550px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+.chat-messages{flex:1;overflow-y:auto;padding:20px}
+.chat-msg{margin-bottom:16px;max-width:85%}
+.chat-msg.user{margin-left:auto}
+.chat-msg.ai{margin-right:auto}
+.chat-msg .bubble{padding:12px 16px;border-radius:12px;font-size:14px;line-height:1.5;white-space:pre-wrap}
+.chat-msg.user .bubble{background:var(--accent);color:#fff;border-bottom-right-radius:4px}
+.chat-msg.ai .bubble{background:var(--card);border:1px solid var(--border);border-bottom-left-radius:4px}
+.chat-msg .sender{font-size:11px;color:var(--text-muted);margin-bottom:4px;font-family:'JetBrains Mono',monospace}
+.chat-input-area{display:flex;gap:8px;padding:12px 16px;border-top:1px solid var(--border);background:var(--card)}
+.chat-input-area input{flex:1;padding:10px 14px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-family:'Sora',sans-serif;font-size:13px;outline:none}
+.chat-input-area input:focus{border-color:var(--accent)}
+.quick-prompts{display:flex;gap:8px;padding:10px 16px;border-top:1px solid var(--border);flex-wrap:wrap}
+.quick-prompt{padding:5px 12px;background:var(--card);border:1px solid var(--border);border-radius:20px;color:var(--text-sec);font-size:12px;cursor:pointer;transition:all .15s;font-family:'Sora',sans-serif}
+.quick-prompt:hover{border-color:var(--accent);color:var(--accent)}
+
+/* Pipeline chart */
+.pipeline-chart{display:flex;flex-direction:column;gap:12px}
+.pipeline-bar{display:flex;align-items:center;gap:12px}
+.pipeline-bar .pl-label{font-size:13px;color:var(--text-sec);flex-shrink:0;min-width:110px}
+.pipeline-bar .pl-track{flex:1;height:28px;background:var(--card);border-radius:6px;overflow:hidden;position:relative}
+.pipeline-bar .pl-fill{height:100%;border-radius:6px;transition:width .5s ease;display:flex;align-items:center;padding-left:10px;font-size:12px;font-weight:600;color:#fff;min-width:fit-content}
+.pl-lead{background:var(--accent)}
+.pl-connected{background:#5b8def}
+.pl-meeting{background:var(--warning)}
+.pl-proposal{background:var(--danger)}
+.pl-won{background:var(--success)}
+
+/* Grid layouts */
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px}
+.grid-2-1{display:grid;grid-template-columns:2fr 1fr;gap:20px}
+.grid-1-2{display:grid;grid-template-columns:1fr 2fr;gap:20px}
+.grid-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;box-shadow:var(--shadow)}
+
+/* SDR Identity Bar */
+.sdr-bar{display:flex;align-items:center;gap:20px;padding:16px 20px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:24px;box-shadow:var(--shadow)}
+.sdr-avatar{width:48px;height:48px;border-radius:50%;background:var(--accent-glow);color:var(--accent);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:18px;border:2px solid var(--accent);flex-shrink:0}
+.sdr-info{flex:1}
+.sdr-info .name{font-size:16px;font-weight:600}
+.sdr-info .role{font-size:12px;color:var(--text-muted)}
+.sdr-metrics{display:flex;gap:16px;font-size:12px}
+.sdr-metrics>div{text-align:center}
+.sdr-metrics .val{font-family:'JetBrains Mono',monospace;font-size:16px;font-weight:600}
+.sdr-metrics .lbl{color:var(--text-muted);font-size:10px;text-transform:uppercase;letter-spacing:.5px}
+
+/* LI row */
+.li-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)}
+.li-row:last-child{border-bottom:none}
+.li-row .li-name{flex:1;font-size:13px}
+.li-row .li-status{font-size:11px}
+.li-row .li-score{font-size:12px;font-family:'JetBrains Mono',monospace}
+
+/* Source item */
+.source-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px}
+.source-item{padding:16px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);text-align:center;cursor:pointer;transition:all .2s}
+.source-item:hover{border-color:var(--accent);background:var(--accent-glow)}
+.source-item.selected{border-color:var(--accent);background:var(--accent-glow);box-shadow:0 0 12px var(--accent-glow)}
+.source-item .si-icon{font-size:28px;margin-bottom:6px}
+.source-item .si-name{font-size:13px;font-weight:500}
+.source-item .si-desc{font-size:11px;color:var(--text-muted);margin-top:2px}
+
+/* Toggle */
+.toggle{display:flex;background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm);overflow:hidden}
+.toggle button{padding:8px 16px;border:none;background:transparent;color:var(--text-sec);cursor:pointer;font-size:12px;font-family:'Sora',sans-serif;font-weight:500;transition:all .15s}
+.toggle button.active{background:var(--accent);color:#fff}
+.toggle button:hover:not(.active){background:var(--hover)}
+
+/* LI stats */
+.li-stats{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;margin-bottom:20px}
+.li-stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;text-align:center}
+.li-stat-card .val{font-size:24px;font-weight:700;font-family:'JetBrains Mono',monospace}
+.li-stat-card .lbl{font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-top:4px}
+
+/* Groq banner */
+.groq-banner{display:flex;align-items:center;gap:16px;padding:16px 20px;background:linear-gradient(135deg,rgba(124,109,250,.12),rgba(91,141,239,.08));border:1px solid rgba(124,109,250,.2);border-radius:var(--radius);margin-bottom:20px}
+.groq-banner .groq-icon{font-size:32px}
+.groq-banner h3{font-size:16px;font-weight:600}
+.groq-banner .groq-sub{font-size:12px;color:var(--text-muted)}
+
+/* Integration cards */
+.integration-card{display:flex;align-items:center;gap:16px;padding:16px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:12px;box-shadow:var(--shadow)}
+.integration-card .int-icon{width:44px;height:44px;border-radius:10px;background:var(--card);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
+.integration-card .int-info{flex:1}
+.integration-card .int-info h4{font-size:14px;font-weight:600}
+.integration-card .int-info p{font-size:12px;color:var(--text-muted)}
+.integration-card .int-status{font-size:11px;padding:3px 10px;border-radius:20px;font-weight:500}
+
+/* SDR Activity */
+.sdr-activity .act-icon{font-size:18px;width:36px;height:36px;border-radius:50%;background:var(--card);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+
+/* Form */
+.form-group{margin-bottom:16px}
+.form-group label{display:block;font-size:13px;color:var(--text-sec);margin-bottom:6px}
+.form-group input,.form-group textarea,.form-group select{width:100%;padding:10px 14px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-family:'Sora',sans-serif;font-size:13px;outline:none;transition:border-color .2s}
+.form-group input:focus,.form-group textarea:focus,.form-group select:focus{border-color:var(--accent)}
+.form-group textarea{min-height:80px;resize:vertical}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+
+/* Email gen output */
+.gen-output{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-top:16px;min-height:200px;white-space:pre-wrap;font-size:14px;line-height:1.6;color:var(--text-sec)}
+
+/* API config */
+.api-config-area{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px}
+.api-config-area label{display:block;font-size:13px;color:var(--text-sec);margin-bottom:4px}
+.api-config-area .config-value{font-family:'JetBrains Mono',monospace;font-size:13px;padding:8px 12px;background:var(--card);border-radius:var(--radius-sm);color:var(--text);margin-bottom:16px;word-break:break-all}
+.api-config-area .token-row{display:flex;gap:8px;align-items:center}
+.api-config-area .token-row code{flex:1;padding:8px 12px;background:var(--card);border-radius:var(--radius-sm);font-size:12px;color:var(--text-muted);word-break:break-all}
+
+/* Dev docs */
+.doc-content{font-size:14px;line-height:1.7;color:var(--text-sec)}
+.doc-content h3{color:var(--text);font-size:18px;font-weight:600;margin:24px 0 12px}
+.doc-content h4{color:var(--text);font-size:15px;font-weight:600;margin:20px 0 10px}
+.doc-content p{margin-bottom:12px}
+.doc-content ul{margin:8px 0 16px 20px}
+.doc-content li{margin-bottom:6px}
+.doc-content code{background:var(--card);padding:2px 6px;border-radius:4px;font-family:'JetBrains Mono',monospace;font-size:12px}
+.doc-content pre{background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:16px;overflow-x:auto;margin:12px 0;font-family:'JetBrains Mono',monospace;font-size:12px}
+
+/* Progress bar */
+.progress-track{height:6px;background:var(--card);border-radius:3px;overflow:hidden}
+.progress-fill{height:100%;border-radius:3px;transition:width .5s ease}
+.progress-label{display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px}
+.progress-label .prog-name{color:var(--text-sec)}
+.progress-label .prog-val{font-family:'JetBrains Mono',monospace;color:var(--text)}
+
+/* Admin */
+.health-dot{width:10px;height:10px;border-radius:50%;display:inline-block;margin-right:6px}
+.health-ok{background:var(--success);box-shadow:0 0 6px rgba(62,207,142,.4)}
+.health-warn{background:var(--warning);box-shadow:0 0 6px rgba(245,166,35,.4)}
+.health-fail{background:var(--danger);box-shadow:0 0 6px rgba(245,72,90,.4)}
+
+/* Dump panel */
+.dump-panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;min-height:200px;max-height:500px;overflow-y:auto}
+.dump-item{padding:10px 0;border-bottom:1px solid var(--border);font-size:13px}
+.dump-item:last-child{border-bottom:none}
+.dump-item .dump-label{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-muted)}
+
+.loading{display:flex;align-items:center;justify-content:center;padding:40px;color:var(--text-muted);font-size:14px;gap:8px}
+.spinner{width:20px;height:20px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .6s linear infinite;display:inline-block}
+@keyframes spin{to{transform:rotate(360deg)}}
+.demo-banner{display:none;background:rgba(245,166,35,.12);border-bottom:1px solid rgba(245,166,35,.3);color:var(--warning);text-align:center;padding:8px 16px;font-size:13px;font-weight:500}
+.section-title{font-size:16px;font-weight:600;margin-bottom:14px;margin-top:24px}
+.section-title:first-of-type{margin-top:0}
+.mb16{margin-bottom:16px}
+.mt16{margin-top:16px}
+.text-center{text-align:center}
+.flex{display:flex}
+.flex-1{flex:1}
+.gap8{gap:8px}
+.gap12{gap:12px}
+.gap16{gap:16px}
+.items-center{align-items:center}
+.flex-wrap{flex-wrap:wrap}
+::-webkit-scrollbar{width:6px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:var(--text-muted)}
+@media(max-width:768px){
+  .sidebar{width:60px}
+  .sidebar-brand span:not(.logo-icon),.nav-item span:not(.nav-icon),.sidebar-footer,.nav-section{display:none}
+  .main-area{margin-left:60px}
+  .stat-grid{grid-template-columns:1fr 1fr}
+  .content-area{padding:16px}
+  .filter-bar{flex-direction:column}
+  .filter-bar input{min-width:auto;width:100%}
+  .grid-2,.grid-3,.grid-2-1,.grid-1-2{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<div id="login-view">
+  <div class="login-card">
+    <h1><span>🎯</span> Lead Hunter AI</h1>
+    <div class="sub">SDR Operating System · v2.0</div>
+    <form id="login-form">
+      <label for="email">Email</label>
+      <input type="email" id="email" placeholder="you@example.com" value="" autocomplete="email">
+      <label for="password">Password</label>
+      <input type="password" id="password" placeholder="Enter password" value="" autocomplete="current-password">
+      <button type="submit" class="btn-primary" id="login-btn">Sign In</button>
+    </form>
+    <div id="login-error" class="login-error"></div>
+    <div class="demo-creds">Demo: demo@leadhunter.ai / demo123</div>
+  </div>
+</div>
+
+<div id="app-view">
+<div id="demo-banner" class="demo-banner">⚠️ Backend unreachable — showing demo data</div>
+
+<aside class="sidebar">
+  <div class="sidebar-brand">
+    <div class="logo-icon">🎯</div>
+    <span>Lead Hunter</span>
+  </div>
+  <nav class="sidebar-nav">
+    <div class="nav-section">Main</div>
+    <div class="nav-item active" onclick="showTab('dashboard')"><span class="nav-icon">📊</span><span>Dashboard</span></div>
+    <div class="nav-item" onclick="showTab('lead-hunter')"><span class="nav-icon">🎯</span><span>Lead Hunter</span></div>
+    <div class="nav-item" onclick="showTab('leads')"><span class="nav-icon">👥</span><span>Leads Database</span></div>
+    <div class="nav-item" onclick="showTab('email-gen')"><span class="nav-icon">✉️</span><span>Email Generator</span></div>
+    <div class="nav-item" onclick="showTab('linkedin-tracker')"><span class="nav-icon">🔗</span><span>LinkedIn Tracker</span></div>
+    <div class="nav-item" onclick="showTab('hubspot')"><span class="nav-icon">🔄</span><span>Anna Jordan Pipeline</span></div>
+    <div class="nav-item" onclick="showTab('activity')"><span class="nav-icon">📋</span><span>SDR Activity</span></div>
+
+    <div class="nav-section">Intelligence</div>
+    <div class="nav-item" onclick="showTab('ai-agent')"><span class="nav-icon">🤖</span><span>AI Agent</span></div>
+    <div class="nav-item" onclick="showTab('analytics')"><span class="nav-icon">📈</span><span>Analytics</span></div>
+
+    <div class="nav-section">System</div>
+    <div class="nav-item" onclick="showTab('integrations')"><span class="nav-icon">🔌</span><span>Integrations</span></div>
+    <div class="nav-item" onclick="showTab('api-config')"><span class="nav-icon">⚙️</span><span>API Config</span></div>
+    <div class="nav-item" onclick="showTab('admin')"><span class="nav-icon">🛡️</span><span>Admin</span></div>
+  </nav>
+  <div class="sidebar-footer">
+    <div id="sidebar-user" style="font-size:11px;">Lead Hunter AI</div>
+    <button class="logout-btn" onclick="logout()">Sign Out</button>
+  </div>
+</aside>
+
+<div class="main-area">
+<header class="topbar">
+  <div>
+    <h2 id="page-title">Dashboard</h2>
+    <div class="sub" id="page-sub">Sales Command Center · AI-Powered SDR Operating System</div>
+  </div>
+  <span style="font-size:12px;color:var(--text-muted)">v2.0</span>
+</header>
+
+<div class="content-area">
+
+<!-- DASHBOARD -->
+<div class="tab-content active" id="tab-dashboard">
+  <div class="sdr-bar" id="sdr-bar">
+    <div class="sdr-avatar">SJ</div>
+    <div class="sdr-info">
+      <div class="name">Sarah Johnson</div>
+      <div class="role">Senior SDR · Team Alpha</div>
+    </div>
+    <div class="sdr-metrics">
+      <div><div class="val" style="color:var(--accent)">14</div><div class="lbl">Sprint Day</div></div>
+      <div><div class="val" style="color:var(--warning)">🔥 7</div><div class="lbl">Day Streak</div></div>
+      <div><div class="val" style="color:var(--success)">#2</div><div class="lbl">Team Rank</div></div>
+    </div>
+  </div>
+
+  <div class="stat-grid" id="dash-stats"></div>
+
+  <div class="grid-2-1">
+    <div class="grid-card" style="grid-row:span 2;">
+      <div class="section-title">Activity Timeline</div>
+      <div class="timeline" id="dash-timeline"></div>
+    </div>
+    <div class="grid-card">
+      <div class="section-title">Today's Targets</div>
+      <div id="dash-targets"></div>
+    </div>
+    <div class="grid-card">
+      <div class="section-title">Groq AI Agent Quick Access</div>
+      <div class="flex gap8 flex-wrap mb16">
+        <button class="btn-secondary" onclick="showTab('ai-agent');setTimeout(function(){sendQuickPrompt('Research my top 5 leads')},100)">🧠 Research Leads</button>
+        <button class="btn-secondary" onclick="showTab('email-gen')">✉️ Draft Emails</button>
+        <button class="btn-secondary" onclick="showTab('ai-agent');setTimeout(function(){sendQuickPrompt('Analyze my pipeline health')},100)">📊 Pipeline Analysis</button>
+        <button class="btn-secondary" onclick="showTab('ai-agent');setTimeout(function(){sendQuickPrompt('Find new prospects in my ICP')},100)">🎯 Find Prospects</button>
+      </div>
+      <div style="font-size:12px;color:var(--text-muted)">Powered by Groq LPU Inference Engine · Llama 3 70B</div>
+    </div>
+  </div>
+
+  <div class="section-title">LI Pipeline Snapshot</div>
+  <div class="card mb16" id="li-pipeline-snapshot"></div>
+
+  <div class="grid-3">
+    <div class="grid-card">
+      <div class="section-title">Recent LinkedIn Activity</div>
+      <div class="activity-feed" id="dash-li-feed"></div>
+    </div>
+    <div class="grid-card">
+      <div class="section-title">Follow-ups Due</div>
+      <div id="dash-followups"></div>
+    </div>
+    <div class="grid-card">
+      <div class="section-title">Top Lead Sources</div>
+      <div id="dash-sources"></div>
+    </div>
+  </div>
+</div>
+
+<!-- LEAD HUNTER -->
+<div class="tab-content" id="tab-lead-hunter">
+  <div class="section-title">Select Data Sources</div>
+  <div class="source-grid mb16" id="source-grid">
+    <div class="source-item" data-source="google-maps" onclick="toggleSource(this)"><div class="si-icon">🗺️</div><div class="si-name">Google Maps</div><div class="si-desc">Local business data</div></div>
+    <div class="source-item" data-source="apollo" onclick="toggleSource(this)"><div class="si-icon">🚀</div><div class="si-name">Apollo.io</div><div class="si-desc">B2B contact DB</div></div>
+    <div class="source-item" data-source="hunter" onclick="toggleSource(this)"><div class="si-icon">📧</div><div class="si-name">Hunter.io</div><div class="si-desc">Email finder</div></div>
+    <div class="source-item" data-source="linkedin" onclick="toggleSource(this)"><div class="si-icon">🔗</div><div class="si-name">LinkedIn</div><div class="si-desc">Professional network</div></div>
+    <div class="source-item" data-source="firecrawl" onclick="toggleSource(this)"><div class="si-icon">🔥</div><div class="si-name">Firecrawl</div><div class="si-desc">Web scraping</div></div>
+    <div class="source-item" data-source="serper" onclick="toggleSource(this)"><div class="si-icon">🔍</div><div class="si-name">Serper.dev</div><div class="si-desc">Google search API</div></div>
+  </div>
+
+  <div class="section-title">ICP Filters</div>
+  <div class="card mb16">
+    <div class="form-row">
+      <div class="form-group"><label>Industry</label><input id="icp-industry" placeholder="e.g. SaaS, Fintech, Healthcare" value="SaaS"></div>
+      <div class="form-group"><label>Location</label><input id="icp-location" placeholder="e.g. San Francisco, Remote" value="San Francisco"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Company Size</label><input id="icp-size" placeholder="e.g. 10-50, 51-200" value="10-200"></div>
+      <div class="form-group"><label>Job Title</label><input id="icp-title" placeholder="e.g. VP Sales, CRO" value="VP Sales"></div>
+    </div>
+    <div class="form-group"><label>Keywords</label><input id="icp-keywords" placeholder="e.g. AI, CRM, enterprise"></div>
+  </div>
+
+  <div class="flex gap12 items-center mb16">
+    <button class="btn-primary" onclick="runHunt()">🚀 Run Hunt</button>
+    <span id="hunt-status" style="font-size:13px;color:var(--text-muted)"></span>
+  </div>
+
+  <div class="grid-2">
+    <div class="grid-card">
+      <div class="section-title">Score Distribution</div>
+      <div id="score-dist"></div>
+    </div>
+    <div class="grid-card">
+      <div class="section-title">Recent Hunts</div>
+      <div id="recent-hunts" style="font-size:13px;color:var(--text-muted)">No hunts yet. Configure sources and run your first hunt.</div>
+          <div id="hunt-results" style="display:none;margin-top:16px">
+            <div style="font-size:13px;color:var(--text-sec);margin-bottom:8px">Last Hunt Results:</div>
+            <div style="max-height:400px;overflow-y:auto" id="hunt-results-list"></div>
+          </div>
+    </div>
+  </div>
+</div>
+
+<!-- LEADS -->
+<div class="tab-content" id="tab-leads">
+  <div class="filter-bar">
+    <input type="text" id="leads-search" placeholder="Search by name, company, or title..." oninput="loadLeads()">
+    <select id="leads-source" onchange="loadLeads()">
+      <option value="">All Sources</option>
+      <option value="linkedin">LinkedIn</option>
+      <option value="referral">Referral</option>
+      <option value="web">Web</option>
+      <option value="email">Email</option>
+      <option value="manual">Manual</option>
+      <option value="google_maps">Google Maps</option>
+      <option value="apollo">Apollo.io</option>
+      <option value="hunter">Hunter.io</option>
+    </select>
+    <select id="leads-status" onchange="loadLeads()">
+      <option value="">All Status</option>
+      <option value="new">New</option>
+      <option value="contacted">Contacted</option>
+      <option value="qualified">Qualified</option>
+      <option value="meeting">Meeting</option>
+      <option value="closed">Closed</option>
+    </select>
+  </div>
+  <div class="table-container" id="leads-table"></div>
+  <div class="pagination" id="leads-pagination"></div>
+</div>
+
+<!-- EMAIL GENERATOR -->
+<div class="tab-content" id="tab-email-gen">
+  <div class="grid-2">
+    <div class="grid-card">
+      <div class="section-title">Lead Context</div>
+      <div class="form-group"><label>Name</label><input id="eg-name" placeholder="Lead name"></div>
+      <div class="form-group"><label>Company</label><input id="eg-company" placeholder="Company name"></div>
+      <div class="form-group"><label>Title</label><input id="eg-title" placeholder="Job title"></div>
+      <div class="form-group"><label>Industry</label><input id="eg-industry" placeholder="e.g. SaaS, Fintech"></div>
+      <div class="form-group"><label>Pain Points</label><textarea id="eg-pain" placeholder="Describe their pain points or context..."></textarea></div>
+      <div class="form-group"><label>Email Type</label>
+        <div class="toggle" id="eg-type-toggle">
+          <button class="active" onclick="setEmailType('cold',this)">Cold Email</button>
+          <button onclick="setEmailType('followup',this)">Follow Up</button>
+          <button onclick="setEmailType('linkedin-dm',this)">LinkedIn DM</button>
+          <button onclick="setEmailType('sequence',this)">Sequence</button>
+        </div>
+      </div>
+      <button class="btn-primary" onclick="generateEmail()">✨ Generate Email</button>
+    </div>
+    <div class="grid-card">
+      <div class="section-title">Generated Output</div>
+      <div id="eg-subject" style="font-size:13px;color:var(--text-muted);margin-bottom:8px;font-family:'JetBrains Mono',monospace"></div>
+      <div class="gen-output" id="eg-output">Fill in lead context and click generate...</div>
+      <div class="flex gap8 mt16">
+        <button class="btn-secondary" onclick="copyEmail()">📋 Copy</button>
+        <button class="btn-secondary" onclick="generateEmail()">🔄 Regenerate</button>
+        <button class="btn-primary" onclick="sendEmailFromGen()">📤 Send</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- AI AGENT -->
+<div class="tab-content" id="tab-ai-agent">
+  <div class="groq-banner">
+    <div class="groq-icon">⚡</div>
+    <div>
+      <h3>Groq AI Agent</h3>
+      <div class="groq-sub">Llama 3 70B · LPU Inference Engine · Ultra-low latency</div>
+    </div>
+  </div>
+
+  <div class="grid-1-2">
+    <div>
+      <div class="section-title">LinkedIn Dump</div>
+      <div class="dump-panel" id="linkedin-dump">
+        <div class="text-center" style="padding:40px;color:var(--text-muted);font-size:13px">Paste LinkedIn profile data here for AI parsing</div>
+      </div>
+      <div class="flex gap8 mt16">
+        <textarea id="li-dump-input" placeholder="Paste LinkedIn profile text..." style="width:100%;padding:10px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-family:'Sora',sans-serif;font-size:13px;min-height:100px;resize:vertical;outline:none"></textarea>
+      </div>
+      <button class="btn-primary mt16" onclick="parseLinkedInDump()">🤖 Parse with AI</button>
+    </div>
+    <div>
+      <div class="section-title">Chat with AI Agent</div>
+      <div class="chat-container">
+        <div class="chat-messages" id="chat-messages">
+          <div class="chat-msg ai">
+            <div class="sender">AI Agent</div>
+            <div class="bubble">Hi! I'm your Lead Hunter AI powered by Groq. Ask me to research leads, draft outreach, or analyze pipeline. I can also parse LinkedIn profiles.</div>
+          </div>
+        </div>
+        <div class="quick-prompts">
+          <span class="quick-prompt" onclick="sendQuickPrompt('Find me 5 SaaS companies in SF that need email marketing')">Find 5 SaaS leads</span>
+          <span class="quick-prompt" onclick="sendQuickPrompt('Draft a cold LinkedIn message for a VP of Sales')">Draft LI message</span>
+          <span class="quick-prompt" onclick="sendQuickPrompt('Analyze my pipeline performance')">Analyze pipeline</span>
+          <span class="quick-prompt" onclick="sendQuickPrompt('Summarize best SDR outreach strategies')">SDR strategies</span>
+        </div>
+        <div class="chat-input-area">
+          <input type="text" id="chat-input" placeholder="Ask the AI agent..." onkeydown="if(event.key==='Enter') sendChatMessage()">
+          <button class="btn-primary" onclick="sendChatMessage()">Send</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- LINKEDIN TRACKER -->
+<div class="tab-content" id="tab-linkedin-tracker">
+  <div class="li-stats" id="li-stats"></div>
+
+  <div class="grid-2 mb16">
+    <div class="grid-card">
+      <div class="section-title">Smart Activity Dump</div>
+      <textarea id="li-smart-dump" placeholder="Paste raw LinkedIn activity text here..." style="width:100%;padding:10px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-family:'Sora',sans-serif;font-size:13px;min-height:120px;resize:vertical;outline:none"></textarea>
+      <button class="btn-primary mt16" onclick="parseSmartDump()">🤖 Parse Dump with Groq</button>
+    </div>
+    <div class="grid-card">
+      <div class="section-title">Quick Activity Log</div>
+      <div class="flex gap8 flex-wrap mb16">
+        <button class="qlog-btn" onclick="logLiActivity('connection_request')">➕ Connection</button>
+        <button class="qlog-btn" onclick="logLiActivity('message')">💬 Message</button>
+        <button class="qlog-btn" onclick="logLiActivity('profile_view')">👤 Profile View</button>
+        <button class="qlog-btn" onclick="logLiActivity('connection_accepted')">✅ Accepted</button>
+        <button class="qlog-btn" onclick="logLiActivity('reply_received')">📥 Reply</button>
+        <button class="qlog-btn" onclick="logLiActivity('meeting_booked')">📅 Meeting</button>
+        <button class="qlog-btn" onclick="logLiActivity('note')">📝 Note</button>
+        <button class="qlog-btn" onclick="logLiActivity('follow_up')">🔄 Follow-up</button>
+      </div>
+      <div class="form-row" style="margin-top:8px">
+        <div class="form-group"><label>Lead Name</label><input id="quick-li-name" placeholder="Name"></div>
+        <div class="form-group"><label>Company</label><input id="quick-li-company" placeholder="Company"></div>
+      </div>
+      <button class="btn-sm btn-secondary" onclick="logQuickCustom()">Log Activity</button>
+    </div>
+  </div>
+
+  <div class="section-title">Activity Feed</div>
+  <div class="flex gap8 flex-wrap mb16">
+    <select id="li-feed-filter" onchange="loadLinkedInTracker()" style="padding:8px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-size:12px;outline:none">
+      <option value="">All Types</option>
+      <option value="connection_request">Connection Requests</option>
+      <option value="message">Messages</option>
+      <option value="profile_view">Profile Views</option>
+      <option value="connection_accepted">Accepted</option>
+      <option value="reply_received">Replies</option>
+      <option value="meeting_booked">Meetings</option>
+    </select>
+  </div>
+  <div class="activity-feed" id="li-feed"></div>
+
+  <div class="grid-2 mt16">
+    <div class="grid-card">
+      <div class="section-title">LinkedIn Performance</div>
+      <div id="li-performance"></div>
+    </div>
+    <div class="grid-card">
+      <div class="section-title">Follow-ups Due</div>
+      <div id="li-followups"></div>
+    </div>
+  </div>
+</div>
+
+<!-- HUBSPOT PIPELINE -->
+<div class="tab-content" id="tab-hubspot">
+  <div class="flex align-center gap8 mb16">
+    <div class="section-title" style="margin-bottom:0">📊 Anna Jordan — 30 Day Deals</div>
+    <span id="hs-status" style="font-size:12px;padding:4px 10px;border-radius:20px;background:rgba(124,109,250,.12);color:var(--accent)">checking...</span>
+    <button class="btn-sm ml-auto" onclick="loadHubSpot()">🔄 Refresh</button>
+  </div>
+  <div class="grid-4 mb16" id="hs-stat-cards">
+    <div class="grid-card"><div style="font-size:24px;font-weight:700" id="hs-open-deals">—</div><div style="font-size:12px;color:var(--text-muted)">Open Deals</div></div>
+    <div class="grid-card"><div style="font-size:24px;font-weight:700" id="hs-owners">—</div><div style="font-size:12px;color:var(--text-muted)">Active Owners</div></div>
+    <div class="grid-card"><div style="font-size:24px;font-weight:700" id="hs-value">—</div><div style="font-size:12px;color:var(--text-muted)">Pipeline Value</div></div>
+    <div class="grid-card"><div style="font-size:24px;font-weight:700" id="hs-avg">—</div><div style="font-size:12px;color:var(--text-muted)">Avg Deal Size</div></div>
+  </div>
+  <div style="display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap">
+    <input id="hs-search" placeholder="Search owner..." class="input" style="flex:1;min-width:180px" oninput="hsFilter()">
+    <select id="hs-sort" class="input" style="width:auto" onchange="hsRender()">
+      <option value="deals">Sort by deals</option>
+      <option value="value">Sort by value</option>
+      <option value="name">Sort by name</option>
+    </select>
+  </div>
+  <div id="hs-loading" style="text-align:center;padding:40px;color:var(--text-muted)"><span class="spinner"></span> Loading HubSpot data...</div>
+  <div id="hs-error" style="display:none;text-align:center;padding:40px;color:var(--danger)"></div>
+  <div id="hs-grid" style="display:none"></div>
+</div>
+
+<!-- ANALYTICS -->
+<div class="tab-content" id="tab-analytics">
+  <div class="stat-grid" id="analytics-stats"></div>
+
+  <div class="section-title">Pipeline Funnel</div>
+  <div class="card mb16">
+    <div class="pipeline-chart" id="pipeline-chart"></div>
+  </div>
+
+  <div class="section-title">Performance by Source</div>
+  <div class="table-container">
+    <table>
+      <thead><tr><th>Source</th><th>Leads</th><th>Contacted</th><th>Conversion</th><th>Share</th></tr></thead>
+      <tbody id="by-source-body"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- SDR ACTIVITY -->
+<div class="tab-content" id="tab-activity">
+  <div class="grid-2">
+    <div class="grid-card">
+      <div class="section-title">Activity Log</div>
+      <div class="activity-feed" id="activity-log-feed"></div>
+    </div>
+    <div class="grid-card">
+      <div class="section-title">Today's Targets</div>
+      <div id="activity-targets"></div>
+    </div>
+  </div>
+
+  <div class="card mt16">
+    <div class="section-title">Manual Activity Log</div>
+    <div class="form-row">
+      <div class="form-group"><label>Activity Type</label>
+        <select id="manual-act-type">
+          <option value="email_sent">Email Sent</option>
+          <option value="call">Call</option>
+          <option value="meeting">Meeting</option>
+          <option value="linkedin">LinkedIn Activity</option>
+          <option value="research">Research</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Lead Name</label><input id="manual-act-lead" placeholder="Lead name"></div>
+    </div>
+    <div class="form-group"><label>Notes</label><textarea id="manual-act-notes" placeholder="Activity details..." style="min-height:60px"></textarea></div>
+    <button class="btn-primary" onclick="logManualActivity()">📝 Log Activity</button>
+  </div>
+</div>
+
+<!-- INTEGRATIONS -->
+<div class="tab-content" id="tab-integrations">
+  <div class="section-title">Connected Services</div>
+  <div id="integrations-list">
+    <div class="integration-card">
+      <div class="int-icon">📧</div>
+      <div class="int-info"><h4>Gmail</h4><p>Send and track emails</p></div>
+      <span class="int-status" style="background:rgba(62,207,142,.15);color:var(--success)">Connected</span>
+      <span style="font-size:11px;color:var(--text-muted);display:block;margin-top:4px;">sawerakhadium557@gmail.com</span>
+      <div style="margin-top:8px;" id="gmail-preview"><span class="spinner"></span> Loading emails...</div>
+      <script>
+      setTimeout(function() {
+      if (typeof gmailLoaded === 'undefined') { gmailLoaded = true;
+        api('/api/gmail/emails?limit=3').then(function(d) {
+          if (!d || !d.emails) return;
+          var h = '<div style="font-size:12px;font-weight:600;margin:6px 0 4px">📬 Recent Emails</div>';
+          d.emails.forEach(function(e) {
+            h += '<div style="font-size:11px;padding:4px 0;border-bottom:1px solid var(--border)">';
+            h += '<b>' + e.from.split('<')[0].trim() + '</b>: ' + e.subject;
+            h += '<div style="color:var(--text-muted);font-size:10px">' + e.date + '</div></div>';
+          });
+          document.getElementById('gmail-preview').innerHTML = h;
+        }).catch(function() {
+          document.getElementById('gmail-preview').innerHTML = '';
+        });
+      }
+      </script>
+    </div>
+    <div class="integration-card">
+      <div class="int-icon">📧</div>
+      <div class="int-info"><h4>Gmail</h4><p>Send and track emails</p></div>
+      <span class="int-status" style="background:rgba(62,207,142,.15);color:var(--success)">Connected</span>
+    </div>
+    <div class="integration-card">
+      <div class="int-icon">📅</div>
+      <div class="int-info"><h4>Calendar</h4><p>Meeting scheduling</p></div>
+      <span class="int-status" style="background:rgba(62,207,142,.15);color:var(--success)">Connected</span>
+    </div>
+    <div class="integration-card">
+      <div class="int-icon">📈</div>
+      <div class="int-info"><h4>HubSpot</h4><p>CRM sync</p></div>
+      <span class="int-status" style="background:rgba(245,166,35,.15);color:var(--warning)">Pending</span>
+    </div>
+    <div class="integration-card">
+      <div class="int-icon">🚀</div>
+      <div class="int-info"><h4>Apollo.io</h4><p>B2B lead data</p></div>
+      <span class="int-status" style="background:rgba(62,207,142,.15);color:var(--success)">Connected</span>
+    </div>
+    <div class="integration-card">
+      <div class="int-icon">📧</div>
+      <div class="int-info"><h4>Hunter.io</h4><p>Email verification</p></div>
+      <span class="int-status" style="background:rgba(62,207,142,.15);color:var(--success)">Connected</span>
+    </div>
+    <div class="integration-card">
+      <div class="int-icon">🔥</div>
+      <div class="int-info"><h4>Firecrawl</h4><p>Web scraping</p></div>
+      <span class="int-status" style="background:rgba(245,166,35,.15);color:var(--warning)">Configured</span>
+    </div>
+  </div>
+</div>
+
+<!-- API CONFIG -->
+<div class="tab-content" id="tab-api-config">
+  <div class="section-title">Backend Connection</div>
+  <div class="api-config-area">
+    <label>API Base URL</label>
+    <div class="config-value" id="api-url-display"></div>
+    <label>Auth Token</label>
+    <div class="token-row">
+      <code id="token-display">......</code>
+      <button class="btn-secondary" onclick="copyToken()">📋 Copy</button>
+    </div>
+    <div style="margin-top:16px;">
+      <label>Connection Status</label>
+      <div class="flex gap12 items-center">
+        <button class="btn-primary" onclick="testConnection()">Test Connection</button>
+        <span id="test-result" style="font-size:13px;"></span>
+      </div>
+    </div>
+    <div class="demo-creds" style="margin-top:20px">Demo credentials saved for quick access</div>
+  </div>
+</div>
+
+<!-- ADMIN -->
+<div class="tab-content" id="tab-admin">
+  <div class="section-title">SDR Team Performance</div>
+  <div class="table-container mb16">
+    <table>
+      <thead><tr><th>SDR</th><th>Leads Found</th><th>Emails Sent</th><th>Meetings</th><th>Conversion</th><th>Activity</th></tr></thead>
+      <tbody id="admin-sdr-body">
+        <tr><td style="color:var(--text)">Sarah Johnson</td><td>342</td><td>1,287</td><td>31</td><td><span class="badge badge-high">9.1%</span></td><td><span class="health-dot health-ok"></span>Active</td></tr>
+        <tr><td style="color:var(--text)">Mike Chen</td><td>289</td><td>956</td><td>22</td><td><span class="badge badge-med">7.7%</span></td><td><span class="health-dot health-ok"></span>Active</td></tr>
+        <tr><td style="color:var(--text)">Alex Rivera</td><td>198</td><td>743</td><td>18</td><td><span class="badge badge-med">9.1%</span></td><td><span class="health-dot health-warn"></span>Away</td></tr>
+        <tr><td style="color:var(--text)">Emma Wilson</td><td>415</td><td>1,502</td><td>44</td><td><span class="badge badge-high">10.6%</span></td><td><span class="health-dot health-ok"></span>Active</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="section-title">System Health</div>
+  <div class="grid-2">
+    <div class="grid-card" id="sys-health">
+      <div class="flex gap12 items-center mb16">
+        <span class="health-dot health-ok" id="health-dot"></span>
+        <span id="health-text" style="font-size:14px;font-weight:500">Checking...</span>
+      </div>
+      <div id="health-details" style="font-size:13px;color:var(--text-sec)"></div>
+    </div>
+    <div class="grid-card">
+      <div class="section-title">Quick Stats</div>
+      <div class="flex gap8 flex-wrap">
+        <div style="flex:1;min-width:120px;padding:12px;background:var(--card);border-radius:var(--radius-sm);text-align:center">
+          <div style="font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:600;color:var(--accent)">12</div>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:2px">Total Users</div>
+        </div>
+        <div style="flex:1;min-width:120px;padding:12px;background:var(--card);border-radius:var(--radius-sm);text-align:center">
+          <div style="font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:600;color:var(--success)">99.8%</div>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:2px">Uptime</div>
+        </div>
+        <div style="flex:1;min-width:120px;padding:12px;background:var(--card);border-radius:var(--radius-sm);text-align:center">
+          <div style="font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:600;color:var(--warning)">42ms</div>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:2px">Avg Response</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const API_BASE = 'https://surveys-advanced-mothers-type.trycloudflare.com';
+let authToken = localStorage.getItem('lhai_token') || null;
+let useDemo = false;
+let activeStreamReader = null;
+let currentEmailType = 'cold';
+let selectedSources = new Set();
+let leadsPage = 1;
+
+const pageTitles = {
+  'dashboard': ['Dashboard', 'Sales Command Center · AI-Powered SDR Operating System'],
+  'lead-hunter': ['Lead Hunter', 'Discover & enrich prospects'],
+  'leads': ['Leads Database', 'All leads in workspace'],
+  'email-gen': ['Email Generator', 'AI-powered personalized outreach'],
+  'ai-agent': ['AI Agent', 'Groq-powered SDR brain'],
+  'analytics': ['Analytics', 'Pipeline & performance metrics'],
+  'activity': ['SDR Activity', 'Daily log & targets'],
+  'linkedin-tracker': ['LinkedIn Tracker', 'Connection → Meeting pipeline'],
+  'integrations': ['Integrations', 'Connected tools & APIs'],
+  'api-config': ['API Config', 'Keys & model settings'],
+  'admin': ['Admin Panel', 'Team & system management'],
+  'hubspot': ['Anna Jordan', '30-day deal activity'],
+};
+
+const DEMO = {
+  stats: { leads: 342, emails: 1287, emailReplies: 187, liConnections: 89, liDMs: 134, meetings: 31, interested: 48, pipelineValue: 247000 },
+  timeline: [
+    { time: '2 hours ago', desc: 'Follow-up sent to Sarah Chen (Acme Corp)', meta: 'Replied - Interested in demo' },
+    { time: '4 hours ago', desc: 'New LI connection: Michael Torres — VP Eng at DataFlow', meta: 'Auto-accepted' },
+    { time: '6 hours ago', desc: 'Booked discovery call with InnoTech', meta: 'Scheduled Jun 5 @ 2PM' },
+    { time: 'Yesterday', desc: 'AI Agent qualified 14 leads from LinkedIn outreach', meta: 'Avg score: 78 — 6 hot leads' },
+    { time: 'Yesterday', desc: 'Cold email batch sent — 45 SaaS leads', meta: 'Campaign: June Outreach Batch' },
+    { time: '2 days ago', desc: 'Emily Park (NexGen SaaS) accepted connection', meta: 'CEO · Score: 95' }
+  ],
+  targets: [
+    { name: 'Cold Emails', current: 34, target: 50, color: 'var(--accent)' },
+    { name: 'LI Connections', current: 12, target: 20, color: '#5b8def' },
+    { name: 'LI DMs', current: 8, target: 15, color: 'var(--warning)' },
+    { name: 'Follow-ups', current: 6, target: 10, color: 'var(--danger)' },
+    { name: 'Meetings', current: 2, target: 4, color: 'var(--success)' }
+  ],
+  pipelineSnapshot: [
+    { label: 'Connections Sent', val: 89, pct: 100 },
+    { label: 'Connections Accepted', val: 62, pct: 70 },
+    { label: 'DMs Sent', val: 48, pct: 54 },
+    { label: 'Replied', val: 22, pct: 25 },
+    { label: 'Interested', val: 14, pct: 16 },
+    { label: 'Meetings Booked', val: 8, pct: 9 }
+  ],
+  liActivity: [
+    { type: 'connection_request', title: 'Connection sent to Sarah Chen (Acme Corp)', meta: '2 hours ago' },
+    { type: 'connection_accepted', title: 'Michael Torres (DataFlow) accepted', meta: '4 hours ago' },
+    { type: 'message', title: 'Sent DM to Emily Park (NexGen SaaS)', meta: '6 hours ago' },
+    { type: 'profile_view', title: 'Viewed James Liu (CloudBase) profile', meta: 'Yesterday' },
+    { type: 'reply_received', title: 'Reply from Rachel Adams (Strata LLC)', meta: '2 days ago' }
+  ],
+  followups: [
+    { name: 'Sarah Chen', company: 'Acme Corp', due: 'Today' },
+    { name: 'Michael Torres', company: 'DataFlow', due: 'Tomorrow' },
+    { name: 'James Liu', company: 'CloudBase', due: 'Jun 4' },
+    { name: 'David Kim', company: 'Fusion Labs', due: 'Jun 5' }
+  ],
+  topSources: [
+    { name: 'LinkedIn', count: 156, pct: 46 },
+    { name: 'Web', count: 89, pct: 26 },
+    { name: 'Referral', count: 45, pct: 13 },
+    { name: 'Email', count: 34, pct: 10 },
+    { name: 'Manual', count: 18, pct: 5 }
+  ],
+  leads: [
+    { id: 1, name: 'Sarah Chen', company: 'Acme Corp', title: 'VP Marketing', email: 'sarah@acme.com', score: 92, source: 'linkedin', status: 'contacted' },
+    { id: 2, name: 'Michael Torres', company: 'DataFlow Inc', title: 'VP Engineering', email: 'mt@dataflow.io', score: 88, source: 'linkedin', status: 'new' },
+    { id: 3, name: 'Emily Park', company: 'NexGen SaaS', title: 'CEO', email: 'emily@nexgen.dev', score: 95, source: 'referral', status: 'qualified' },
+    { id: 4, name: 'James Liu', company: 'CloudBase', title: 'Head of Sales', email: 'james@cloudbase.com', score: 76, source: 'web', status: 'new' },
+    { id: 5, name: 'Rachel Adams', company: 'Strata LLC', title: 'Director Ops', email: 'rachel@strata.co', score: 64, source: 'email', status: 'contacted' },
+    { id: 6, name: 'David Kim', company: 'Fusion Labs', title: 'CTO', email: 'david@fusion.ai', score: 81, source: 'linkedin', status: 'new' },
+    { id: 7, name: 'Lisa Nguyen', company: 'Pivot Inc', title: 'CMO', email: 'lisa@pivot.co', score: 73, source: 'manual', status: 'qualified' },
+    { id: 8, name: 'Tom Bradley', company: 'Edge Systems', title: 'Sales Director', email: 'tom@edge.dev', score: 59, source: 'web', status: 'meeting' },
+    { id: 9, name: 'Anna Kowalski', company: 'BrightWave', title: 'VP Growth', email: 'anna@brightwave.io', score: 87, source: 'linkedin', status: 'new' },
+    { id: 10, name: 'Robert Kim', company: 'TechSphere', title: 'CRO', email: 'robert@techsphere.com', score: 91, source: 'apollo', status: 'qualified' }
+  ],
+  liStats: { connectionsSent: 89, connectionsAccepted: 62, dmsSent: 48, replies: 22, meetings: 8 },
+  liFeed: [
+    { type: 'connection_request', title: 'Sent to Sarah Chen (Acme Corp)', meta: '2h ago' },
+    { type: 'connection_accepted', title: 'Michael Torres (DataFlow)', meta: '4h ago' },
+    { type: 'message', title: 'DM to Emily Park (NexGen SaaS)', meta: '6h ago' },
+    { type: 'profile_view', title: 'James Liu (CloudBase)', meta: 'Yesterday' },
+    { type: 'reply_received', title: 'From Rachel Adams (Strata LLC)', meta: '2d ago' },
+    { type: 'connection_request', title: 'Sent to David Kim (Fusion Labs)', meta: '3d ago' }
+  ],
+  liPerformance: [
+    { label: 'Accept Rate', val: '70%', good: true },
+    { label: 'Reply Rate', val: '25%', good: true },
+    { label: 'DM → Meeting', val: '17%', good: true },
+    { label: 'Avg Reply Time', val: '18h', good: false }
+  ],
+  analytics: {
+    pipeline: [
+      { stage: 'Lead', count: 342 },
+      { stage: 'Connected', count: 189 },
+      { stage: 'Meeting', count: 67 },
+      { stage: 'Proposal', count: 31 },
+      { stage: 'Won', count: 14 }
+    ],
+    bySource: [
+      { source: 'LinkedIn', leads: 156, contacted: 89, conversion: '24%' },
+      { source: 'Web', leads: 89, contacted: 42, conversion: '18%' },
+      { source: 'Referral', leads: 45, contacted: 31, conversion: '36%' },
+      { source: 'Email', leads: 34, contacted: 18, conversion: '15%' },
+      { source: 'Manual', leads: 18, contacted: 10, conversion: '22%' }
+    ],
+    stats: { conversionRate: '9.1%', replyRate: '24%', avgScore: 76, meetingsPerWeek: 7.8, costPerLead: '$4.20' }
+  },
+  activities: [
+    { type: 'email_sent', title: 'Cold email sent to Sarah Chen', meta: '2 hours ago', icon: '📧' },
+    { type: 'linkedin', title: 'Connection request to Michael Torres', meta: '3 hours ago', icon: '🔗' },
+    { type: 'meeting', title: 'Discovery call with InnoTech', meta: 'Yesterday, 2PM', icon: '📅' },
+    { type: 'call', title: 'Call with James Liu (15 min)', meta: 'Yesterday', icon: '📞' },
+    { type: 'research', title: 'Researched CloudBase Inc', meta: '2 days ago', icon: '🔍' },
+    { type: 'email_sent', title: 'Follow-up to Emily Park', meta: '2 days ago', icon: '📧' }
+  ]
+};
+
+function capitalize(s) { return s ? s.replace(/_/g,' ').replace(/\b\w/g,function(c){return c.toUpperCase()}) : ''; }
+function scoreClass(s) { return s >= 80 ? 'badge-high' : s >= 60 ? 'badge-med' : 'badge-low'; }
+function statusClass(s) { var m = { 'new':'badge-new','contacted':'badge-contacted','qualified':'badge-qualified','meeting':'badge-med','closed':'badge-high' }; return m[s] || 'badge-new'; }
+function sourceBadge(s) { var m = { 'linkedin':'badge-linkedin','referral':'badge-referral','web':'badge-web','email':'badge-email','manual':'badge-manual','google_maps':'badge-web','apollo':'badge-med','hunter':'badge-email','serper':'badge-web','firecrawl':'badge-web' }; return m[s] || 'badge-new'; }
+function escapeHtml(s) { var d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+function getHeaders() {
+  var h = { 'Content-Type': 'application/json' };
+  if (authToken) h['Authorization'] = 'Bearer ' + authToken;
+  return h;
+}
+
+function requireAuth() {
+  if (!authToken) {
+    document.getElementById('app-view').style.display = 'none';
+    document.getElementById('login-view').style.display = 'flex';
+    return false;
+  }
+  return true;
+}
+
+function api(path, opts) {
+  opts = opts || {};
+  if (useDemo) return Promise.reject(new Error('demo'));
+  return fetch(API_BASE + path, { method: opts.method || 'GET', headers: opts.headers || getHeaders(), body: opts.body })
+    .then(function(r) {
+      if (r.status === 401) { authToken = null; localStorage.removeItem('lhai_token'); logout(); throw new Error('Unauthorized'); }
+      if (!r.ok) return r.text().then(function(t) { throw new Error(t || r.statusText); });
+      return r.json();
+    });
+}
+
+function login(email, password) {
+  var btn = document.getElementById('login-btn');
+  var errEl = document.getElementById('login-error');
+  btn.disabled = true; btn.textContent = 'Signing in...';
+  errEl.style.display = 'none';
+  fetch(API_BASE + '/api/auth/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email: email, password: password })
+  }).then(function(r) {
+    return r.json().then(function(data) {
+      if (!r.ok) throw new Error(data.error || data.message || 'Login failed');
+      authToken = data.token || data.access_token;
+      localStorage.setItem('lhai_token', authToken);
+      showApp();
+    });
+  }).catch(function(err) {
+    if (email === 'demo@leadhunter.ai' && password === 'demo123') {
+      authToken = 'demo-fallback-token';
+      localStorage.setItem('lhai_token', authToken);
+      useDemo = true;
+      showApp();
+      return;
+    }
+    errEl.textContent = 'Login failed: ' + err.message;
+    errEl.style.display = 'block';
+    btn.disabled = false;
+    btn.textContent = 'Sign In';
+  });
+}
+
+function logout() {
+  authToken = null;
+  useDemo = false;
+  localStorage.removeItem('lhai_token');
+  document.getElementById('app-view').style.display = 'none';
+  document.getElementById('login-view').style.display = 'flex';
+}
+
+function showApp() {
+  document.getElementById('login-view').style.display = 'none';
+  document.getElementById('app-view').style.display = 'flex';
+  if (authToken === 'demo-fallback-token') useDemo = true;
+  if (useDemo) document.getElementById('demo-banner').style.display = 'block';
+  else document.getElementById('demo-banner').style.display = 'none';
+  document.getElementById('api-url-display').textContent = API_BASE;
+  var tok = authToken || '......';
+  document.getElementById('token-display').textContent = tok.length > 20 ? tok.slice(0, 20) + '...' : tok;
+  document.getElementById('sidebar-user').textContent = useDemo ? 'Demo Mode' : 'Anna Jordan';
+  showTab('dashboard');
+}
+
+/* Auto-check on load */
+(function() {
+  var saved = localStorage.getItem('lhai_token');
+  if (saved) {
+    authToken = saved;
+    useDemo = (saved === 'demo-fallback-token');
+    if (!useDemo) {
+      api('/api/admin/system-health').catch(function() { useDemo = true; }).then(function() {
+        showApp();
+      });
+    } else {
+      showApp();
+    }
+  }
+})();
+
+/* Login form */
+document.getElementById('login-form').addEventListener('submit', function(e) {
+  e.preventDefault();
+  login(document.getElementById('email').value, document.getElementById('password').value);
+});
+
+/* TAB SYSTEM */
+function showTab(name) {
+  document.querySelectorAll('.nav-item').forEach(function(el) { el.classList.remove('active'); });
+  document.querySelectorAll('.tab-content').forEach(function(el) { el.classList.remove('active'); });
+  var nav = document.querySelector('[onclick*="' + name + '"]');
+  if (!nav) nav = document.querySelector('.nav-item[onclick*="' + name + '"]');
+  if (nav) nav.classList.add('active');
+  var tab = document.getElementById('tab-' + name);
+  if (tab) tab.classList.add('active');
+  var t = pageTitles[name] || [name, ''];
+  document.getElementById('page-title').textContent = t[0];
+  document.getElementById('page-sub').textContent = t[1] || '';
+  if (name === 'dashboard') loadDashboard();
+  if (name === 'leads') loadLeads();
+  if (name === 'linkedin-tracker') loadLinkedInTracker();
+  if (name === 'ai-agent') { /* chat already loaded */ }
+  if (name === 'analytics') loadAnalytics();
+  if (name === 'activity') loadActivity();
+  if (name === 'admin') loadAdmin();
+  if (name === 'hubspot') loadHubSpot();
+}
+
+/** HubSpot tab — load owner pipeline from API */
+var HS_DATA = {};
+var HS_CURRENT_OWNER = '101551557';  // Anna Jordan
+
+function loadHubSpot() {
+  var grid = document.getElementById('hs-grid');
+  var loading = document.getElementById('hs-loading');
+  var errEl = document.getElementById('hs-error');
+  grid.style.display = 'none';
+  errEl.style.display = 'none';
+  loading.style.display = 'block';
+  document.getElementById('hs-status').textContent = 'loading last 30 days...';
+
+  // Load Anna Jordan's last 30 days deals
+  api('/api/hubspot/owner/101551557/deals?limit=50&last_days=30').then(function(d) {
+    HS_DATA = d;
+    hsRender();
+    loading.style.display = 'none';
+    grid.style.display = 'block';
+    document.getElementById('hs-status').textContent = d.count + ' deals (30d)';
+  }).catch(function(e) {
+    loading.style.display = 'none';
+    errEl.style.display = 'block';
+    errEl.textContent = 'HubSpot API error: ' + (e.message || 'Connection failed');
+    document.getElementById('hs-status').textContent = 'error';
+  });
+}
+
+function hsRender() {
+  var d = HS_DATA;
+  if (!d || !d.deals) return;
+  
+  var deals = [].concat(d.deals);
+  var totalVal = deals.reduce(function(s, dl) { return s + parseInt(dl.amount || 0, 10); }, 0);
+  
+  document.getElementById('hs-open-deals').textContent = d.count;
+  document.getElementById('hs-owners').textContent = d.owner ? d.owner.name : 'Anna Jordan';
+  document.getElementById('hs-value').textContent = '$' + totalVal.toLocaleString();
+  document.getElementById('hs-avg').textContent = d.count ? '$' + Math.round(totalVal / d.count).toLocaleString() : '$0';
+
+  var q = document.getElementById('hs-search').value.toLowerCase().trim();
+  if (q) deals = deals.filter(function(dl) { return dl.name.toLowerCase().indexOf(q) !== -1; });
+
+  document.getElementById('hs-grid').innerHTML = deals.map(function(dl) {
+    return '<div class="card" style="padding:14px;display:flex;justify-content:space-between;align-items:center">' +
+      '<div><strong>' + dl.name + '</strong><br><span style="font-size:12px;color:var(--text-muted)">' + dl.stage + ' · ' + dl.modified + '</span></div>' +
+      '<div style="font-size:18px;font-weight:700;color:var(--accent)">$' + dl.amount + '</div>' +
+      '</div>';
+  }).join('');
+  
+  if (deals.length === 0) {
+    document.getElementById('hs-grid').innerHTML = '<div class="card" style="text-align:center;padding:40px;color:var(--text-muted)">No deals found in the last 30 days</div>';
+  }
+}
+
+function hsFilter() { hsRender(); }
+function hsModal(ownerId) { /* not needed for owner-specific view */ }
+
+/* === DASHBOARD === */
+function loadDashboard() {
+  var ok = false;
+  api('/api/hubspot/my-dashboard').then(function(d) { 
+    ok = true;
+    renderMyDashboard(d);
+  }).catch(function() { 
+    ok = false;
+    // fallback to legacy leads endpoint
+    api('/api/leads').then(function() { ok = true; }).catch(function() {}).then(function() {
+      if (ok) fetchDashboardStats();
+      else renderDashboardDemo();
+    });
+  });
+}
+
+function renderMyDashboard(d) {
+  document.getElementById('dash-stats').innerHTML = [
+    { label: 'My Deals (30d)', value: d.total_deals, change: 'Last 30 days', dir: 'up' },
+    { label: 'Pipeline Value', value: '$' + d.total_value.toLocaleString(), change: '', dir: 'up' },
+    { label: 'Avg Deal Size', value: '$' + d.avg_deal.toLocaleString(), change: '', dir: 'up' },
+    { label: 'Deal Stages', value: (d.stages || []).length, change: 'different stages', dir: 'up' }
+  ].map(function(c) {
+    return '<div class="stat-card"><div class="stat-label">' + c.label + '</div><div class="stat-value" style="color:var(--accent)">' + c.value + '</div><div class="stat-change ' + c.dir + '">' + c.change + '</div></div>';
+  }).join('');
+
+  // Timeline — list of your deals by date
+  document.getElementById('dash-timeline').innerHTML = (d.timeline || []).map(function(i) {
+    return '<div class="timeline-item"><div class="time">' + i.date + '</div><div class="desc">' + i.desc + '</div><div class="meta">' + i.stage + ' — $' + i.amount + '</div></div>';
+  }).join('') || '<div style="padding:20px;color:var(--text-muted)">No activity in last 30 days</div>';
+
+  // Targets — stage breakdown
+  document.getElementById('dash-targets').innerHTML = (d.stages || []).map(function(s) {
+    var color = s.pct >= 50 ? 'var(--success)' : s.pct >= 20 ? 'var(--warning)' : 'var(--accent)';
+    return '<div style="margin-bottom:8px"><div style="display:flex;justify-content:space-between;font-size:13px">' +
+      '<span>' + s.stage + '</span><span style="color:var(--accent)">' + s.count + ' (' + s.pct + '%)</span></div>' +
+      '<div class="progress-track"><div class="progress-fill" style="width:' + s.pct + '%;background:' + color + '"></div></div></div>';
+  }).join('');
+
+  // Pipeline snapshot
+  document.getElementById('li-pipeline-snapshot').innerHTML = (d.stages || []).map(function(s) {
+    var color = s.pct >= 50 ? 'var(--success)' : s.pct >= 20 ? 'var(--warning)' : 'var(--accent)';
+    return '<div class="pipeline-bar"><div class="pl-label">' + s.stage + '</div><div class="pl-track"><div class="pl-fill" style="width:' + s.pct + '%;background:' + color + '">' + s.count + '</div></div></div>';
+  }).join('');
+
+  // Source breakdown (by stage name for now)
+  var totalDeals = d.total_deals || 1;
+  document.getElementById('dash-sources').innerHTML = (d.stages || []).map(function(s) {
+    return '<div class="progress-label mb16"><span class="prog-name">' + s.stage + ' <span style="color:var(--text-muted);font-size:11px">(' + s.count + ')</span></span><span class="prog-val" style="color:var(--accent)">' + s.pct + '%</span></div><div class="progress-track mb16"><div class="progress-fill" style="width:' + s.pct + '%;background:var(--accent)"></div></div>';
+  }).join('');
+
+  // LI feed and follow-ups — show empty or deal list
+  document.getElementById('dash-li-feed').innerHTML = (d.deals || []).slice(0, 5).map(function(dl) {
+    return '<div class="activity-item"><div class="activity-icon" style="font-size:16px">💼</div><div class="activity-body"><div class="act-title">' + dl.name + '</div><div class="act-meta">$' + dl.amount + ' — ' + dl.stage + '</div></div></div>';
+  }).join('') || '<div style="padding:20px;color:var(--text-muted)">No recent deals</div>';
+
+  document.getElementById('dash-followups').innerHTML = '';
+}
+
+
+function renderDashboardDemo() {
+  var s = DEMO.stats;
+  document.getElementById('dash-stats').innerHTML = [
+    { label: 'Leads Found', value: s.leads, change: '+12%', dir: 'up' },
+    { label: 'Emails Sent', value: s.emails.toLocaleString(), change: '+5%', dir: 'up' },
+    { label: 'Email Replies', value: s.emailReplies, change: '+8%', dir: 'up' },
+    { label: 'LI Connections', value: s.liConnections, change: '+23%', dir: 'up' },
+    { label: 'LI DMs Sent', value: s.liDMs, change: '+15%', dir: 'up' },
+    { label: 'Meetings Booked', value: s.meetings, change: '+3', dir: 'up' },
+    { label: 'Interested Leads', value: s.interested, change: '+7', dir: 'up' },
+    { label: 'Pipeline Value', value: '$' + s.pipelineValue.toLocaleString(), change: '+$18K', dir: 'up' }
+  ].map(function(c) {
+    return '<div class="stat-card"><div class="stat-label">' + c.label + '</div><div class="stat-value" style="color:var(--accent)">' + c.value + '</div><div class="stat-change ' + c.dir + '">' + c.change + '</div></div>';
+  }).join('');
+
+  document.getElementById('dash-timeline').innerHTML = DEMO.timeline.map(function(i) {
+    return '<div class="timeline-item"><div class="time">' + i.time + '</div><div class="desc">' + i.desc + '</div><div class="meta">' + i.meta + '</div></div>';
+  }).join('');
+
+  renderTargets(DEMO.targets, 'dash-targets');
+
+  document.getElementById('li-pipeline-snapshot').innerHTML = DEMO.pipelineSnapshot.map(function(p) {
+    var color = p.pct >= 70 ? 'var(--success)' : p.pct >= 30 ? 'var(--warning)' : 'var(--accent)';
+    return '<div class="pipeline-bar"><div class="pl-label">' + p.label + '</div><div class="pl-track"><div class="pl-fill" style="width:' + p.pct + '%;background:' + color + '">' + p.val + '</div></div></div>';
+  }).join('');
+
+  document.getElementById('dash-li-feed').innerHTML = DEMO.liActivity.slice(0, 4).map(function(a) {
+    var icons = { connection_request: '🔗', connection_accepted: '✅', message: '💬', profile_view: '👤', reply_received: '📥' };
+    return '<div class="activity-item"><div class="activity-icon" style="font-size:16px">' + (icons[a.type] || '📌') + '</div><div class="activity-body"><div class="act-title">' + a.title + '</div><div class="act-meta">' + a.meta + '</div></div></div>';
+  }).join('');
+
+  document.getElementById('dash-followups').innerHTML = DEMO.followups.map(function(f) {
+    return '<div class="li-row"><div class="li-name"><strong>' + f.name + '</strong><span style="color:var(--text-muted);font-size:11px;display:block">' + f.company + '</span></div><div class="li-status" style="color:' + (f.due === 'Today' ? 'var(--danger)' : 'var(--warning)') + ';font-size:11px">' + f.due + '</div></div>';
+  }).join('') || '<div style="color:var(--text-muted);padding:10px;font-size:13px">No follow-ups due</div>';
+
+  document.getElementById('dash-sources').innerHTML = DEMO.topSources.map(function(s) {
+    return '<div class="progress-label mb16"><span class="prog-name">' + s.name + ' <span style="color:var(--text-muted);font-size:11px">(' + s.count + ')</span></span><span class="prog-val" style="color:var(--accent)">' + s.pct + '%</span></div><div class="progress-track mb16"><div class="progress-fill" style="width:' + s.pct + '%;background:var(--accent)"></div></div>';
+  }).join('');
+}
+
+function fetchDashboardStats() {
+  var p1 = api('/api/leads').then(function(d) { if (!useDemo && d) { var leads = Array.isArray(d) ? d : (d.leads || d.data || []); DEMO.stats.leads = leads.length; } }).catch(function() {});
+  var p2 = api('/api/linkedin/stats').then(function(s) { if (s) Object.assign(DEMO.stats, s); }).catch(function() {});
+  var p3 = api('/api/analytics/pipeline').then(function(p) { if (p) { var items = Array.isArray(p) ? p : (p.stages || p.pipeline || []); if (items.length) DEMO.timeline = items.map(function(x) { return { desc: x.stage + ': ' + x.count + ' leads', time: x.updated_at || '', meta: '' }; }); } }).catch(function() {});
+  Promise.all([p1, p2, p3]).then(function() { renderDashboardDemo(); }).catch(function() { renderDashboardDemo(); });
+}
+
+function renderTargets(items, elId) {
+  document.getElementById(elId).innerHTML = items.map(function(t) {
+    var pct = Math.min(100, Math.round(t.current / t.target * 100));
+    return '<div class="progress-label mb16"><span class="prog-name">' + t.name + '</span><span class="prog-val">' + t.current + '/' + t.target + '</span></div><div class="progress-track mb16"><div class="progress-fill" style="width:' + pct + '%;background:' + t.color + '"></div></div>';
+  }).join('');
+}
+
+/* === LEAD HUNTER === */
+function toggleSource(el) {
+  var src = el.dataset.source;
+  if (selectedSources.has(src)) { selectedSources.delete(src); el.classList.remove('selected'); }
+  else { selectedSources.add(src); el.classList.add('selected'); }
+}
+
+function runHunt() {
+  var statusEl = document.getElementById('hunt-status');
+  if (selectedSources.size === 0) { statusEl.textContent = 'Please select at least one source'; statusEl.style.color = 'var(--danger)'; return; }
+  statusEl.textContent = '🚀 Running hunt...';
+  statusEl.style.color = 'var(--text-muted)';
+  var payload = {
+    sources: Array.from(selectedSources),
+    icp: {
+      industry: document.getElementById('icp-industry').value,
+      location: document.getElementById('icp-location').value,
+      companySize: document.getElementById('icp-size').value,
+      title: document.getElementById('icp-title').value,
+      keywords: document.getElementById('icp-keywords').value
+    }
+  };
+  api('/api/leads/hunt', { method: 'POST', body: JSON.stringify(payload) })
+    .then(function(r) {
+      var leads = r.leads || [];
+      statusEl.textContent = '✅ Hunt complete! Found ' + leads.length + ' leads';
+      statusEl.style.color = 'var(--success)';
+      var timeStr = new Date().toLocaleString();
+      document.getElementById('recent-hunts').innerHTML = '<div style="color:var(--text)">Latest hunt: ' + payload.sources.join(', ') + ' — ' + timeStr + '</div>';
+      if (leads.length > 0) {
+        var high = leads.filter(function(l){ return (l.lead_score || 0) >= 70; }).length;
+        var med = leads.filter(function(l){ return (l.lead_score || 0) >= 40 && (l.lead_score || 0) < 70; }).length;
+        var low = leads.filter(function(l){ return (l.lead_score || 0) < 40; }).length;
+        var total = leads.length || 1;
+        document.getElementById('score-dist').innerHTML = 
+          '<div class="pipeline-bar"><div class="pl-label">High (70+)</div><div class="pl-track"><div class="pl-fill pl-lead" style="width:' + Math.round(high/total*100) + '%">' + high + '</div></div></div>' +
+          '<div class="pipeline-bar"><div class="pl-label">Med (40-69)</div><div class="pl-track"><div class="pl-fill pl-connected" style="width:' + Math.round(med/total*100) + '%">' + med + '</div></div></div>' +
+          '<div class="pipeline-bar"><div class="pl-label">Low (&lt;40)</div><div class="pl-track"><div class="pl-fill pl-proposal" style="width:' + Math.round(low/total*100) + '%">' + low + '</div></div></div>';
+      }
+    })
+    .catch(function() {
+      statusEl.textContent = '❌ Hunt failed — check backend connection';
+      statusEl.style.color = 'var(--danger)';
+    });
+}
+
+/* === LEADS === */
+function loadLeads() {
+  var tableEl = document.getElementById('leads-table');
+  var paginationEl = document.getElementById('leads-pagination');
+  var search = document.getElementById('leads-search').value.toLowerCase();
+  var source = document.getElementById('leads-source').value;
+  var status = document.getElementById('leads-status').value;
+
+  api('/api/leads?page=' + leadsPage + '&search=' + encodeURIComponent(search) + '&source=' + encodeURIComponent(source) + '&status=' + encodeURIComponent(status))
+    .then(function(data) {
+      var allLeads = Array.isArray(data) ? data : (data.leads || data.data || []);
+      renderLeadsTable(allLeads, tableEl, paginationEl);
+    })
+    .catch(function() {
+      var allLeads = DEMO.leads;
+      var filtered = allLeads.filter(function(l) {
+        var lName = (l.first_name || l.name || '') + ' ' + (l.last_name || '');
+        var lTitle = l.job_title || l.title || '';
+        if (search && lName.toLowerCase().indexOf(search) < 0 && (l.company||'').toLowerCase().indexOf(search) < 0 && lTitle.toLowerCase().indexOf(search) < 0) return false;
+        if (source && l.source !== source) return false;
+        if (status && l.status !== status) return false;
+        return true;
+      });
+      renderLeadsTable(filtered, tableEl, paginationEl);
+    });
+}
+
+function renderLeadsTable(filtered, tableEl, paginationEl) {
+  var total = filtered.length;
+  var perPage = 25;
+  var totalPages = Math.ceil(total / perPage) || 1;
+  if (leadsPage > totalPages) leadsPage = totalPages;
+  var start = (leadsPage - 1) * perPage;
+  var pageLeads = filtered.slice(start, start + perPage);
+
+  tableEl.innerHTML = '<table><thead><tr><th>Name</th><th>Company</th><th>Title</th><th>Email</th><th>Score</th><th>Source</th><th>Status</th><th>Actions</th></tr></thead><tbody>' +
+    pageLeads.map(function(l) {
+      var fullName = (l.first_name || l.name || '') + ' ' + (l.last_name || '');
+      fullName = fullName.trim() || l.company || 'Unknown';
+      var leadScore = l.lead_score !== undefined ? l.lead_score : (l.score || 0);
+      var leadTitle = l.job_title || l.title || '';
+      var leadEmail = l.email || '—';
+      var leadSource = l.source || 'unknown';
+      var leadStatus = l.status || 'new';
+      var scoreBarColor = leadScore >= 80 ? 'var(--success)' : leadScore >= 60 ? 'var(--warning)' : 'var(--danger)';
+      return '<tr><td style="color:var(--text);font-weight:500">' + escapeHtml(fullName) + '</td><td>' + escapeHtml(l.company || '') + '</td><td>' + escapeHtml(leadTitle) + '</td><td style="font-family:JetBrains Mono,monospace;font-size:12px">' + escapeHtml(leadEmail) + '</td><td><div class="score-bar"><span class="badge ' + scoreClass(leadScore) + '">' + leadScore + '</span><div class="sb-track"><div class="sb-fill" style="width:' + leadScore + '%;background:' + scoreBarColor + '"></div></div></div></td><td><span class="badge ' + sourceBadge(leadSource) + '">' + capitalize(leadSource) + '</span></td><td><span class="badge ' + statusClass(leadStatus) + '">' + capitalize(leadStatus) + '</span></td><td><button class="btn-sm btn-secondary" onclick="alert(\'View lead: ' + escapeHtml(fullName) + '\')">View</button></td></tr>';
+    }).join('') +
+    '<tr><td colspan="8" style="color:var(--text-muted);font-size:12px;text-align:center">' + (total ? 'Showing ' + (start+1) + '-' + (start + pageLeads.length) + ' of ' + total : 'No leads found') + '</td></tr></tbody></table>';
+
+  paginationEl.innerHTML =
+    '<button ' + (leadsPage <= 1 ? 'disabled' : '') + ' onclick="leadsPage=1;loadLeads()">««</button>' +
+    '<button ' + (leadsPage <= 1 ? 'disabled' : '') + ' onclick="leadsPage--;loadLeads()">«</button>' +
+    '<span class="page-info">Page ' + leadsPage + ' of ' + totalPages + '</span>' +
+    '<button ' + (leadsPage >= totalPages ? 'disabled' : '') + ' onclick="leadsPage++;loadLeads()">»</button>' +
+    '<button ' + (leadsPage >= totalPages ? 'disabled' : '') + ' onclick="leadsPage=' + totalPages + ';loadLeads()">»»</button>';
+}
+
+/* === EMAIL GENERATOR === */
+function setEmailType(type, btn) {
+  currentEmailType = type;
+  document.querySelectorAll('#eg-type-toggle button').forEach(function(b) { b.classList.remove('active'); });
+  if (btn) btn.classList.add('active');
+}
+
+function generateEmail() {
+  var output = document.getElementById('eg-output');
+  var subject = document.getElementById('eg-subject');
+  output.textContent = 'Generating...';
+  var payload = {
+    lead_id: null,
+    type: currentEmailType,
+    lead: {
+      first_name: document.getElementById('eg-name').value.split(' ')[0] || document.getElementById('eg-name').value,
+      last_name: document.getElementById('eg-name').value.split(' ').slice(1).join(' ') || '',
+      company: document.getElementById('eg-company').value,
+      job_title: document.getElementById('eg-title').value,
+      industry: document.getElementById('eg-industry').value,
+      pain_points: document.getElementById('eg-pain').value,
+    }
+  };
+
+  if (!payload.lead.first_name && !useDemo) { output.textContent = 'Please fill in the lead name'; return; }
+
+  api('/api/ai/generate-email', { method: 'POST', body: JSON.stringify(payload) })
+    .then(function(r) {
+      subject.textContent = r.subject ? 'Subject: ' + r.subject : '';
+      output.textContent = r.body || r.email || r.message || 'Generated successfully';
+    })
+    .catch(function() {
+      var subjects = {
+        'cold': 'Unlocking Growth at ' + (payload.company || 'Your Company'),
+        'followup': 'Following Up — ' + (payload.company || 'Your Company'),
+        'linkedin-dm': 'Hey ' + (payload.name || 'there') + ' — quick question',
+        'sequence': payload.name + ' — Part 1 of 3: Your Growth Stack'
+      };
+      var bodies = {
+        'cold': 'Hi ' + (payload.name || '{name}') + ',\n\nI\'ve been following ' + (payload.company || '{company}') + '\'s growth in the ' + (payload.industry || 'industry') + ' space and noticed your team is doing impressive work.\n\nWe help companies like yours streamline lead generation and automate outreach — cutting manual SDR work by 60% while increasing reply rates by 35%.\n\nWould you be open to a 15-minute call this week to explore if this could help ' + (payload.company || 'your team') + '?\n\nBest,\nSarah Johnson\nLead Hunter AI',
+        'followup': 'Hi ' + (payload.name || '{name}') + ',\n\nFollowing up on my previous email. I know you\'re busy, but I wanted to share a quick case study of how we helped a similar ' + (payload.industry || '') + ' company increase their pipeline by 3x in 60 days.\n\nWould 10 minutes next Tuesday work to show you how?\n\nBest,\nSarah Johnson',
+        'linkedin-dm': 'Hi ' + (payload.name || '{name}') + '! I came across your profile and was impressed by your work at ' + (payload.company || '{company}') + '. I help SDR teams automate lead gen — would you be open to a quick chat? 🚀',
+        'sequence': 'Hi ' + (payload.name || '{name}') + ',\n\nThis is part 1 of a 3-email series on how top SDR teams are hitting 200%+ of quota using AI-powered outreach.\n\n' + (payload.industry || 'Your') + ' companies that automate lead gen see 40% higher conversion rates.\n\nStay tuned for part 2 tomorrow.\n\nBest,\nSarah Johnson'
+      };
+      subject.textContent = subjects[currentEmailType] || 'Generated Email';
+      output.textContent = bodies[currentEmailType] || 'Hi ' + (payload.name || '{name}') + ',\n\nSample outreach email body...';
+    });
+}
+
+function copyEmail() {
+  var text = document.getElementById('eg-output').textContent;
+  if (text && text !== 'Fill in lead context and click generate...' && text !== 'Generating...') {
+    navigator.clipboard.writeText(text).then(function() { alert('Copied to clipboard!'); }).catch(function() {});
+  }
+}
+
+function sendEmailFromGen() {
+  alert('Email queued for sending (demo mode)');
+}
+
+/* === AI CHAT === */
+function sendChatMessage(text) {
+  var input = document.getElementById('chat-input');
+  var msg = text || input.value.trim();
+  if (!msg) return;
+  if (!text) input.value = '';
+
+  var msgsEl = document.getElementById('chat-messages');
+  msgsEl.innerHTML += '<div class="chat-msg user"><div class="sender">You</div><div class="bubble">' + escapeHtml(msg) + '</div></div>';
+  msgsEl.scrollTop = msgsEl.scrollHeight;
+
+  var aiDiv = document.createElement('div');
+  aiDiv.className = 'chat-msg ai';
+  aiDiv.innerHTML = '<div class="sender">AI Agent</div><div class="bubble"><span class="spinner"></span> Thinking...</div>';
+  msgsEl.appendChild(aiDiv);
+  msgsEl.scrollTop = msgsEl.scrollHeight;
+  var bubble = aiDiv.querySelector('.bubble');
+
+  if (!useDemo && authToken && authToken !== 'demo-fallback-token') {
+    firehose = {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + authToken },
+      body: JSON.stringify({ messages: [{role: 'user', content: msg}] })
+    };
+    fetch(API_BASE + '/api/ai/chat', firehose).then(function(res) {
+      if (!res.ok) throw new Error('Failed');
+      var reader = res.body.getReader();
+      var decoder = new TextDecoder();
+      var fullText = '';
+      bubble.innerHTML = '';
+      function tryRead() {
+        reader.read().then(function(res2) {
+          if (res2.done) {
+            bubble.textContent = fullText || 'No response';
+            msgsEl.scrollTop = msgsEl.scrollHeight;
+            return;
+          }
+          var chunk = decoder.decode(res2.value, { stream: true });
+          var lines = chunk.split('\n');
+          for (var i = 0; i < lines.length; i++) {
+            var line = lines[i];
+            if (line.indexOf('data: ') === 0) {
+              var data = line.slice(6);
+              if (data === '[DONE]') break;
+              try { var parsed = JSON.parse(data); fullText += (parsed.text || parsed.content || ''); }
+              catch(e) { fullText += data; }
+            }
+          }
+          bubble.textContent = fullText || '...';
+          msgsEl.scrollTop = msgsEl.scrollHeight;
+          tryRead();
+        }).catch(function() { bubble.textContent = fullText || 'Error reading stream'; });
+      }
+      tryRead();
+    }).catch(function() { demoChatResponse(msgsEl, bubble, msg); });
+  } else {
+    demoChatResponse(msgsEl, bubble, msg);
+  }
+}
+
+function demoChatResponse(msgsEl, bubble, msg) {
+  var responses = [
+    'Great question! Based on your pipeline, I found 14 high-intent leads in the SaaS space. Would you like me to draft personalized outreach for them?',
+    'I analyzed your LinkedIn activity. Your connection rate is up 12% this week. I recommend focusing on VP-level contacts at companies with 50-200 employees.',
+    'Here are 5 promising leads: 1) Acme Corp — Sarah Chen, VP Marketing (score: 92) 2) DataFlow — Michael Torres, VP Eng (88) 3) NexGen — Emily Park, CEO (95) 4) CloudBase — James Liu (76) 5) Fusion Labs — David Kim, CTO (81)',
+    'Your pipeline health looks good! 31 meetings booked so far. The bottleneck appears between "Connected" and "Meeting" — try adding a case study follow-up.',
+    'I found 3 trending topics in SaaS sales: AI-powered lead scoring, automated personalization, and multi-channel outreach sequences. Want me to draft content around any of these?',
+    'Based on your data, your highest-converting source is LinkedIn connections (42% of qualified leads). I recommend increasing daily connection requests by 20%.'
+  ];
+  setTimeout(function() {
+    bubble.textContent = responses[Math.floor(Math.random() * responses.length)];
+    msgsEl.scrollTop = msgsEl.scrollHeight;
+  }, 800);
+}
+
+function sendQuickPrompt(text) {
+  document.getElementById('chat-input').value = text;
+  sendChatMessage(text);
+}
+
+function parseLinkedInDump() {
+  var input = document.getElementById('li-dump-input');
+  var panel = document.getElementById('linkedin-dump');
+  var text = input.value.trim();
+  if (!text) { panel.innerHTML = '<div class="text-center" style="padding:20px;color:var(--text-muted)">Paste LinkedIn profile data to parse</div>'; return; }
+  panel.innerHTML = '<div class="text-center" style="padding:20px"><span class="spinner"></span> Parsing...</div>';
+
+  if (!useDemo) {
+    api('/api/ai/parse-linkedin', { method: 'POST', body: JSON.stringify({ text: text }) })
+      .then(function(r) {
+        var people = r.people || r.data || [];
+        if (!Array.isArray(people) || people.length === 0) {
+          demoParseLinkedIn(text, panel);
+          return;
+        }
+        displayParsedPeople(people, panel);
+        // Items already saved to DB by the API — reload tracker
+        loadLinkedInTracker();
+      })
+      .catch(function() { demoParseLinkedIn(text, panel); });
+  } else {
+    demoParseLinkedIn(text, panel);
+  }
+}
+
+function displayParsedPeople(people, container) {
+  container.innerHTML = '<div style="margin-bottom:8px;font-size:13px;color:var(--text-sec)">Parsed ' + people.length + ' contacts</div>' +
+    '<div style="max-height:300px;overflow-y:auto">' +
+    people.map(function(p) {
+      return '<div style="padding:8px 10px;border-left:2px solid var(--accent);margin-bottom:6px;background:var(--card);border-radius:var(--radius-sm)">' +
+        '<div style="font-weight:600;font-size:13px">' + (p.name || '—') + '</div>' +
+        '<div style="font-size:12px;color:var(--text-sec)">' + (p.title || '') + (p.company ? ' @ ' + p.company : '') + '</div>' +
+        (p.linkedin_url ? '<div style="font-size:11px;color:var(--accent);overflow:hidden;text-overflow:ellipsis">' + p.linkedin_url + '</div>' : '') +
+        '</div>';
+    }).join('') + '</div>';
+}
+
+function demoParseLinkedIn(text, panel) {
+  setTimeout(function() {
+    panel.innerHTML = '<div class="dump-item"><div class="dump-label">Name</div>Sarah Chen</div><div class="dump-item"><div class="dump-label">Title</div>VP Marketing</div><div class="dump-item"><div class="dump-label">Company</div>Acme Corp</div><div class="dump-item"><div class="dump-label">Location</div>San Francisco Bay Area</div><div class="dump-item"><div class="dump-label">Summary</div>Experienced marketing leader with 12+ years in B2B SaaS. Specializes in demand generation and growth marketing.</div>';
+  }, 500);
+}
+
+/* === LINKEDIN TRACKER === */
+function loadLinkedInTracker() {
+  api('/api/linkedin/stats').then(function(s) { if (s) Object.assign(DEMO.liStats, s); }).catch(function() {}).then(function() {
+    api('/api/linkedin/activities?per_page=100').then(function(a) {
+      if (a && a.activities) {
+        DEMO.liFeed = a.activities.map(function(act) {
+          return {
+            _id: act.id,
+            name: act.lead_name,
+            company: act.company,
+            linkedin_url: act.linkedin_url,
+            title: act.notes,
+            type: act.activity_type,
+            created_at: act.created_at
+          };
+        });
+      }
+      renderLinkedInTracker();
+    }).catch(function() { renderLinkedInTracker(); });
+  });
+}
+
+function updateLiStatus(activityId, newType) {
+  var label = document.getElementById('li-status-' + activityId);
+  if (label) label.textContent = '⏳';
+  api('/api/linkedin/activities/' + activityId, {
+    method: 'PUT',
+    body: JSON.stringify({ activity_type: newType })
+  }).then(function() {
+    loadLinkedInTracker();
+  }).catch(function() {
+    loadLinkedInTracker();
+  });
+}
+
+function deleteLiActivity(activityId) {
+  if (!confirm('Are you sure you want to delete this activity?')) return;
+  api('/api/linkedin/activities/' + activityId, {
+    method: 'DELETE'
+  }).then(function() {
+    loadLinkedInTracker();
+  }).catch(function() {
+    loadLinkedInTracker();
+  });
+}
+
+function renderLinkedInTracker() {
+  var ls = DEMO.liStats;
+  document.getElementById('li-stats').innerHTML = [
+    { label: 'Connections Sent', val: ls.connections_sent || ls.connectionsSent || 0, color: 'var(--accent)' },
+    { label: 'Accepted', val: ls.accepted || ls.connectionsAccepted || 0, color: 'var(--success)' },
+    { label: 'DMs Sent', val: ls.dms || ls.dmsSent || 0, color: 'var(--accent)' },
+    { label: 'Replies', val: ls.replies || 0, color: 'var(--warning)' },
+    { label: 'Meetings', val: ls.meetings || 0, color: 'var(--success)' }
+  ].map(function(s) {
+    return '<div class="li-stat-card"><div class="val" style="color:' + s.color + '">' + s.val + '</div><div class="lbl">' + s.label + '</div></div>';
+  }).join('');
+
+  var filter = document.getElementById('li-feed-filter').value;
+  var feed = DEMO.liFeed.filter(function(a) {
+    var typeMap = {
+      connection_request: 'connection_sent', connection_accepted: 'connection_accepted',
+      message: 'dm_sent', profile_view: 'profile_viewed', reply_received: 'reply_received',
+      meeting_booked: 'meeting_booked', note: 'interested', follow_up: 'followup_sent'
+    };
+    var dbType = a.type || '';
+    return !filter || typeMap[filter] === dbType || filter === dbType;
+  });
+
+  var statusOptions = [
+    { val: 'connection_sent', icon: '➕', label: 'Connection' },
+    { val: 'connection_accepted', icon: '✅', label: 'Accepted' },
+    { val: 'dm_sent', icon: '💬', label: 'Message' },
+    { val: 'profile_viewed', icon: '👤', label: 'Profile View' },
+    { val: 'reply_received', icon: '📥', label: 'Reply' },
+    { val: 'meeting_booked', icon: '📅', label: 'Meeting' },
+    { val: 'interested', icon: '📝', label: 'Note' },
+    { val: 'followup_sent', icon: '🔄', label: 'Follow-up' }
+  ];
+
+  document.getElementById('li-feed').innerHTML = feed.length ? ('<div class="table-container" style="overflow-x:auto"><table><thead><tr><th style="padding:8px 10px;font-size:11px">Name</th><th style="padding:8px 10px;font-size:11px">Title</th><th style="padding:8px 10px;font-size:11px">Company</th><th style="padding:8px 10px;font-size:11px">LinkedIn</th><th style="padding:8px 10px;font-size:11px">Status</th><th style="padding:8px 10px;font-size:11px">Actions</th></tr></thead><tbody>' + feed.map(function(a) {
+    var curIcon = '+';
+    var curLabel = (a.type || '').replace(/_/g, ' ');
+    for (var i = 0; i < statusOptions.length; i++) {
+      if (statusOptions[i].val === a.type) { curIcon = statusOptions[i].icon; curLabel = statusOptions[i].label; break; }
+    }
+    var opts = statusOptions.map(function(o) {
+      return '<option value="' + o.val + '"' + (o.val === a.type ? ' selected' : '') + '>' + o.icon + ' ' + o.label + '</option>';
+    }).join('');
+
+    return '<tr>' +
+      '<td style="padding:8px 10px;border-bottom:1px solid var(--border);font-weight:600;font-size:13px;color:var(--text)">' + (a.name || '—') + '</td>' +
+      '<td style="padding:8px 10px;border-bottom:1px solid var(--border);font-size:12px;color:var(--text-sec)">' + (a.title || '—') + '</td>' +
+      '<td style="padding:8px 10px;border-bottom:1px solid var(--border);font-size:12px;color:var(--accent)">' + (a.company || '—') + '</td>' +
+      '<td style="padding:8px 10px;border-bottom:1px solid var(--border);font-size:11px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + (a.linkedin_url ? '<a href="' + a.linkedin_url + '" target="_blank" style="color:var(--accent)">🔗 Link</a>' : '—') + '</td>' +
+      '<td style="padding:8px 10px;border-bottom:1px solid var(--border)">' + 
+        '<select id="li-status-' + a._id + '" onchange="updateLiStatus(' + a._id + ', this.value)" style="padding:4px 6px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-size:11px;cursor:pointer;outline:none;margin-right:8px">' + opts + '</select>' +
+      '</td>' +
+      '<td style="padding:8px 10px;border-bottom:1px solid var(--border)">' +
+        '<button class="btn-sm btn-danger" onclick="deleteLiActivity(' + a._id + ')" title="Delete Activity">🗑️</button>' +
+      '</td>' +
+    '</tr>';
+  }).join('') + '</tbody></table></div>') : '<div style="color:var(--text-muted);padding:20px;text-align:center">No activities yet. Parse LinkedIn data or add manually.</div>';
+
+  document.getElementById('li-performance').innerHTML = DEMO.liPerformance.map(function(p) {
+    return '<div class="li-row"><span style="flex:1;font-size:13px;color:var(--text-sec)">' + p.label + '</span><span style="font-size:14px;font-weight:600;color:' + (p.good ? 'var(--success)' : 'var(--warning)') + '">' + p.val + '</span></div>';
+  }).join('');
+
+  document.getElementById('li-followups').innerHTML = DEMO.followups.map(function(f) {
+    return '<div class="li-row"><div class="li-name"><strong>' + f.name + '</strong><span style="color:var(--text-muted);font-size:11px;display:block">' + f.company + '</span></div><div class="li-status" style="color:' + (f.due === 'Today' ? 'var(--danger)' : 'var(--warning)') + ';font-size:11px">' + f.due + '</div><button class="btn-sm btn-secondary" onclick="logLiActivity(\'follow_up\')">Follow Up</button></div>';
+  }).join('') || '<div style="color:var(--text-muted);padding:10px">No follow-ups due</div>';
+}
+
+function logLiActivity(type) {
+  if (!useDemo && authToken && authToken !== 'demo-fallback-token') {
+    api('/api/linkedin/activities', { method: 'POST', body: JSON.stringify({ type: type, title: capitalize(type.replace(/_/g, ' ')), timestamp: new Date().toISOString() }) }).catch(function() {});
+  }
+  var titles = {
+    connection_request: 'Connection Request', connection_accepted: 'Connection Accepted', message: 'Message Sent',
+    profile_view: 'Profile View', reply_received: 'Reply Received', meeting_booked: 'Meeting Booked',
+    note: 'Note Added', follow_up: 'Follow-up Sent'
+  };
+  DEMO.liFeed.unshift({ type: type, title: titles[type] || capitalize(type.replace(/_/g, ' ')), meta: 'Just now' });
+  if (type === 'connection_request') DEMO.liStats.connectionsSent++;
+  if (type === 'connection_accepted') DEMO.liStats.connectionsAccepted++;
+  if (type === 'message') DEMO.liStats.dmsSent++;
+  if (type === 'reply_received') DEMO.liStats.replies++;
+  if (type === 'meeting_booked') DEMO.liStats.meetings++;
+  loadLinkedInTracker();
+}
+
+function logQuickCustom() {
+  var name = document.getElementById('quick-li-name').value.trim();
+  var company = document.getElementById('quick-li-company').value.trim();
+  if (!name) { alert('Enter a lead name'); return; }
+  var title = 'Activity for ' + name + (company ? ' (' + company + ')' : '');
+  if (!useDemo) {
+    api('/api/linkedin/activities', { method: 'POST', body: JSON.stringify({ type: 'note', title: title, timestamp: new Date().toISOString() }) }).catch(function() {});
+  }
+  DEMO.liFeed.unshift({ type: 'note', title: title, meta: 'Just now' });
+  document.getElementById('quick-li-name').value = '';
+  document.getElementById('quick-li-company').value = '';
+  loadLinkedInTracker();
+}
+
+function parseSmartDump() {
+  var input = document.getElementById('li-smart-dump');
+  var text = input.value.trim();
+  if (!text) { alert('Paste some LinkedIn activity text first'); return; }
+
+  if (!useDemo) {
+    api('/api/ai/parse-linkedin', { method: 'POST', body: JSON.stringify({ text: text }) })
+      .then(function(r) {
+        // Items are saved to DB by the API; just reload the tracker
+        loadLinkedInTracker();
+        input.value = '';
+      })
+      .catch(function() {
+        alert('Failed to parse LinkedIn dump. Please check your connection.');
+        loadLinkedInTracker();
+      });
+  } else {
+    var lines = text.split('\n').filter(Boolean);
+    lines.slice(0, 5).forEach(function(line) {
+      DEMO.liFeed.unshift({ type: 'note', title: line.slice(0, 80), meta: 'Parsed just now' });
+    });
+    loadLinkedInTracker();
+    input.value = '';
+  }
+}
+
+/* === ANALYTICS === */
+function loadAnalytics() {
+  var ok = false;
+  api('/api/analytics/pipeline').then(function() { ok = true; }).catch(function() {}).then(function() {
+    if (ok) {
+      fetchPipeline();
+      fetchBySource();
+    } else {
+      renderAnalyticsDemo();
+    }
+  });
+}
+
+function renderAnalyticsDemo() {
+  var as = DEMO.analytics.stats;
+  document.getElementById('analytics-stats').innerHTML = [
+    { label: 'Conversion Rate', val: as.conversionRate, color: 'var(--success)' },
+    { label: 'Reply Rate', val: as.replyRate, color: 'var(--accent)' },
+    { label: 'Avg Score', val: as.avgScore, color: 'var(--warning)' },
+    { label: 'Meetings/Week', val: as.meetingsPerWeek, color: 'var(--success)' },
+    { label: 'Cost Per Lead', val: as.costPerLead, color: 'var(--text)' }
+  ].map(function(s) {
+    return '<div class="stat-card"><div class="stat-label">' + s.label + '</div><div class="stat-value" style="color:' + s.color + '">' + s.val + '</div></div>';
+  }).join('');
+
+  var pipeline = DEMO.analytics.pipeline;
+  var maxC = 1;
+  pipeline.forEach(function(p) { if (p.count > maxC) maxC = p.count; });
+  var colors = { Lead: 'pl-lead', Connected: 'pl-connected', Meeting: 'pl-meeting', Proposal: 'pl-proposal', Won: 'pl-won' };
+  document.getElementById('pipeline-chart').innerHTML = pipeline.map(function(p) {
+    return '<div class="pipeline-bar"><div class="pl-label">' + p.stage + '</div><div class="pl-track"><div class="pl-fill ' + (colors[p.stage] || 'pl-lead') + '" style="width:' + Math.round(p.count / maxC * 100) + '%">' + p.count + '</div></div></div>';
+  }).join('');
+
+  document.getElementById('by-source-body').innerHTML = DEMO.analytics.bySource.map(function(s) {
+    return '<tr><td>' + s.source + '</td><td>' + s.leads + '</td><td>' + s.contacted + '</td><td><span class="badge badge-high">' + s.conversion + '</span></td><td><div class="progress-track" style="width:80px;display:inline-block;vertical-align:middle"><div class="progress-fill" style="width:' + s.conversion.replace('%','') + '%;background:var(--accent)"></div></div></td></tr>';
+  }).join('');
+}
+
+function fetchPipeline() {
+  api('/api/analytics/pipeline').then(function(p) {
+    if (p) { var items = Array.isArray(p) ? p : (p.stages || p.pipeline || []); if (items.length) DEMO.analytics.pipeline = items; }
+    renderAnalyticsDemo();
+  }).catch(function() { renderAnalyticsDemo(); });
+}
+
+function fetchBySource() {
+  api('/api/analytics/by-source').then(function(s) {
+    if (s) { DEMO.analytics.bySource = Array.isArray(s) ? s : (s.sources || s.data || DEMO.analytics.bySource); }
+    renderAnalyticsDemo();
+  }).catch(function() { renderAnalyticsDemo(); });
+}
+
+/* === SDR ACTIVITY === */
+function loadActivity() {
+  renderTargets(DEMO.targets, 'activity-targets');
+  var icons = { email_sent: '📧', call: '📞', meeting: '📅', linkedin: '🔗', research: '🔍', other: '📌' };
+  document.getElementById('activity-log-feed').innerHTML = DEMO.activities.map(function(a) {
+    return '<div class="activity-item"><div class="activity-icon sdr-activity" style="font-size:16px">' + (icons[a.type] || '📌') + '</div><div class="activity-body"><div class="act-title">' + a.title + '</div><div class="act-meta">' + a.meta + '</div></div></div>';
+  }).join('');
+}
+
+function logManualActivity() {
+  var type = document.getElementById('manual-act-type').value;
+  var lead = document.getElementById('manual-act-lead').value.trim();
+  var notes = document.getElementById('manual-act-notes').value.trim();
+  var title = capitalize(type.replace(/_/g, ' ')) + (lead ? ' — ' + lead : '') + (notes ? ': ' + notes : '');
+  var icons = { email_sent: '📧', call: '📞', meeting: '📅', linkedin: '🔗', research: '🔍', other: '📌' };
+  DEMO.activities.unshift({ type: type, title: title, meta: 'Just now', icon: icons[type] || '📌' });
+  if (!useDemo) {
+    api('/api/activities', { method: 'POST', body: JSON.stringify({ type: type, lead: lead, notes: notes }) }).catch(function() {});
+  }
+  document.getElementById('manual-act-lead').value = '';
+  document.getElementById('manual-act-notes').value = '';
+  loadActivity();
+}
+
+/* === ADMIN === */
+function loadAdmin() {
+  var healthDot = document.getElementById('health-dot');
+  var healthText = document.getElementById('health-text');
+  var healthDetails = document.getElementById('health-details');
+  if (!useDemo) {
+    api('/api/admin/system-health').then(function(r) {
+      healthText.textContent = 'All Systems Operational';
+      healthDetails.innerHTML = '<div>API: ✅ Online</div><div>Database: ✅ Connected</div><div>Auth: ✅ Active</div><div>Groq AI: ✅ Available</div><div>Last checked: ' + new Date().toLocaleString() + '</div>';
+    }).catch(function(e) {
+      healthText.textContent = 'System Status Unknown';
+      healthDot.className = 'health-dot health-warn';
+      healthDetails.innerHTML = '<div>API: ⚠️ Unreachable — showing demo</div>';
+    });
+  } else {
+    healthDot.className = 'health-dot health-warn';
+    healthText.textContent = 'Demo Mode — Backend Unreachable';
+    healthDetails.innerHTML = '<div>API: ⚠️ Demo data active</div><div>Database: ⚠️ Not connected</div><div>All features shown with sample data</div>';
+  }
+}
+
+/* === API CONFIG === */
+function copyToken() {
+  if (!authToken) return;
+  navigator.clipboard.writeText(authToken).then(function() { alert('Token copied!'); }).catch(function() {});
+}
+
+function testConnection() {
+  var resultEl = document.getElementById('test-result');
+  resultEl.textContent = 'Testing...';
+  resultEl.style.color = 'var(--text-muted)';
+  api('/api/health').then(function() {
+    resultEl.textContent = '✅ Connected';
+    resultEl.style.color = 'var(--success)';
+  }).catch(function() {
+    fetch(API_BASE + '/api/health')
+      .then(function() {
+        resultEl.textContent = '✅ Connected (no auth needed)';
+        resultEl.style.color = 'var(--success)';
+      })
+      .catch(function() {
+        resultEl.textContent = '❌ Backend unreachable';
+        resultEl.style.color = 'var(--danger)';
+      });
+  });
+}
+
+/* Delete LI activity */
+function deleteLiActivity(id) {
+  if (!useDemo) {
+    api('/api/linkedin/activities/' + id, { method: 'DELETE' }).catch(function() {});
+  }
+  DEMO.liFeed = DEMO.liFeed.filter(function(a, i) { return i !== id; });
+  loadLinkedInTracker();
+}
+</script>
+</body>
+</html>
