@@ -1,11 +1,8 @@
-"""HubSpot routes — dashboard endpoints for owners, deals, and search.
-
-All endpoints require JWT auth (same as other Lead Hunter endpoints).
-Returns HubSpot data grouped by owner for the frontend dashboard.
-"""
+"""HubSpot routes — dashboard endpoints for owners, deals, and search."""
 
 import logging
-from flask import Blueprint, request, jsonify
+import os
+from flask import Blueprint, request, jsonify, send_file
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from app import db
 from app.models.user import User
@@ -29,6 +26,14 @@ def _get_user():
         return User.query.get(int(user_id))
     except (ValueError, TypeError):
         return None
+
+
+@hubspot_bp.route('/hubspot-dashboard')
+@hubspot_bp.route('/h')
+def serve_dashboard():
+    """Serve the HubSpot dashboard HTML page (no auth required for the page itself)."""
+    base_dir = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+    return send_file(os.path.join(base_dir, 'hubspot-dashboard.html'))
 
 
 @hubspot_bp.route('/api/hubspot/status', methods=['GET'])
@@ -65,12 +70,7 @@ def list_owners():
 @hubspot_bp.route('/api/hubspot/dashboard', methods=['GET'])
 @jwt_required()
 def dashboard():
-    """HubSpot pipeline dashboard — open deals grouped by owner.
-
-    Query params:
-        owner_id (optional): filter to a specific owner
-        target_amount (optional): show only deals above this amount
-    """
+    """HubSpot pipeline dashboard — open deals grouped by owner."""
     user = _get_user()
     if not user:
         return jsonify({'error': 'User not found'}), 404
@@ -80,11 +80,10 @@ def dashboard():
 
     try:
         if owner_id:
-            # Single owner view
             deals = get_deals_for_owner(owner_id, limit=50)
-            # Get owner name
             owners = get_owners()
-            owner_info = next((o for o in owners if o['id'] == owner_id), {'id': owner_id, 'name': f'Owner {owner_id}'})
+            owner_info = next((o for o in owners if o['id'] == owner_id),
+                              {'id': owner_id, 'name': f'Owner {owner_id}'})
             return jsonify({
                 'owner': owner_info,
                 'deals': deals,
@@ -92,13 +91,13 @@ def dashboard():
                 'total_value': sum(int(d['amount'] or 0) for d in deals),
             })
         else:
-            # Full dashboard
             data = get_open_deals_by_owner()
             if target_amount:
                 try:
                     min_amt = int(target_amount)
                     for owner in data['owners']:
-                        owner['latest_deals'] = [d for d in owner['latest_deals'] if int(d.get('amount', 0) or 0) >= min_amt]
+                        owner['latest_deals'] = [d for d in owner['latest_deals']
+                                                 if int(d.get('amount', 0) or 0) >= min_amt]
                         owner['deal_count'] = len(owner['latest_deals'])
                     data['owners'] = [o for o in data['owners'] if o['deal_count'] > 0]
                 except ValueError:
@@ -112,12 +111,7 @@ def dashboard():
 @hubspot_bp.route('/api/hubspot/owner/<owner_id>/deals', methods=['GET'])
 @jwt_required()
 def owner_deals(owner_id):
-    """Get the latest deals for a specific owner.
-
-    Query params:
-        limit (int, default 10)
-        include_closed (bool, default false)
-    """
+    """Get the latest deals for a specific owner."""
     user = _get_user()
     if not user:
         return jsonify({'error': 'User not found'}), 404
@@ -127,7 +121,6 @@ def owner_deals(owner_id):
 
     try:
         deals = get_deals_for_owner(owner_id, limit=limit, include_closed=include_closed)
-        # Look up owner name
         owners = get_owners()
         owner_info = next((o for o in owners if o['id'] == owner_id),
                           {'id': owner_id, 'name': f'Owner {owner_id}', 'email': ''})
@@ -162,10 +155,7 @@ def search_owners():
 @hubspot_bp.route('/api/hubspot/search/deals-by-owner', methods=['GET'])
 @jwt_required()
 def deals_by_owner_name():
-    """Search deals by fuzzy owner name.
-
-    Example: /api/hubspot/search/deals-by-owner?q=Anna
-    """
+    """Search deals by fuzzy owner name."""
     user = _get_user()
     if not user:
         return jsonify({'error': 'User not found'}), 404
@@ -185,11 +175,7 @@ def deals_by_owner_name():
 @hubspot_bp.route('/api/hubspot/ai-context', methods=['GET'])
 @jwt_required()
 def ai_context():
-    """Generate a text summary of HubSpot state for AI prompt injection.
-
-    The frontend calls this and injects it into the AI chat system prompt
-    so the agent can answer questions about HubSpot.
-    """
+    """Generate a text summary of HubSpot state for AI prompt injection."""
     user = _get_user()
     if not user:
         return jsonify({'error': 'User not found'}), 404
