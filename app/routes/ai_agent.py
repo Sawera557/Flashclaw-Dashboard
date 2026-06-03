@@ -7,6 +7,7 @@ from app import db
 from app.models.user import User
 from app.models.lead import Lead, GeneratedEmail
 from app.services.scoring import get_groq_client, score_lead_via_groq
+from app.services.hubspot_service import build_dashboard_context, search_deals_by_owner_name, search_owner_by_name, HubSpotError
 
 ai_bp = Blueprint('ai', __name__)
 
@@ -27,25 +28,61 @@ def ai_chat():
         return jsonify({'error': 'Messages array is required'}), 400
 
     # System prompt for Lead Hunter
-    system_prompt = {
-        'role': 'system',
-        'content': (
-            'You are Lead Hunter AI, an expert sales assistant. You help SDRs and sales teams '
-            'find leads, craft outreach emails, analyze ICP fit, and provide sales strategy advice. '
-            'Be concise, actionable, and data-driven. When asked to write emails, personalize them. '
-            'When analyzing leads, focus on buying signals. You can help with cold email copy, '
-            'LinkedIn messages, follow-up sequences, ICP definitions, and outreach strategy.'
-        ),
-    }
+    system_content = (
+        'You are Lead Hunter AI, an expert sales assistant. You help SDRs and sales teams '
+        'find leads, craft outreach emails, analyze ICP fit, and provide sales strategy advice. '
+        'Be concise, actionable, and data-driven. When asked to write emails, personalize them. '
+        'When analyzing leads, focus on buying signals. You can help with cold email copy, '
+        'LinkedIn messages, follow-up sequences, ICP definitions, and outreach strategy.'
+    )
 
-    # Check for Gmail-specific queries — fetch real emails and inject as context
+    # Detect HubSpot questions and inject live context
+    user_msg = messages[-1]['content'] if messages else ''
+    user_msg_lower = user_msg.lower()
+    hs_keywords = ['deal', 'owner', 'pipeline', 'hubspot', 'jordan', 'anna', 'working on',
+                   'latest deal', 'open deal', 'stage', 'qualified', 'meeting scheduled']
+    if any(kw in user_msg_lower for kw in hs_keywords):
+        try:
+            hs_context = build_dashboard_context()
+            system_content += f'\n\n--- HUBSPOT CRM DATA (LIVE) ---\n{hs_context}\n--- END HUBSPOT DATA ---\n\n'
+            system_content += (
+                'You have live HubSpot CRM data above. The user can ask you about any owner\'s deals. '
+                'Owners are sales reps. If asked for details on a specific owner, describe their '
+                'deals, stages, and amounts. If the user names someone who is a HubSpot contact '
+                '(not an owner), say so and offer to search their owner. Be concise and data-driven.'
+            )
+        except HubSpotError:
+            pass
+
+    system_prompt = {'role': 'system', 'content': system_content}
+
+    # Check for HubSpot-specific owner queries — fetch deals for a specific person
     import re
     import os
     import urllib.request, urllib.parse
     
-    gmail_query = None
     user_msg = messages[-1]['content'] if messages else ''
     user_msg_lower = user_msg.lower()
+
+    # Detect "what deals is [name] working on" pattern
+    owner_match = re.search(r'(?:what|which)\s+deals\s+(?:is|does)\s+(.+?)\s+(?:working on|have|own)', user_msg_lower)
+    if owner_match:
+        name_query = owner_match.group(1).strip()
+        try:
+            matched_owners = search_owner_by_name(name_query)
+            if matched_owners:
+                owner = matched_owners[0]
+                deals = [None]  # lazy: use search endpoint
+                from app.services.hubspot_service import get_deals_for_owner
+                deals = get_deals_for_owner(owner['id'], limit=10)
+                if deals:
+                    deal_lines = [f'Deals for {owner["name"]} ({owner["email"]}):']
+                    for d in deals:
+                        amt = f"${d['amount']}" if d['amount'] != '0' else '$0'
+                        deal_lines.append(f'  · {d["name"]} — {amt} — {d["stage"]} (last: {d["modified"]})')
+                    system_content += '\n\n--- HUBSPOT RESULT ---\n' + '\n'.join(deal_lines) + '\n--- END HUBSPOT RESULT ---'
+        except Exception:
+            pass
     
     # Detect Gmail-related requests
     if any(p in user_msg_lower for p in ['my last', 'my emails', 'my gmail', 'my emails from gmail', 'gmail emails', 'recent emails', 'show my inbox', 'last 5 emails']):
