@@ -39,7 +39,7 @@ Return ONLY valid JSON: {{"score": <integer 0-100>, "reason": "<short explanatio
 
     try:
         completion = client.chat.completions.create(
-            model="mixtral-8x7b-32768",
+            model="llama-3.1-8b-instant",
             messages=[{"role": "user", "content": prompt}],
             temperature=0.3,
             response_format={"type": "json_object"},
@@ -124,7 +124,7 @@ Be conservative — don't guess if uncertain. Just return the original data if n
 
     try:
         completion = client.chat.completions.create(
-            model="mixtral-8x7b-32768",
+            model="llama-3.1-8b-instant",
             messages=[{"role": "user", "content": prompt}],
             temperature=0.2,
             response_format={"type": "json_object"},
