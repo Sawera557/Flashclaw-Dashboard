@@ -11,14 +11,15 @@ def get_groq_client():
     return Groq(api_key=api_key)
 
 
-def score_lead_via_groq(lead_data, icp_profile):
-    """Score a lead's ICP match using Groq Mixtral.
+def get_llm_client():
+    """Alias for backwards compat."""
+    return get_groq_client()
 
-    Returns dict with score (0-100), reason, and icp_match (float 0-1).
-    """
+
+def score_lead_via_groq(lead_data, icp_profile):
+    """Score a lead's ICP match using Groq."""
     client = get_groq_client()
     if not client:
-        # Fallback scoring when no API key
         return _default_score(lead_data, icp_profile)
 
     prompt = f"""You are a lead scoring AI. Score how well this lead matches the Ideal Customer Profile (ICP).
@@ -64,33 +65,28 @@ def _default_score(lead_data, icp_profile):
     score = 0
     reasons = []
 
-    # Industry match
     target_industries = [i.lower().strip() for i in icp_profile.get('industries', [])]
     if lead_data.get('industry', '').lower().strip() in target_industries:
         score += 25
         reasons.append('industry match')
 
-    # Job title relevance
     target_titles = [t.lower().strip() for t in icp_profile.get('job_titles', [])]
     lead_title = lead_data.get('job_title', '').lower().strip()
     if any(t in lead_title for t in target_titles):
         score += 20
         reasons.append('title match')
 
-    # Company size match
     size = lead_data.get('company_size', '').lower().strip()
     target_sizes = [s.lower().strip() for s in icp_profile.get('company_sizes', [])]
     if size in target_sizes:
         score += 15
         reasons.append('size match')
 
-    # Location match
     target_locations = [l.lower().strip() for l in icp_profile.get('locations', [])]
     if lead_data.get('location', '').lower().strip() in target_locations:
         score += 10
         reasons.append('location match')
 
-    # Seniority from job title
     seniority_keywords = ['vp', 'director', 'head of', 'chief', 'cfo', 'cto', 'ceo', 'founder', 'owner']
     if any(k in lead_title for k in seniority_keywords):
         score += 15
@@ -105,10 +101,7 @@ def _default_score(lead_data, icp_profile):
 
 
 def enrich_lead_via_groq(lead_data):
-    """Try to enrich lead data using Groq (simulated enrichment).
-
-    Parses context from raw text / job title to infer industry, size, etc.
-    """
+    """Try to enrich lead data using Groq."""
     client = get_groq_client()
     if not client:
         return lead_data

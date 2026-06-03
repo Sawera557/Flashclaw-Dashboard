@@ -226,53 +226,81 @@ def delete_lead(lead_id):
 @leads_bp.route('/api/leads/hunt', methods=['POST'])
 @jwt_required()
 def hunt_leads():
-    """Lead hunting endpoint — simulated async for now.
-
-    Accepts sources and ICP profile, returns queued job id.
-    """
+    """Lead hunting endpoint using real data sources (Apollo, Hunter, Serper, Firecrawl)."""
     current_user_id = get_jwt_identity()
     user = _get_current_user(current_user_id)
     if not user:
         return jsonify({'error': 'User not found'}), 404
 
     data = request.get_json() or {}
-
-    # Simulate a hunt job (in production, this would be async with Celery/Redis)
-    # For now, generate some sample leads based on ICP
     icp = data.get('icp', {})
     limit = min(data.get('limit', 50), 200)
     sources = data.get('sources', [])
     min_score = data.get('min_score', 60)
 
-    # Generate mock leads based on ICP
-    sample_industries = icp.get('industries', ['Technology', 'SaaS'])
-    sample_titles = icp.get('job_titles', ['VP of Sales', 'CEO', 'Director of Sales'])
+    if not sources:
+        return jsonify({'error': 'At least one source is required'}), 400
+
+    # Run real hunt across selected sources
+    from app.services.lead_sources import run_hunt
+    try:
+        found_leads = run_hunt(sources, icp, limit=limit)
+    except Exception as e:
+        logger.exception('hunt_leads')
+        return jsonify({'error': f'Hunt failed: {str(e)}'}), 502
+
+    # Pre-load existing emails in this workspace to avoid UNIQUE constraint failures
+    existing_emails = set()
+    for row in db.session.query(Lead.email).filter(Lead.email.isnot(None), Lead.email != '').all():
+        existing_emails.add(row[0].strip().lower())
 
     saved_leads = []
-    for i in range(min(limit, 10)):  # Limit mock generation
-        lead = Lead(
-            workspace_id=user.workspace_id,
-            user_id=user.id,
-            first_name=f'Sample{i+1}',
-            last_name='Lead',
-            email=f'sample{i+1}@example.com',
-            company=f'Company {i+1}',
-            job_title=sample_titles[i % len(sample_titles)],
-            industry=sample_industries[i % len(sample_industries)],
-            location='Remote, US',
-            source=','.join(sources) if sources else 'simulated',
-            lead_score=70 + (i * 3),
-            status='new',
-        )
-        db.session.add(lead)
-        saved_leads.append(lead.to_dict())
+    errors = 0
+    for ld in found_leads:
+        try:
+            # Skip if missing basic info
+            if not ld.get('company') and not ld.get('first_name'):
+                errors += 1
+                continue
+            
+            # Skip if email already in DB
+            lead_email = ld.get('email') or None
+            if lead_email and lead_email.strip().lower() in existing_emails:
+                errors += 1
+                continue
+            if lead_email:
+                existing_emails.add(lead_email.strip().lower())
+            
+            lead = Lead(
+                workspace_id=user.workspace_id,
+                user_id=user.id,
+                first_name=ld.get('first_name', ''),
+                last_name=ld.get('last_name', ''),
+                email=lead_email,
+                company=ld.get('company', ''),
+                job_title=ld.get('job_title', ''),
+                phone=ld.get('phone', ''),
+                linkedin_url=ld.get('linkedin_url', ''),
+                website=ld.get('website', ''),
+                industry=ld.get('industry', ''),
+                location=ld.get('location', ''),
+                company_size=ld.get('company_size', ''),
+                source=ld.get('source', 'unknown'),
+                lead_score=ld.get('lead_score', 0),
+                status='new',
+            )
+            db.session.add(lead)
+            saved_leads.append(lead.to_dict())
+        except Exception as e:
+            logger.warning(f'Hunt save error: {e}')
+            errors += 1
 
     db.session.commit()
 
     return jsonify({
-        'job_id': 'simulated-job-id',
         'status': 'completed',
         'leads_found': len(saved_leads),
+        'leads': saved_leads,
     })
 
 
