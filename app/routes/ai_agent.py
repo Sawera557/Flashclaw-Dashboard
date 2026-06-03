@@ -38,6 +38,53 @@ def ai_chat():
         ),
     }
 
+    # Check for Gmail-specific queries — fetch real emails and inject as context
+    import re
+    import os
+    import urllib.request, urllib.parse
+    
+    gmail_query = None
+    user_msg = messages[-1]['content'] if messages else ''
+    user_msg_lower = user_msg.lower()
+    
+    # Detect Gmail-related requests
+    if any(p in user_msg_lower for p in ['my last', 'my emails', 'my gmail', 'my emails from gmail', 'gmail emails', 'recent emails', 'show my inbox', 'last 5 emails']):
+        limit_match = re.search(r'last (\d+)', user_msg_lower)
+        limit = int(limit_match.group(1)) if limit_match else 5
+        maton_key = os.environ.get('MATON_API_KEY', '')
+        if maton_key:
+            try:
+                import base64 as b64
+                # Get message list
+                req_url = f'https://api.maton.ai/google-mail/gmail/v1/users/me/messages?maxResults={limit}'
+                req = urllib.request.Request(req_url)
+                req.add_header('Authorization', f'Bearer {maton_key}')
+                with urllib.request.urlopen(req) as resp:
+                    msg_list = json.load(resp).get('messages', [])
+                
+                emails = []
+                for msg in msg_list:
+                    detail_req = urllib.request.Request(f'https://api.maton.ai/google-mail/gmail/v1/users/me/messages/{msg["id"]}?format=metadata&metadataHeaders=From&metadataHeaders=Subject&metadataHeaders=Date')
+                    detail_req.add_header('Authorization', f'Bearer {maton_key}')
+                    with urllib.request.urlopen(detail_req) as resp:
+                        detail = json.load(resp)
+                    payload = detail.get('payload', {})
+                    headers = {h['name']: h['value'] for h in payload.get('headers', [])}
+                    emails.append({
+                        'from': headers.get('From', '?'),
+                        'subject': headers.get('Subject', '?'),
+                        'date': headers.get('Date', '?'),
+                        'snippet': detail.get('snippet', ''),
+                    })
+                
+                # Inject emails as context
+                email_context = '\n\n--- YOUR RECENT EMAILS FROM GMAIL ---\n'
+                for i, e in enumerate(emails, 1):
+                    email_context += f'{i}. From: {e["from"]}\n   Subject: {e["subject"]}\n   Date: {e["date"]}\n   Preview: {e["snippet"]}\n\n'
+                system_prompt['content'] += email_context
+            except Exception as e:
+                system_prompt['content'] += f'\n\nNote: Attempted to fetch Gmail but got error: {str(e)}'
+
     full_messages = [system_prompt] + messages
 
     client = get_groq_client()
@@ -50,7 +97,7 @@ def ai_chat():
 
         try:
             completion = client.chat.completions.create(
-                model='mixtral-8x7b-32768',
+                model='llama-3.1-8b-instant',
                 messages=full_messages,
                 temperature=0.7,
                 max_tokens=2048,
@@ -104,7 +151,7 @@ def generate_email():
 
     try:
         completion = client.chat.completions.create(
-            model='mixtral-8x7b-32768',
+            model='llama-3.1-8b-instant',
             messages=[{'role': 'user', 'content': prompt}],
             temperature=0.7,
             max_tokens=1024,
@@ -125,7 +172,7 @@ def generate_email():
             email_type=email_type,
             subject=subject,
             body=body,
-            model='mixtral-8x7b-32768',
+            model='llama-3.1-8b-instant',
         )
         db.session.add(gen_email)
         db.session.commit()
@@ -305,7 +352,7 @@ Return ONLY valid JSON: {{"activities": [{{"lead_name": "...", "company": "...",
 
     try:
         completion = client.chat.completions.create(
-            model='mixtral-8x7b-32768',
+            model='llama-3.1-8b-instant',
             messages=[{'role': 'user', 'content': prompt}],
             temperature=0.2,
             response_format={'type': 'json_object'},
