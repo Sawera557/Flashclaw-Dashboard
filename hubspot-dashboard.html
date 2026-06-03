@@ -89,8 +89,8 @@ footer { text-align: center; padding: 20px; color: #94a3b8; font-size: 12px; }
 </div>
 
 <script>
-const API_BASE = window.API_BASE_URL || 'http://43.130.41.150:5000/api';
-document.getElementById('apiUrlDisplay').textContent = '🔗 API: ' + API_BASE.replace('/api','');
+const API_BASE = window.location.origin + '/api';
+document.getElementById('apiUrlDisplay').textContent = '🔗 HubSpot Pipeline | ' + window.location.origin;
 
 let dashboardData = null;
 let authToken = null;
