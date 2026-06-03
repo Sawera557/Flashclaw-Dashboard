@@ -1,3 +1,17 @@
+# In-memory cache
+import time
+_CACHE = {}
+_CACHE_TTL = 300  # 2 minutes
+
+def _cache_get(key):
+    entry = _CACHE.get(key)
+    if entry and time.time() - entry['ts'] < _CACHE_TTL:
+        return entry['data']
+    return None
+
+def _cache_set(key, data):
+    _CACHE[key] = {'data': data, 'ts': time.time()}
+
 """HubSpot service — fetches owners, deals, contacts from HubSpot API."""
 
 import json, os, time, logging, urllib.request, urllib.error
@@ -62,11 +76,19 @@ STAGE_LABELS = {
 CLOSED_STAGES = {'closedwon', 'closedlost'}
 OPEN_STAGES = [k for k in STAGE_LABELS if k not in CLOSED_STAGES]
 
-def get_owners():
+def get_owners(force=False):
+    if not force:
+        cached = _cache_get('owners')
+        if cached: return cached
+    owners = _fetch_owners()
+    _cache_set('owners', owners)
+    return owners
+
+def _fetch_owners():
     data = _api_get('/crm/v3/owners', {'limit': 200})
     return [{'id': o['id'], 'name': f"{o.get('firstName','')} {o.get('lastName','')}".strip() or o.get('email',''), 'email': o.get('email','')} for o in data.get('results',[])]
 
-def fetch_open_deals(max_pages=20):
+def fetch_open_deals(max_pages=15):
     all_deals = []; after = None
     for _ in range(max_pages):
         body = {'filterGroups': [{'filters': [{'propertyName': 'dealstage', 'operator': 'IN', 'values': OPEN_STAGES}]}], 'sorts': [{'propertyName': 'createdate', 'direction': 'DESCENDING'}], 'limit': 100, 'properties': ['dealname','amount','dealstage','createdate','hs_lastmodifieddate','hubspot_owner_id']}
@@ -81,9 +103,17 @@ def fetch_open_deals(max_pages=20):
         time.sleep(0.25)
     return all_deals
 
-def get_open_deals_by_owner():
+def get_open_deals_by_owner(force=False):
+    if not force:
+        cached = _cache_get('dashboard')
+        if cached: return cached
+    result = _build_dashboard()
+    _cache_set('dashboard', result)
+    return result
+
+def _build_dashboard():
     owners_map = {o['id']: o['name'] for o in get_owners()}
-    deals = fetch_open_deals(max_pages=20)
+    deals = fetch_open_deals(max_pages=5)
     by_owner = defaultdict(list)
     for d in deals: by_owner[d.get('owner_id','unassigned')].append(d)
     entries = []
@@ -97,9 +127,13 @@ def get_open_deals_by_owner():
     for e in entries: e['email'] = email_map.get(e['id'], '')
     return {'owners': entries, 'total_open': len(deals), 'total_owners': len(entries)}
 
-def get_deals_for_owner(owner_id, limit=20, include_closed=False):
+def get_deals_for_owner(owner_id, limit=20, include_closed=False, last_days=None):
     filters = [{'propertyName': 'hubspot_owner_id', 'operator': 'EQ', 'value': str(owner_id)}]
     if not include_closed: filters.append({'propertyName': 'dealstage', 'operator': 'IN', 'values': OPEN_STAGES})
+    if last_days:
+        from datetime import datetime, timedelta, timezone
+        cutoff_ms = int((datetime.now(timezone.utc) - timedelta(days=last_days)).timestamp() * 1000)
+        filters.append({'propertyName': 'hs_lastmodifieddate', 'operator': 'GTE', 'value': str(cutoff_ms)})
     data = _api_post('/crm/v3/objects/deals/search', {'filterGroups': [{'filters': filters}], 'sorts': [{'propertyName': 'hs_lastmodifieddate', 'direction': 'DESCENDING'}], 'limit': limit, 'properties': ['dealname','amount','dealstage','createdate','hs_lastmodifieddate','hubspot_owner_id']})
     return [{'id': d['id'], 'name': p.get('dealname','?'), 'amount': p.get('amount') or '0', 'stage': STAGE_LABELS.get(p.get('dealstage',''), p.get('dealstage','')), 'stage_id': p.get('dealstage',''), 'created': (p.get('createdate') or '')[:10], 'modified': (p.get('hs_lastmodifieddate') or '')[:10], 'owner_id': p.get('hubspot_owner_id','')} for d in data.get('results',[]) if (p := d['properties'])]
 

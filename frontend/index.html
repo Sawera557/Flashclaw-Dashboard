@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+<!-- build: 1780509777 -->
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -329,9 +330,9 @@ tr:last-child td{border-bottom:none}
     <div class="sub">SDR Operating System · v2.0</div>
     <form id="login-form">
       <label for="email">Email</label>
-      <input type="email" id="email" placeholder="you@example.com" value="demo@leadhunter.ai" autocomplete="email">
+      <input type="email" id="email" placeholder="you@example.com" value="" autocomplete="email">
       <label for="password">Password</label>
-      <input type="password" id="password" placeholder="Enter password" value="demo123" autocomplete="current-password">
+      <input type="password" id="password" placeholder="Enter password" value="" autocomplete="current-password">
       <button type="submit" class="btn-primary" id="login-btn">Sign In</button>
     </form>
     <div id="login-error" class="login-error"></div>
@@ -354,7 +355,7 @@ tr:last-child td{border-bottom:none}
     <div class="nav-item" onclick="showTab('leads')"><span class="nav-icon">👥</span><span>Leads Database</span></div>
     <div class="nav-item" onclick="showTab('email-gen')"><span class="nav-icon">✉️</span><span>Email Generator</span></div>
     <div class="nav-item" onclick="showTab('linkedin-tracker')"><span class="nav-icon">🔗</span><span>LinkedIn Tracker</span></div>
-    <div class="nav-item" onclick="showTab('hubspot')"><span class="nav-icon">🔄</span><span>HubSpot Pipeline</span></div>
+    <div class="nav-item" onclick="showTab('hubspot')"><span class="nav-icon">🔄</span><span>Anna Jordan Pipeline</span></div>
     <div class="nav-item" onclick="showTab('activity')"><span class="nav-icon">📋</span><span>SDR Activity</span></div>
 
     <div class="nav-section">Intelligence</div>
@@ -478,6 +479,10 @@ tr:last-child td{border-bottom:none}
     <div class="grid-card">
       <div class="section-title">Recent Hunts</div>
       <div id="recent-hunts" style="font-size:13px;color:var(--text-muted)">No hunts yet. Configure sources and run your first hunt.</div>
+          <div id="hunt-results" style="display:none;margin-top:16px">
+            <div style="font-size:13px;color:var(--text-sec);margin-bottom:8px">Last Hunt Results:</div>
+            <div style="max-height:400px;overflow-y:auto" id="hunt-results-list"></div>
+          </div>
     </div>
   </div>
 </div>
@@ -647,7 +652,7 @@ tr:last-child td{border-bottom:none}
 <!-- HUBSPOT PIPELINE -->
 <div class="tab-content" id="tab-hubspot">
   <div class="flex align-center gap8 mb16">
-    <div class="section-title" style="margin-bottom:0">📊 HubSpot Pipeline</div>
+    <div class="section-title" style="margin-bottom:0">📊 Anna Jordan — 30 Day Deals</div>
     <span id="hs-status" style="font-size:12px;padding:4px 10px;border-radius:20px;background:rgba(124,109,250,.12);color:var(--accent)">checking...</span>
     <button class="btn-sm ml-auto" onclick="loadHubSpot()">🔄 Refresh</button>
   </div>
@@ -848,7 +853,7 @@ tr:last-child td{border-bottom:none}
 </div>
 
 <script>
-const API_BASE = window.location.hostname === 'localhost' ? '/api' : 'http://43.130.41.150:5000/api';
+const API_BASE = 'https://surveys-advanced-mothers-type.trycloudflare.com';
 let authToken = localStorage.getItem('lhai_token') || null;
 let useDemo = false;
 let activeStreamReader = null;
@@ -868,7 +873,7 @@ const pageTitles = {
   'integrations': ['Integrations', 'Connected tools & APIs'],
   'api-config': ['API Config', 'Keys & model settings'],
   'admin': ['Admin Panel', 'Team & system management'],
-  'hubspot': ['HubSpot Pipeline', 'Live CRM deals & owner pipeline'],
+  'hubspot': ['Anna Jordan', '30-day deal activity'],
 };
 
 const DEMO = {
@@ -970,10 +975,10 @@ const DEMO = {
   ]
 };
 
-function capitalize(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : ''; }
+function capitalize(s) { return s ? s.replace(/_/g,' ').replace(/\b\w/g,function(c){return c.toUpperCase()}) : ''; }
 function scoreClass(s) { return s >= 80 ? 'badge-high' : s >= 60 ? 'badge-med' : 'badge-low'; }
 function statusClass(s) { var m = { 'new':'badge-new','contacted':'badge-contacted','qualified':'badge-qualified','meeting':'badge-med','closed':'badge-high' }; return m[s] || 'badge-new'; }
-function sourceBadge(s) { var m = { 'linkedin':'badge-linkedin','referral':'badge-referral','web':'badge-web','email':'badge-email','manual':'badge-manual','google_maps':'badge-web','apollo':'badge-med','hunter':'badge-email' }; return m[s] || 'badge-new'; }
+function sourceBadge(s) { var m = { 'linkedin':'badge-linkedin','referral':'badge-referral','web':'badge-web','email':'badge-email','manual':'badge-manual','google_maps':'badge-web','apollo':'badge-med','hunter':'badge-email','serper':'badge-web','firecrawl':'badge-web' }; return m[s] || 'badge-new'; }
 function escapeHtml(s) { var d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
 
 function getHeaders() {
@@ -1050,7 +1055,7 @@ function showApp() {
   document.getElementById('api-url-display').textContent = API_BASE;
   var tok = authToken || '......';
   document.getElementById('token-display').textContent = tok.length > 20 ? tok.slice(0, 20) + '...' : tok;
-  document.getElementById('sidebar-user').textContent = useDemo ? 'Demo Mode' : 'Logged In';
+  document.getElementById('sidebar-user').textContent = useDemo ? 'Demo Mode' : 'Anna Jordan';
   showTab('dashboard');
 }
 
@@ -1098,17 +1103,123 @@ function showTab(name) {
   if (name === 'hubspot') loadHubSpot();
 }
 
+/** HubSpot tab — load owner pipeline from API */
+var HS_DATA = {};
+var HS_CURRENT_OWNER = '101551557';  // Anna Jordan
+
+function loadHubSpot() {
+  var grid = document.getElementById('hs-grid');
+  var loading = document.getElementById('hs-loading');
+  var errEl = document.getElementById('hs-error');
+  grid.style.display = 'none';
+  errEl.style.display = 'none';
+  loading.style.display = 'block';
+  document.getElementById('hs-status').textContent = 'loading last 30 days...';
+
+  // Load Anna Jordan's last 30 days deals
+  api('/api/hubspot/owner/101551557/deals?limit=50&last_days=30').then(function(d) {
+    HS_DATA = d;
+    hsRender();
+    loading.style.display = 'none';
+    grid.style.display = 'block';
+    document.getElementById('hs-status').textContent = d.count + ' deals (30d)';
+  }).catch(function(e) {
+    loading.style.display = 'none';
+    errEl.style.display = 'block';
+    errEl.textContent = 'HubSpot API error: ' + (e.message || 'Connection failed');
+    document.getElementById('hs-status').textContent = 'error';
+  });
+}
+
+function hsRender() {
+  var d = HS_DATA;
+  if (!d || !d.deals) return;
+  
+  var deals = [].concat(d.deals);
+  var totalVal = deals.reduce(function(s, dl) { return s + parseInt(dl.amount || 0, 10); }, 0);
+  
+  document.getElementById('hs-open-deals').textContent = d.count;
+  document.getElementById('hs-owners').textContent = d.owner ? d.owner.name : 'Anna Jordan';
+  document.getElementById('hs-value').textContent = '$' + totalVal.toLocaleString();
+  document.getElementById('hs-avg').textContent = d.count ? '$' + Math.round(totalVal / d.count).toLocaleString() : '$0';
+
+  var q = document.getElementById('hs-search').value.toLowerCase().trim();
+  if (q) deals = deals.filter(function(dl) { return dl.name.toLowerCase().indexOf(q) !== -1; });
+
+  document.getElementById('hs-grid').innerHTML = deals.map(function(dl) {
+    return '<div class="card" style="padding:14px;display:flex;justify-content:space-between;align-items:center">' +
+      '<div><strong>' + dl.name + '</strong><br><span style="font-size:12px;color:var(--text-muted)">' + dl.stage + ' · ' + dl.modified + '</span></div>' +
+      '<div style="font-size:18px;font-weight:700;color:var(--accent)">$' + dl.amount + '</div>' +
+      '</div>';
+  }).join('');
+  
+  if (deals.length === 0) {
+    document.getElementById('hs-grid').innerHTML = '<div class="card" style="text-align:center;padding:40px;color:var(--text-muted)">No deals found in the last 30 days</div>';
+  }
+}
+
+function hsFilter() { hsRender(); }
+function hsModal(ownerId) { /* not needed for owner-specific view */ }
+
 /* === DASHBOARD === */
 function loadDashboard() {
   var ok = false;
-  api('/api/leads').then(function() { ok = true; }).catch(function() {}).then(function() {
-    if (ok) {
-      fetchDashboardStats();
-    } else {
-      renderDashboardDemo();
-    }
+  api('/api/hubspot/my-dashboard').then(function(d) { 
+    ok = true;
+    renderMyDashboard(d);
+  }).catch(function() { 
+    ok = false;
+    // fallback to legacy leads endpoint
+    api('/api/leads').then(function() { ok = true; }).catch(function() {}).then(function() {
+      if (ok) fetchDashboardStats();
+      else renderDashboardDemo();
+    });
   });
 }
+
+function renderMyDashboard(d) {
+  document.getElementById('dash-stats').innerHTML = [
+    { label: 'My Deals (30d)', value: d.total_deals, change: 'Last 30 days', dir: 'up' },
+    { label: 'Pipeline Value', value: '$' + d.total_value.toLocaleString(), change: '', dir: 'up' },
+    { label: 'Avg Deal Size', value: '$' + d.avg_deal.toLocaleString(), change: '', dir: 'up' },
+    { label: 'Deal Stages', value: (d.stages || []).length, change: 'different stages', dir: 'up' }
+  ].map(function(c) {
+    return '<div class="stat-card"><div class="stat-label">' + c.label + '</div><div class="stat-value" style="color:var(--accent)">' + c.value + '</div><div class="stat-change ' + c.dir + '">' + c.change + '</div></div>';
+  }).join('');
+
+  // Timeline — list of your deals by date
+  document.getElementById('dash-timeline').innerHTML = (d.timeline || []).map(function(i) {
+    return '<div class="timeline-item"><div class="time">' + i.date + '</div><div class="desc">' + i.desc + '</div><div class="meta">' + i.stage + ' — $' + i.amount + '</div></div>';
+  }).join('') || '<div style="padding:20px;color:var(--text-muted)">No activity in last 30 days</div>';
+
+  // Targets — stage breakdown
+  document.getElementById('dash-targets').innerHTML = (d.stages || []).map(function(s) {
+    var color = s.pct >= 50 ? 'var(--success)' : s.pct >= 20 ? 'var(--warning)' : 'var(--accent)';
+    return '<div style="margin-bottom:8px"><div style="display:flex;justify-content:space-between;font-size:13px">' +
+      '<span>' + s.stage + '</span><span style="color:var(--accent)">' + s.count + ' (' + s.pct + '%)</span></div>' +
+      '<div class="progress-track"><div class="progress-fill" style="width:' + s.pct + '%;background:' + color + '"></div></div></div>';
+  }).join('');
+
+  // Pipeline snapshot
+  document.getElementById('li-pipeline-snapshot').innerHTML = (d.stages || []).map(function(s) {
+    var color = s.pct >= 50 ? 'var(--success)' : s.pct >= 20 ? 'var(--warning)' : 'var(--accent)';
+    return '<div class="pipeline-bar"><div class="pl-label">' + s.stage + '</div><div class="pl-track"><div class="pl-fill" style="width:' + s.pct + '%;background:' + color + '">' + s.count + '</div></div></div>';
+  }).join('');
+
+  // Source breakdown (by stage name for now)
+  var totalDeals = d.total_deals || 1;
+  document.getElementById('dash-sources').innerHTML = (d.stages || []).map(function(s) {
+    return '<div class="progress-label mb16"><span class="prog-name">' + s.stage + ' <span style="color:var(--text-muted);font-size:11px">(' + s.count + ')</span></span><span class="prog-val" style="color:var(--accent)">' + s.pct + '%</span></div><div class="progress-track mb16"><div class="progress-fill" style="width:' + s.pct + '%;background:var(--accent)"></div></div>';
+  }).join('');
+
+  // LI feed and follow-ups — show empty or deal list
+  document.getElementById('dash-li-feed').innerHTML = (d.deals || []).slice(0, 5).map(function(dl) {
+    return '<div class="activity-item"><div class="activity-icon" style="font-size:16px">💼</div><div class="activity-body"><div class="act-title">' + dl.name + '</div><div class="act-meta">$' + dl.amount + ' — ' + dl.stage + '</div></div></div>';
+  }).join('') || '<div style="padding:20px;color:var(--text-muted)">No recent deals</div>';
+
+  document.getElementById('dash-followups').innerHTML = '';
+}
+
 
 function renderDashboardDemo() {
   var s = DEMO.stats;
@@ -1186,16 +1297,27 @@ function runHunt() {
       keywords: document.getElementById('icp-keywords').value
     }
   };
-  api('/api/leads', { method: 'POST', body: JSON.stringify({ sources: payload.sources, icp: payload.icp }) })
+  api('/api/leads/hunt', { method: 'POST', body: JSON.stringify(payload) })
     .then(function(r) {
-      statusEl.textContent = '✅ Hunt complete! Found ' + (r.count || r.leads || 0) + ' leads';
+      var leads = r.leads || [];
+      statusEl.textContent = '✅ Hunt complete! Found ' + leads.length + ' leads';
       statusEl.style.color = 'var(--success)';
-      document.getElementById('recent-hunts').innerHTML = '<div style="color:var(--text)">Latest hunt: ' + payload.sources.join(', ') + ' — ' + new Date().toLocaleString() + '</div>';
-      document.getElementById('score-dist').innerHTML = '<div class="pipeline-bar"><div class="pl-label">High (80+)</div><div class="pl-track"><div class="pl-fill pl-lead" style="width:35%">35%</div></div></div><div class="pipeline-bar"><div class="pl-label">Med (60-79)</div><div class="pl-track"><div class="pl-fill pl-connected" style="width:42%">42%</div></div></div><div class="pipeline-bar"><div class="pl-label">Low (&lt;60)</div><div class="pl-track"><div class="pl-fill pl-proposal" style="width:23%">23%</div></div></div>';
+      var timeStr = new Date().toLocaleString();
+      document.getElementById('recent-hunts').innerHTML = '<div style="color:var(--text)">Latest hunt: ' + payload.sources.join(', ') + ' — ' + timeStr + '</div>';
+      if (leads.length > 0) {
+        var high = leads.filter(function(l){ return (l.lead_score || 0) >= 70; }).length;
+        var med = leads.filter(function(l){ return (l.lead_score || 0) >= 40 && (l.lead_score || 0) < 70; }).length;
+        var low = leads.filter(function(l){ return (l.lead_score || 0) < 40; }).length;
+        var total = leads.length || 1;
+        document.getElementById('score-dist').innerHTML = 
+          '<div class="pipeline-bar"><div class="pl-label">High (70+)</div><div class="pl-track"><div class="pl-fill pl-lead" style="width:' + Math.round(high/total*100) + '%">' + high + '</div></div></div>' +
+          '<div class="pipeline-bar"><div class="pl-label">Med (40-69)</div><div class="pl-track"><div class="pl-fill pl-connected" style="width:' + Math.round(med/total*100) + '%">' + med + '</div></div></div>' +
+          '<div class="pipeline-bar"><div class="pl-label">Low (&lt;40)</div><div class="pl-track"><div class="pl-fill pl-proposal" style="width:' + Math.round(low/total*100) + '%">' + low + '</div></div></div>';
+      }
     })
     .catch(function() {
-      statusEl.textContent = '✅ Demo hunt complete! Found ~12 leads (demo mode)';
-      statusEl.style.color = 'var(--success)';
+      statusEl.textContent = '❌ Hunt failed — check backend connection';
+      statusEl.style.color = 'var(--danger)';
     });
 }
 
@@ -1215,7 +1337,9 @@ function loadLeads() {
     .catch(function() {
       var allLeads = DEMO.leads;
       var filtered = allLeads.filter(function(l) {
-        if (search && (l.name||'').toLowerCase().indexOf(search) < 0 && (l.company||'').toLowerCase().indexOf(search) < 0 && (l.title||'').toLowerCase().indexOf(search) < 0) return false;
+        var lName = (l.first_name || l.name || '') + ' ' + (l.last_name || '');
+        var lTitle = l.job_title || l.title || '';
+        if (search && lName.toLowerCase().indexOf(search) < 0 && (l.company||'').toLowerCase().indexOf(search) < 0 && lTitle.toLowerCase().indexOf(search) < 0) return false;
         if (source && l.source !== source) return false;
         if (status && l.status !== status) return false;
         return true;
@@ -1226,7 +1350,7 @@ function loadLeads() {
 
 function renderLeadsTable(filtered, tableEl, paginationEl) {
   var total = filtered.length;
-  var perPage = 5;
+  var perPage = 25;
   var totalPages = Math.ceil(total / perPage) || 1;
   if (leadsPage > totalPages) leadsPage = totalPages;
   var start = (leadsPage - 1) * perPage;
@@ -1234,8 +1358,15 @@ function renderLeadsTable(filtered, tableEl, paginationEl) {
 
   tableEl.innerHTML = '<table><thead><tr><th>Name</th><th>Company</th><th>Title</th><th>Email</th><th>Score</th><th>Source</th><th>Status</th><th>Actions</th></tr></thead><tbody>' +
     pageLeads.map(function(l) {
-      var scoreBarColor = l.score >= 80 ? 'var(--success)' : l.score >= 60 ? 'var(--warning)' : 'var(--danger)';
-      return '<tr><td style="color:var(--text);font-weight:500">' + escapeHtml(l.name) + '</td><td>' + escapeHtml(l.company) + '</td><td>' + escapeHtml(l.title) + '</td><td style="font-family:JetBrains Mono,monospace;font-size:12px">' + escapeHtml(l.email||'—') + '</td><td><div class="score-bar"><span class="badge ' + scoreClass(l.score) + '">' + l.score + '</span><div class="sb-track"><div class="sb-fill" style="width:' + l.score + '%;background:' + scoreBarColor + '"></div></div></div></td><td><span class="badge ' + sourceBadge(l.source) + '">' + capitalize(l.source) + '</span></td><td><span class="badge ' + statusClass(l.status) + '">' + capitalize(l.status) + '</span></td><td><button class="btn-sm btn-secondary" onclick="alert(\'View lead: ' + escapeHtml(l.name) + '\')">View</button></td></tr>';
+      var fullName = (l.first_name || l.name || '') + ' ' + (l.last_name || '');
+      fullName = fullName.trim() || l.company || 'Unknown';
+      var leadScore = l.lead_score !== undefined ? l.lead_score : (l.score || 0);
+      var leadTitle = l.job_title || l.title || '';
+      var leadEmail = l.email || '—';
+      var leadSource = l.source || 'unknown';
+      var leadStatus = l.status || 'new';
+      var scoreBarColor = leadScore >= 80 ? 'var(--success)' : leadScore >= 60 ? 'var(--warning)' : 'var(--danger)';
+      return '<tr><td style="color:var(--text);font-weight:500">' + escapeHtml(fullName) + '</td><td>' + escapeHtml(l.company || '') + '</td><td>' + escapeHtml(leadTitle) + '</td><td style="font-family:JetBrains Mono,monospace;font-size:12px">' + escapeHtml(leadEmail) + '</td><td><div class="score-bar"><span class="badge ' + scoreClass(leadScore) + '">' + leadScore + '</span><div class="sb-track"><div class="sb-fill" style="width:' + leadScore + '%;background:' + scoreBarColor + '"></div></div></div></td><td><span class="badge ' + sourceBadge(leadSource) + '">' + capitalize(leadSource) + '</span></td><td><span class="badge ' + statusClass(leadStatus) + '">' + capitalize(leadStatus) + '</span></td><td><button class="btn-sm btn-secondary" onclick="alert(\'View lead: ' + escapeHtml(fullName) + '\')">View</button></td></tr>';
     }).join('') +
     '<tr><td colspan="8" style="color:var(--text-muted);font-size:12px;text-align:center">' + (total ? 'Showing ' + (start+1) + '-' + (start + pageLeads.length) + ' of ' + total : 'No leads found') + '</td></tr></tbody></table>';
 
@@ -1259,15 +1390,19 @@ function generateEmail() {
   var subject = document.getElementById('eg-subject');
   output.textContent = 'Generating...';
   var payload = {
-    name: document.getElementById('eg-name').value,
-    company: document.getElementById('eg-company').value,
-    title: document.getElementById('eg-title').value,
-    industry: document.getElementById('eg-industry').value,
-    painPoints: document.getElementById('eg-pain').value,
-    type: currentEmailType
+    lead_id: null,
+    type: currentEmailType,
+    lead: {
+      first_name: document.getElementById('eg-name').value.split(' ')[0] || document.getElementById('eg-name').value,
+      last_name: document.getElementById('eg-name').value.split(' ').slice(1).join(' ') || '',
+      company: document.getElementById('eg-company').value,
+      job_title: document.getElementById('eg-title').value,
+      industry: document.getElementById('eg-industry').value,
+      pain_points: document.getElementById('eg-pain').value,
+    }
   };
 
-  if (!payload.name && !useDemo) { output.textContent = 'Please fill in the lead name'; return; }
+  if (!payload.lead.first_name && !useDemo) { output.textContent = 'Please fill in the lead name'; return; }
 
   api('/api/ai/generate-email', { method: 'POST', body: JSON.stringify(payload) })
     .then(function(r) {

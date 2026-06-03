@@ -98,7 +98,7 @@ def ai_chat():
 
         try:
             completion = client.chat.completions.create(
-                model='llama-3.1-8b-instant',
+                model="llama-3.1-8b-instant",
                 messages=full_messages,
                 temperature=0.7,
                 max_tokens=2048,
@@ -152,11 +152,10 @@ def generate_email():
 
     try:
         completion = client.chat.completions.create(
-            model='llama-3.1-8b-instant',
+            model="llama-3.1-8b-instant",
             messages=[{'role': 'user', 'content': prompt}],
             temperature=0.7,
             max_tokens=1024,
-            response_format={'type': 'json_object'},
         )
         result = json.loads(completion.choices[0].message.content)
     except Exception as e:
@@ -173,7 +172,7 @@ def generate_email():
             email_type=email_type,
             subject=subject,
             body=body,
-            model='llama-3.1-8b-instant',
+            model="llama-3.1-8b-instant",
         )
         db.session.add(gen_email)
         db.session.commit()
@@ -353,10 +352,9 @@ Return ONLY valid JSON: {{"activities": [{{"lead_name": "...", "company": "...",
 
     try:
         completion = client.chat.completions.create(
-            model='llama-3.1-8b-instant',
+            model="llama-3.1-8b-instant",
             messages=[{'role': 'user', 'content': prompt}],
             temperature=0.2,
-            response_format={'type': 'json_object'},
             max_tokens=2000,
         )
         result = json.loads(completion.choices[0].message.content)

@@ -32,8 +32,9 @@ def dashboard():
 def owner_deals(owner_id):
     limit = request.args.get('limit', 20, type=int)
     closed = request.args.get('closed', 'false').lower() == 'true'
+    last_days = request.args.get('last_days', type=int)
     try:
-        deals = get_deals_for_owner(owner_id, limit=limit, include_closed=closed)
+        deals = get_deals_for_owner(owner_id, limit=limit, include_closed=closed, last_days=last_days)
         owners = get_owners()
         info = next((o for o in owners if o['id'] == owner_id), {'id': owner_id, 'name': f'Owner {owner_id}'})
         return jsonify({'owner': info, 'deals': deals, 'count': len(deals)})
@@ -49,6 +50,48 @@ def search_owners():
         r = search_owner_by_name(q)
         return jsonify({'results': r, 'count': len(r)})
     except HubSpotError as e: return jsonify({'error': str(e)}), 502
+
+
+
+@hubspot_bp.route('/api/hubspot/my-dashboard', methods=['GET'])
+@jwt_required()
+def my_dashboard():
+    """Returns Anna Jordan's deals (last 30 days) with dashboard-friendly stats."""
+    from app.services.hubspot_service import get_deals_for_owner, get_owners
+    import math
+    try:
+        # Cache owner info
+        owners = get_owners()
+        me = next((o for o in owners if o['id'] == '101551557'), {'id': '101551557', 'name': 'Anna Jordan', 'email': ''})
+        
+        # My last 30 days deals
+        deals = get_deals_for_owner('101551557', limit=100, last_days=30)
+        
+        total_val = sum(int(float(d.get('amount', 0) or 0)) for d in deals)
+        
+        # Stage breakdown for pipeline chart
+        stage_counts = {}
+        for d in deals:
+            s = d.get('stage', 'Unknown')
+            stage_counts[s] = stage_counts.get(s, 0) + 1
+        
+        stages = [{'stage': s, 'count': c, 'pct': round(c/len(deals)*100) if deals else 0} for s, c in sorted(stage_counts.items(), key=lambda x: x[1], reverse=True)]
+        
+        # Timeline
+        timeline = [{'desc': d['name'], 'stage': d['stage'], 'amount': d.get('amount', '0'), 'date': d.get('modified',''), 'time': d.get('modified','')[:10]} for d in deals[:20]]
+        
+        return jsonify({
+            'owner': me,
+            'total_deals': len(deals),
+            'total_value': total_val,
+            'avg_deal': math.floor(total_val / len(deals)) if deals else 0,
+            'stages': stages,
+            'deals': deals[:50],
+            'timeline': timeline,
+        })
+    except Exception as e:
+        logger.exception('my_dashboard')
+        return jsonify({'error': str(e)}), 502
 
 
 @hubspot_bp.route('/api/hubspot/search/deals', methods=['GET'])
