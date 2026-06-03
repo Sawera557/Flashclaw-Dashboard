@@ -7,7 +7,7 @@ from app import db
 from app.models.user import User
 from app.models.lead import Lead, GeneratedEmail
 from app.services.scoring import get_groq_client, score_lead_via_groq
-from app.services.hubspot_service import build_dashboard_context, search_deals_by_owner_name, search_owner_by_name, HubSpotError
+from app.services.hubspot_service import build_context_summary, search_deals_by_owner_name, search_owner_by_name, HubSpotError
 
 ai_bp = Blueprint('ai', __name__)
 
@@ -43,7 +43,7 @@ def ai_chat():
                    'latest deal', 'open deal', 'stage', 'qualified', 'meeting scheduled']
     if any(kw in user_msg_lower for kw in hs_keywords):
         try:
-            hs_context = build_dashboard_context()
+            hs_context = build_context_summary()
             system_content += f'\n\n--- HUBSPOT CRM DATA (LIVE) ---\n{hs_context}\n--- END HUBSPOT DATA ---\n\n'
             system_content += (
                 'You have live HubSpot CRM data above. The user can ask you about any owner\'s deals. '

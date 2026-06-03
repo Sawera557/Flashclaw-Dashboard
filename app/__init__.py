@@ -55,6 +55,19 @@ def create_app(config_name='dev'):
             'status': 'running',
         }
 
+    @app.route('/hubspot')
+    def hubspot_redirect():
+        return redirect('/app')
+
+    @app.route('/app')
+    @app.route('/dashboard')
+    def serve_frontend():
+        """Serve the Lead Hunter frontend SPA."""
+        from flask import send_from_directory, redirect
+        import os
+        frontend_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'frontend')
+        return send_from_directory(frontend_dir, 'index.html')
+
     @app.route('/api/health')
     def health():
         return {'status': 'healthy'}
