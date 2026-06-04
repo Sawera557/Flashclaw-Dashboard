@@ -159,13 +159,22 @@ def generate_email():
             messages=[{'role': 'user', 'content': prompt}],
             temperature=0.7,
             max_tokens=1024,
+            response_format={"type": "json_object"},
         )
-        result = json.loads(completion.choices[0].message.content)
+        raw = completion.choices[0].message.content.strip()
+        result = json.loads(raw)
     except Exception as e:
+        logger.warning(f'Groq email generation failed: {e}, using template fallback')
         return _generate_template_email(lead_data, email_type, user.id, lead_id)
 
     subject = result.get('subject', '')[:500]
     body = result.get('body', '')
+    
+    # Replace placeholder sender with actual user name
+    user_name = user.name if user else ''
+    if user_name:
+        body = body.replace('[Your Name]', user_name).replace('[your name]', user_name).replace('[YOUR NAME]', user_name)
+        body = body.replace('Your Name', user_name)
 
     # Save to database if lead_id provided
     if lead_id:
@@ -195,25 +204,27 @@ def _build_email_prompt(lead_data, email_type):
     pain_points = lead_data.get('pain_points', '')
 
     type_guidance = {
-        'cold': 'A first-touch cold outreach email. Keep it short (3-5 sentences), personalized, with a clear value proposition. Don\'t ask for a meeting in the first email.',
-        'followup': 'A follow-up email to someone you already reached out to. Reference the previous email, add new value, and include a soft CTA.',
-        'linkedin': 'A LinkedIn connection request message (300 chars max) or InMail. Brief, professional, and personalized.',
+        'cold': 'A first-touch cold outreach email. Personalize it around their role and company. Reference a specific trigger (recent funding, job change, company news) or industry trend relevant to them. Keep it to 3-4 short sentences. End with a soft CTA — offer a relevant resource, not a meeting request.',
+        'followup': 'A follow-up email to a lead you reached out to before. Reference the previous email. Add a new piece of value: a case study, relevant article, or specific insight about their company. Include a call to action.',
+        'linkedin': 'A LinkedIn connection request or InMail. Maximum 300 characters. Must be extremely concise. Reference something specific about their work or company. Ask a single relevant question.',
         'sequence': 'Generate an email sequence: subjects and bodies for 3 emails (initial, follow-up, break-up). Return as JSON with keys sequence.[0-2].subject and sequence.[0-2].body.',
     }
 
     guidance = type_guidance.get(email_type, type_guidance['cold'])
 
-    return f"""Write a personalized {email_type} email for this lead:
+    return f"""You are a professional SDR copywriter. Write a personalized {email_type} email for this lead.
 
-Name: {name}
-Company: {company}
-Title: {title}
-Industry: {industry}
-Pain points: {pain_points}
+LEAD DATA:
+- Name: {name}
+- Company: {company}
+- Title: {title}
+- Industry: {industry}
+- Pain points: {pain_points}
 
-Guidance: {guidance}
+WRITING GUIDELINES:
+{guidance}
 
-Return ONLY valid JSON: {{"subject": "...", "body": "..."}}"""
+Respond with a JSON object containing "subject" and "body" keys. The body should use plain text with newlines, no markdown."""
 
 
 def _generate_template_email(lead_data, email_type, user_id, lead_id):
