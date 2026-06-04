@@ -54,6 +54,7 @@ def _fmt_date(dt):
 def _build_stats(workspace_id, user_id):
     """KPI calculations — total, new, enriched, emails, replies, meetings, pipeline value, conversion."""
     today_start = _today_start()
+    today_end = _today_end()
 
     # Lead counts
     total_leads = Lead.query.filter_by(workspace_id=workspace_id).count()

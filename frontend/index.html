@@ -152,21 +152,30 @@ tr:last-child td{border-bottom:none}
 .pagination .page-info{font-size:13px;color:var(--text-muted)}
 
 /* Chat */
-.chat-container{display:flex;flex-direction:column;height:550px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
-.chat-messages{flex:1;overflow-y:auto;padding:20px}
-.chat-msg{margin-bottom:16px;max-width:85%}
+.chat-container{display:flex;flex-direction:column;height:calc(100vh - 220px);min-height:500px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+.chat-messages{flex:1;overflow-y:auto;padding:24px}
+.chat-msg{margin-bottom:20px;max-width:88%}
 .chat-msg.user{margin-left:auto}
 .chat-msg.ai{margin-right:auto}
-.chat-msg .bubble{padding:12px 16px;border-radius:12px;font-size:14px;line-height:1.5;white-space:pre-wrap}
+.chat-msg .bubble{padding:14px 18px;border-radius:14px;font-size:14px;line-height:1.7;white-space:pre-wrap;word-wrap:break-word}
 .chat-msg.user .bubble{background:var(--accent);color:#fff;border-bottom-right-radius:4px}
-.chat-msg.ai .bubble{background:var(--card);border:1px solid var(--border);border-bottom-left-radius:4px}
+.chat-msg.ai .bubble{background:var(--card);border:1px solid var(--border);border-bottom-left-radius:4px;box-shadow:0 2px 8px rgba(0,0,0,0.15)}
 .chat-msg .sender{font-size:11px;color:var(--text-muted);margin-bottom:4px;font-family:'JetBrains Mono',monospace}
 .chat-input-area{display:flex;gap:8px;padding:12px 16px;border-top:1px solid var(--border);background:var(--card)}
-.chat-input-area input{flex:1;padding:10px 14px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-family:'Sora',sans-serif;font-size:13px;outline:none}
-.chat-input-area input:focus{border-color:var(--accent)}
+.chat-input-area textarea{flex:1;padding:12px 14px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-family:'Sora',sans-serif;font-size:13px;line-height:1.5;outline:none;resize:none;min-height:48px;max-height:120px}
+.chat-input-area textarea:focus{border-color:var(--accent)}
 .quick-prompts{display:flex;gap:8px;padding:10px 16px;border-top:1px solid var(--border);flex-wrap:wrap}
 .quick-prompt{padding:5px 12px;background:var(--card);border:1px solid var(--border);border-radius:20px;color:var(--text-sec);font-size:12px;cursor:pointer;transition:all .15s;font-family:'Sora',sans-serif}
-.quick-prompt:hover{border-color:var(--accent);color:var(--accent)}
+.quick-prompt:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-glow)}
+.chat-msg.ai .bubble table{width:100%;border-collapse:collapse;margin:8px 0;font-size:13px}
+.chat-msg.ai .bubble table th,.chat-msg.ai .bubble table td{border:1px solid var(--border);padding:6px 10px;text-align:left}
+.chat-msg.ai .bubble table th{background:var(--border);color:var(--text-sec);font-weight:600}
+.chat-msg.ai .bubble table td{color:var(--text)}
+.chat-msg.ai .bubble strong{color:var(--accent)}
+.chat-msg.ai .bubble h3,.chat-msg.ai .bubble h4{margin:12px 0 6px;color:var(--accent)}
+.chat-msg.ai .bubble code{background:var(--bg);padding:2px 6px;border-radius:4px;font-size:12px;font-family:'JetBrains Mono',monospace}
+.chat-msg.ai .bubble .lead-entry{margin:8px 0;padding:8px 12px;background:rgba(124,109,250,0.08);border:none;border-radius:6px;font-size:13px;line-height:1.6}
+.chat-msg.ai .bubble .lead-entry strong{color:var(--warning);font-size:13px;font-weight:700}
 
 /* Pipeline chart */
 .pipeline-chart{display:flex;flex-direction:column;gap:12px}
@@ -555,36 +564,24 @@ tr:last-child td{border-bottom:none}
     </div>
   </div>
 
-  <div class="grid-1-2">
-    <div>
-      <div class="section-title">LinkedIn Dump</div>
-      <div class="dump-panel" id="linkedin-dump">
-        <div class="text-center" style="padding:40px;color:var(--text-muted);font-size:13px">Paste LinkedIn profile data here for AI parsing</div>
+  <div>
+    <div class="section-title">Chat with AI Agent</div>
+    <div class="chat-container">
+      <div class="chat-messages" id="chat-messages">
+        <div class="chat-msg ai">
+          <div class="sender">AI Agent</div>
+          <div class="bubble">Hi! I'm your Lead Hunter AI powered by Groq. Ask me to research leads, draft outreach, or analyze pipeline.</div>
+        </div>
       </div>
-      <div class="flex gap8 mt16">
-        <textarea id="li-dump-input" placeholder="Paste LinkedIn profile text..." style="width:100%;padding:10px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-family:'Sora',sans-serif;font-size:13px;min-height:100px;resize:vertical;outline:none"></textarea>
+      <div class="quick-prompts">
+        <span class="quick-prompt" onclick="sendQuickPrompt('Find me 5 SaaS companies in SF that need email marketing')">Find 5 SaaS leads</span>
+        <span class="quick-prompt" onclick="sendQuickPrompt('Draft a cold LinkedIn message for a VP of Sales')">Draft LI message</span>
+        <span class="quick-prompt" onclick="sendQuickPrompt('Analyze my pipeline performance')">Analyze pipeline</span>
+        <span class="quick-prompt" onclick="sendQuickPrompt('Summarize best SDR outreach strategies')">SDR strategies</span>
       </div>
-      <button class="btn-primary mt16" onclick="parseLinkedInDump()">🤖 Parse with AI</button>
-    </div>
-    <div>
-      <div class="section-title">Chat with AI Agent</div>
-      <div class="chat-container">
-        <div class="chat-messages" id="chat-messages">
-          <div class="chat-msg ai">
-            <div class="sender">AI Agent</div>
-            <div class="bubble">Hi! I'm your Lead Hunter AI powered by Groq. Ask me to research leads, draft outreach, or analyze pipeline. I can also parse LinkedIn profiles.</div>
-          </div>
-        </div>
-        <div class="quick-prompts">
-          <span class="quick-prompt" onclick="sendQuickPrompt('Find me 5 SaaS companies in SF that need email marketing')">Find 5 SaaS leads</span>
-          <span class="quick-prompt" onclick="sendQuickPrompt('Draft a cold LinkedIn message for a VP of Sales')">Draft LI message</span>
-          <span class="quick-prompt" onclick="sendQuickPrompt('Analyze my pipeline performance')">Analyze pipeline</span>
-          <span class="quick-prompt" onclick="sendQuickPrompt('Summarize best SDR outreach strategies')">SDR strategies</span>
-        </div>
-        <div class="chat-input-area">
-          <input type="text" id="chat-input" placeholder="Ask the AI agent..." onkeydown="if(event.key==='Enter') sendChatMessage()">
-          <button class="btn-primary" onclick="sendChatMessage()">Send</button>
-        </div>
+      <div class="chat-input-area">
+        <textarea id="chat-input" placeholder="Ask the AI agent... (Shift+Enter for new line, Enter to send)" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChatMessage()}"></textarea>
+        <button class="btn-primary" onclick="sendChatMessage()" style="align-self:flex-end">Send</button>
       </div>
     </div>
   </div>
@@ -614,7 +611,13 @@ tr:last-child td{border-bottom:none}
       </div>
       <div class="form-row" style="margin-top:8px">
         <div class="form-group"><label>Lead Name</label><input id="quick-li-name" placeholder="Name"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Title</label><input id="quick-li-title" placeholder="Job title"></div>
         <div class="form-group"><label>Company</label><input id="quick-li-company" placeholder="Company"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group" style="flex:2"><label>LinkedIn Link</label><input id="quick-li-link" placeholder="https://linkedin.com/in/..."></div>
       </div>
       <button class="btn-sm btn-secondary" onclick="logQuickCustom()">Log Activity</button>
     </div>
@@ -851,7 +854,7 @@ tr:last-child td{border-bottom:none}
 </div>
 
 <script>
-const API_BASE = 'https://surveys-advanced-mothers-type.trycloudflare.com';
+const API_BASE = 'https://minds-poor-drawn-penetration.trycloudflare.com';
 let authToken = localStorage.getItem('lhai_token') || null;
 let useDemo = false;
 let activeStreamReader = null;
@@ -1583,7 +1586,7 @@ function sendChatMessage(text) {
       function tryRead() {
         reader.read().then(function(res2) {
           if (res2.done) {
-            bubble.textContent = fullText || 'No response';
+            bubble.innerHTML = formatChatResponse(fullText) || 'No response';
             msgsEl.scrollTop = msgsEl.scrollHeight;
             return;
           }
@@ -1598,10 +1601,10 @@ function sendChatMessage(text) {
               catch(e) { fullText += data; }
             }
           }
-          bubble.textContent = fullText || '...';
+          bubble.innerHTML = formatChatResponse(fullText) || '...';
           msgsEl.scrollTop = msgsEl.scrollHeight;
           tryRead();
-        }).catch(function() { bubble.textContent = fullText || 'Error reading stream'; });
+        }).catch(function() { bubble.innerHTML = formatChatResponse(fullText || 'Error reading stream'); });
       }
       tryRead();
     }).catch(function() { demoChatResponse(msgsEl, bubble, msg); });
@@ -1620,14 +1623,40 @@ function demoChatResponse(msgsEl, bubble, msg) {
     'Based on your data, your highest-converting source is LinkedIn connections (42% of qualified leads). I recommend increasing daily connection requests by 20%.'
   ];
   setTimeout(function() {
-    bubble.textContent = responses[Math.floor(Math.random() * responses.length)];
+    bubble.innerHTML = formatChatResponse(responses[Math.floor(Math.random() * responses.length)]);
     msgsEl.scrollTop = msgsEl.scrollHeight;
   }, 800);
 }
 
 function sendQuickPrompt(text) {
-  document.getElementById('chat-input').value = text;
+  var ta = document.getElementById('chat-input');
+  ta.value = text;
   sendChatMessage(text);
+}
+
+function formatChatResponse(text) {
+  if (!text) return '...';
+  var html = escapeHtml(text);
+  // Bold: **text**
+  html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  // Numbered items: "N. Title: description" — wrap in lead-entry card
+  // Handles "1. Title: desc" or "1. Title — desc" or "1. Title" followed by content
+  html = html.replace(/(\d+)\.\s+(.+?):\s+/g, '<div class="lead-entry"><strong>$1. $2:</strong> ');
+  html = html.replace(/(\d+)\.\s+(.+?)<br><br>/g, '<div class="lead-entry"><strong>$1. $2</strong></div>');
+  html = html.replace(/(\d+)\.\s+(.+?)(?=<br>\d|"|$)/g, '<div class="lead-entry"><strong>$1. $2</strong></div>');
+  // Close any unclosed lead-entry divs (div opened with colon but no explicit close)
+  var openCount = (html.match(/<div class="lead-entry">/g) || []).length;
+  var closeCount = (html.match(/<\/div>/g) || []).length;
+  // Also handle closing lead-entry before the next one or at end
+  html = html.replace(/(<div class="lead-entry">.*?)(?=<div class="lead-entry">|$)/g, '$1</div>');
+  // Sub-bullets like "* r/..." with indentation
+  html = html.replace(/<br>\*\s+/g, '<br>&nbsp;&nbsp;• ');
+  html = html.replace(/^\*\s+/gm, '&nbsp;&nbsp;• ');
+  // Newlines to <br>
+  html = html.replace(/\n/g, '<br>');
+  // Prevent double breaks
+  html = html.replace(/(<br>){3,}/g, '<br><br>');
+  return html;
 }
 
 function parseLinkedInDump() {
@@ -1787,34 +1816,66 @@ function renderLinkedInTracker() {
 }
 
 function logLiActivity(type) {
+  var name = document.getElementById('quick-li-name').value.trim();
+  var title = document.getElementById('quick-li-title').value.trim();
+  var company = document.getElementById('quick-li-company').value.trim();
+  var linkedinUrl = document.getElementById('quick-li-link').value.trim();
+  if (!name) { alert('Enter a lead name'); return; }
+  var notes = (company ? name + ' (' + company + ')' : name);
   if (!useDemo && authToken && authToken !== 'demo-fallback-token') {
-    api('/api/linkedin/activities', { method: 'POST', body: JSON.stringify({ type: type, title: capitalize(type.replace(/_/g, ' ')), timestamp: new Date().toISOString() }) }).catch(function() {});
+    api('/api/linkedin/activities', { method: 'POST', body: JSON.stringify({
+      lead_name: name, company: company, linkedin_url: linkedinUrl,
+      activity_type: mapActivityType(type), notes: notes, source: 'manual'
+    }) }).catch(function() {});
   }
   var titles = {
     connection_request: 'Connection Request', connection_accepted: 'Connection Accepted', message: 'Message Sent',
     profile_view: 'Profile View', reply_received: 'Reply Received', meeting_booked: 'Meeting Booked',
     note: 'Note Added', follow_up: 'Follow-up Sent'
   };
-  DEMO.liFeed.unshift({ type: type, title: titles[type] || capitalize(type.replace(/_/g, ' ')), meta: 'Just now' });
+  var label = (name && company) ? titles[type] + ': ' + name + ' (' + company + ')' : (titles[type] || capitalize(type.replace(/_/g, ' ')));
+  DEMO.liFeed.unshift({ type: type, title: label, meta: 'Just now' });
   if (type === 'connection_request') DEMO.liStats.connectionsSent++;
   if (type === 'connection_accepted') DEMO.liStats.connectionsAccepted++;
   if (type === 'message') DEMO.liStats.dmsSent++;
   if (type === 'reply_received') DEMO.liStats.replies++;
   if (type === 'meeting_booked') DEMO.liStats.meetings++;
+  document.getElementById('quick-li-name').value = '';
+  document.getElementById('quick-li-title').value = '';
+  document.getElementById('quick-li-company').value = '';
+  document.getElementById('quick-li-link').value = '';
   loadLinkedInTracker();
+}
+
+function mapActivityType(type) {
+  var m = { connection_request: 'connection_sent', message: 'dm_sent', connection_accepted: 'connection_accepted',
+    profile_view: 'profile_viewed', reply_received: 'reply_received', meeting_booked: 'meeting_booked',
+    note: 'dm_sent', follow_up: 'followup_sent' };
+  return m[type] || type;
 }
 
 function logQuickCustom() {
   var name = document.getElementById('quick-li-name').value.trim();
+  var title = document.getElementById('quick-li-title').value.trim();
   var company = document.getElementById('quick-li-company').value.trim();
+  var linkedinUrl = document.getElementById('quick-li-link').value.trim();
   if (!name) { alert('Enter a lead name'); return; }
-  var title = 'Activity for ' + name + (company ? ' (' + company + ')' : '');
+  var notes = title ? (company ? name + ' — ' + title + ' at ' + company : name + ' — ' + title) : (company ? name + ' (' + company + ')' : name);
   if (!useDemo) {
-    api('/api/linkedin/activities', { method: 'POST', body: JSON.stringify({ type: 'note', title: title, timestamp: new Date().toISOString() }) }).catch(function() {});
+    api('/api/linkedin/activities', { method: 'POST', body: JSON.stringify({
+      lead_name: name,
+      company: company,
+      linkedin_url: linkedinUrl,
+      activity_type: 'note',
+      notes: notes,
+      source: 'manual'
+    }) }).catch(function() {});
   }
-  DEMO.liFeed.unshift({ type: 'note', title: title, meta: 'Just now' });
+  DEMO.liFeed.unshift({ type: 'note', title: notes, meta: 'Just now' });
   document.getElementById('quick-li-name').value = '';
+  document.getElementById('quick-li-title').value = '';
   document.getElementById('quick-li-company').value = '';
+  document.getElementById('quick-li-link').value = '';
   loadLinkedInTracker();
 }
 
