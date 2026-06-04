@@ -32,6 +32,7 @@ def create_app(config_name='dev'):
     from app.routes.admin import admin_bp
     from app.routes.gmail import gmail_bp
     from app.routes.hubspot import hubspot_bp
+    from app.routes.dashboard import dashboard_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(leads_bp)
@@ -41,6 +42,7 @@ def create_app(config_name='dev'):
     app.register_blueprint(admin_bp)
     app.register_blueprint(gmail_bp)
     app.register_blueprint(hubspot_bp)
+    app.register_blueprint(dashboard_bp)
 
     # Create tables and seed demo data on first run
     with app.app_context():

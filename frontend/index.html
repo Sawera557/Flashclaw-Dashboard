@@ -384,22 +384,24 @@ tr:last-child td{border-bottom:none}
 
 <div class="content-area">
 
-<!-- DASHBOARD -->
+<!-- DASHBOARD - SDR Command Center -->
 <div class="tab-content active" id="tab-dashboard">
   <div class="sdr-bar" id="sdr-bar">
-    <div class="sdr-avatar">SJ</div>
+    <div class="sdr-avatar">?</div>
     <div class="sdr-info">
-      <div class="name">Sarah Johnson</div>
-      <div class="role">Senior SDR · Team Alpha</div>
+      <div class="name">Loading...</div>
+      <div class="role">SDR · Loading...</div>
     </div>
     <div class="sdr-metrics">
-      <div><div class="val" style="color:var(--accent)">14</div><div class="lbl">Sprint Day</div></div>
-      <div><div class="val" style="color:var(--warning)">🔥 7</div><div class="lbl">Day Streak</div></div>
-      <div><div class="val" style="color:var(--success)">#2</div><div class="lbl">Team Rank</div></div>
+      <div><div class="val" style="color:var(--accent)"><span class="spinner"></span></div><div class="lbl">Streak</div></div>
+      <div><div class="val" style="color:var(--success)"><span class="spinner"></span></div><div class="lbl">Rank</div></div>
+      <div><div class="val" style="color:var(--warning)"><span class="spinner"></span></div><div class="lbl">Leads Gen.</div></div>
     </div>
   </div>
 
-  <div class="stat-grid" id="dash-stats"></div>
+  <div class="stat-grid" id="dash-stats">
+    <div class="loading" style="grid-column:1/-1"><span class="spinner"></span> Loading dashboard data...</div>
+  </div>
 
   <div class="grid-2-1">
     <div class="grid-card" style="grid-row:span 2;">
@@ -407,27 +409,22 @@ tr:last-child td{border-bottom:none}
       <div class="timeline" id="dash-timeline"></div>
     </div>
     <div class="grid-card">
-      <div class="section-title">Today's Targets</div>
+      <div class="section-title">Today's Work Queue</div>
       <div id="dash-targets"></div>
     </div>
     <div class="grid-card">
-      <div class="section-title">Groq AI Agent Quick Access</div>
-      <div class="flex gap8 flex-wrap mb16">
-        <button class="btn-secondary" onclick="showTab('ai-agent');setTimeout(function(){sendQuickPrompt('Research my top 5 leads')},100)">🧠 Research Leads</button>
-        <button class="btn-secondary" onclick="showTab('email-gen')">✉️ Draft Emails</button>
-        <button class="btn-secondary" onclick="showTab('ai-agent');setTimeout(function(){sendQuickPrompt('Analyze my pipeline health')},100)">📊 Pipeline Analysis</button>
-        <button class="btn-secondary" onclick="showTab('ai-agent');setTimeout(function(){sendQuickPrompt('Find new prospects in my ICP')},100)">🎯 Find Prospects</button>
-      </div>
-      <div style="font-size:12px;color:var(--text-muted)">Powered by Groq LPU Inference Engine · Llama 3 70B</div>
+      <div class="section-title">🤖 AI Recommended Actions</div>
+      <div id="ai-rec-list"></div>
+      <div class="mt16" style="font-size:12px;color:var(--text-muted)">Powered by Groq LPU Inference Engine</div>
     </div>
   </div>
 
-  <div class="section-title">LI Pipeline Snapshot</div>
+  <div class="section-title">Pipeline Snapshot</div>
   <div class="card mb16" id="li-pipeline-snapshot"></div>
 
   <div class="grid-3">
     <div class="grid-card">
-      <div class="section-title">Recent LinkedIn Activity</div>
+      <div class="section-title">Recent Outreach Activity</div>
       <div class="activity-feed" id="dash-li-feed"></div>
     </div>
     <div class="grid-card">
@@ -435,7 +432,7 @@ tr:last-child td{border-bottom:none}
       <div id="dash-followups"></div>
     </div>
     <div class="grid-card">
-      <div class="section-title">Top Lead Sources</div>
+      <div class="section-title">Lead Source Performance</div>
       <div id="dash-sources"></div>
     </div>
   </div>
@@ -1162,20 +1159,134 @@ function hsRender() {
 function hsFilter() { hsRender(); }
 function hsModal(ownerId) { /* not needed for owner-specific view */ }
 
-/* === DASHBOARD === */
+/* === DASHBOARD — Full SDR Command Center === */
 function loadDashboard() {
-  var ok = false;
-  api('/api/hubspot/my-dashboard').then(function(d) { 
-    ok = true;
-    renderMyDashboard(d);
-  }).catch(function() { 
-    ok = false;
-    // fallback to legacy leads endpoint
-    api('/api/leads').then(function() { ok = true; }).catch(function() {}).then(function() {
-      if (ok) fetchDashboardStats();
-      else renderDashboardDemo();
+  api('/api/dashboard/summary')
+    .then(function(d) {
+      useDemo = false;
+      renderRealDashboard(d);
+    })
+    .catch(function() {
+      // Fallback: try loading legacy stats, then demo
+      var p1 = api('/api/leads').then(function(d) { if (d && !useDemo) { var l = Array.isArray(d) ? d : (d.leads || d.data || []); DEMO.stats.leads = l.length; } }).catch(function(){});
+      var p2 = api('/api/linkedin/stats').then(function(s) { if (s) Object.assign(DEMO.liStats, s); }).catch(function(){});
+      var p3 = api('/api/analytics/pipeline').then(function(){}).catch(function(){});
+      Promise.all([p1, p2, p3]).then(function() { renderDashboardDemo(); }).catch(function() { renderDashboardDemo(); });
     });
-  });
+}
+
+function renderRealDashboard(d) {
+  if (!d || !d.stats) { renderDashboardDemo(); return; }
+
+  var stats = d.stats || {};
+  var profile = d.sdr_profile || {};
+  var queue = d.today_queue || {};
+  var activities = d.recent_activities || [];
+  var sources = d.source_performance || [];
+  var pipeline = d.pipeline_snapshot || {};
+  var recommendations = d.ai_recommendations || [];
+
+  // ── SDR Identity Card ──
+  var sdrHtml =
+    '<div class="sdr-avatar">' + (profile.avatar || '?') + '</div>' +
+    '<div class="sdr-info">' +
+      '<div class="name">' + escapeHtml(profile.name || 'SDR') + '</div>' +
+      '<div class="role">' + escapeHtml(profile.role || 'SDR') + ' · Team of ' + (profile.team_size || 1) + '</div>' +
+    '</div>' +
+    '<div class="sdr-metrics">' +
+      '<div><div class="val" style="color:var(--accent)">🔥 ' + (profile.streak || 0) + '</div><div class="lbl">Day Streak</div></div>' +
+      '<div><div class="val" style="color:var(--success);font-size:13px">' + escapeHtml(profile.rank || 'New Recruit') + '</div><div class="lbl">Rank</div></div>' +
+      '<div><div class="val" style="color:var(--warning)">' + (profile.leads_generated || 0) + '</div><div class="lbl">Leads Gen.</div></div>' +
+    '</div>';
+  document.getElementById('sdr-bar').innerHTML = sdrHtml;
+
+  // ── KPI Cards ──
+  var kpiCards = [
+    { label: 'Total Leads', value: stats.total_leads || 0, subtitle: (stats.new_today || 0) + ' new today', color: 'var(--accent)' },
+    { label: 'New Today', value: stats.new_today || 0, subtitle: '', color: 'var(--accent)' },
+    { label: 'Enriched Leads', value: stats.enriched_leads || 0, subtitle: 'of ' + (stats.total_leads || 0) + ' total', color: 'var(--success)' },
+    { label: 'Emails Sent', value: stats.emails_sent || 0, subtitle: (stats.reply_rate || 0) + '% reply rate', color: '#5b8def' },
+    { label: 'Replies Received', value: stats.replies_received || 0, subtitle: (stats.positive_replies || 0) + ' positive', color: 'var(--warning)' },
+    { label: 'Meetings Booked', value: stats.meetings_booked || 0, subtitle: (stats.conversion_rate || 0) + '% conversion', color: 'var(--success)' },
+    { label: 'Pipeline Value', value: '$' + (stats.pipeline_value || 0).toLocaleString(), subtitle: '', color: 'var(--accent)' },
+  ];
+  document.getElementById('dash-stats').innerHTML = kpiCards.map(function(c) {
+    return '<div class="stat-card"><div class="stat-label">' + c.label + '</div><div class="stat-value" style="color:' + c.color + '">' + c.value + '</div><div class="stat-change up">' + c.subtitle + '</div></div>';
+  }).join('');
+
+  // ── Activity Timeline ──
+  var timelineEl = document.getElementById('dash-timeline');
+  if (activities.length > 0) {
+    timelineEl.innerHTML = activities.map(function(a) {
+      var timeStr = a.timestamp ? new Date(a.timestamp).toLocaleDateString() + ' ' + new Date(a.timestamp).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) : '—';
+      return '<div class="timeline-item"><div class="time">' + timeStr + '</div><div class="desc"><span style="font-size:16px;margin-right:6px">' + (a.icon || '•') + '</span>' + escapeHtml(a.description || '') + '</div><div class="meta">' + escapeHtml(a.type || '') + '</div></div>';
+    }).join('');
+  } else {
+    timelineEl.innerHTML = '<div style="padding:20px;color:var(--text-muted);font-size:13px">No recent activity. Start your day with outreach!</div>';
+  }
+
+  // ── Today's Work Queue ──
+  var queueHtml =
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">' +
+    '<div style="padding:16px;background:var(--card);border-radius:var(--radius-sm);text-align:center"><div style="font-size:28px;font-weight:700;color:var(--danger)">' + (queue.follow_ups_due || 0) + '</div><div style="font-size:11px;color:var(--text-muted)">Follow-ups Due</div></div>' +
+    '<div style="padding:16px;background:var(--card);border-radius:var(--radius-sm);text-align:center"><div style="font-size:28px;font-weight:700;color:var(--warning)">' + (queue.positive_replies_needing_response || 0) + '</div><div style="font-size:11px;color:var(--text-muted)">Hot Replies to Respond</div></div>' +
+    '<div style="padding:16px;background:var(--card);border-radius:var(--radius-sm);text-align:center"><div style="font-size:28px;font-weight:700;color:var(--success)">' + (queue.meetings_today || 0) + '</div><div style="font-size:11px;color:var(--text-muted)">Meetings Today</div></div>' +
+    '<div style="padding:16px;background:var(--card);border-radius:var(--radius-sm);text-align:center"><div style="font-size:28px;font-weight:700;color:var(--accent)">' + (queue.leads_needing_enrichment || 0) + '</div><div style="font-size:11px;color:var(--text-muted)">Need Enrichment</div></div>' +
+    '</div>';
+  document.getElementById('dash-targets').innerHTML = queueHtml;
+
+  // ── AI Recommended Actions ──
+  if (recommendations.length > 0) {
+    document.getElementById('ai-rec-list').innerHTML = recommendations.map(function(r) {
+      var impactColor = r.impact === 'High' ? 'var(--danger)' : r.impact === 'Medium' ? 'var(--warning)' : 'var(--success)';
+      var iconMap = {messaging:'✉️',enrichment:'📊',response:'💬',pipeline:'📈',sourcing:'🔍',activity:'⚡',referral:'🎯'};
+      return '<div class="activity-item"><div class="activity-icon" style="font-size:16px;background:var(--accent-glow);color:var(--accent)">' + (iconMap[r.type] || '💡') + '</div><div class="activity-body"><div class="act-title">' + escapeHtml(r.action) + ' <span style="font-size:11px;color:' + impactColor + ';font-weight:600">[' + r.impact + ']</span></div><div class="act-meta">' + escapeHtml(r.reason) + '</div></div></div>';
+    }).join('');
+  } else {
+    document.getElementById('ai-rec-list').innerHTML = '<div style="padding:10px;color:var(--text-muted);font-size:13px">No recommendations yet. Keep working your pipeline.</div>';
+  }
+
+  // ── Pipeline Snapshot ──
+  var pipelineStages = pipeline.stages || [];
+  var maxCount = 1;
+  pipelineStages.forEach(function(s) { if (s.count > maxCount) maxCount = s.count; });
+  if (pipelineStages.length > 0) {
+    document.getElementById('li-pipeline-snapshot').innerHTML = pipelineStages.map(function(s) {
+      var pct = Math.round(s.count / maxCount * 100);
+      var color = pct >= 70 ? 'var(--success)' : pct >= 30 ? 'var(--warning)' : 'var(--accent)';
+      var valStr = s.value ? ' ($' + s.value.toLocaleString() + ')' : '';
+      return '<div class="pipeline-bar"><div class="pl-label">' + s.stage + valStr + '</div><div class="pl-track"><div class="pl-fill" style="width:' + Math.max(pct,8) + '%;background:' + color + '">' + s.count + '</div></div></div>';
+    }).join('');
+  } else {
+    document.getElementById('li-pipeline-snapshot').innerHTML = '<div style="padding:20px;color:var(--text-muted);font-size:13px;text-align:center">No pipeline data yet — start hunting!</div>';
+  }
+
+  // ── Source Performance ──
+  var sourcesEl = document.getElementById('dash-sources');
+  if (sources.length > 0) {
+    var maxSourceLeads = 1;
+    sources.forEach(function(s) { if (s.leads > maxSourceLeads) maxSourceLeads = s.leads; });
+    sourcesEl.innerHTML = sources.map(function(s) {
+      var pct = Math.round(s.leads / maxSourceLeads * 100);
+      return '<div class="progress-label mb16"><span class="prog-name">' + escapeHtml(s.source) + ' <span style="color:var(--text-muted);font-size:11px">(' + s.leads + ' leads · ' + s.reply_rate + '% reply)</span></span><span class="prog-val" style="color:var(--success)">' + (s.quality_score || 0) + '</span></div>' +
+        '<div class="progress-track mb16"><div class="progress-fill" style="width:' + pct + '%;background:var(--accent)"></div></div>';
+    }).join('');
+  } else {
+    sourcesEl.innerHTML = '<div style="color:var(--text-muted);font-size:13px;padding:10px">Add leads from different sources to see performance here.</div>';
+  }
+
+  // ── Recent Outreach Activity ──
+  var liActivities = activities.filter(function(a) { return a.type.indexOf('linkedin_') === 0 || a.type.indexOf('email_') === 0; }).slice(0, 5);
+  document.getElementById('dash-li-feed').innerHTML = liActivities.length > 0 ?
+    liActivities.map(function(a) {
+      return '<div class="activity-item"><div class="activity-icon" style="font-size:16px">' + (a.icon || '📌') + '</div><div class="activity-body"><div class="act-title">' + escapeHtml(a.description) + '</div><div class="act-meta">' + (a.timestamp ? new Date(a.timestamp).toLocaleString() : '') + '</div></div></div>';
+    }).join('') :
+    '<div style="padding:20px;color:var(--text-muted);font-size:13px;text-align:center">Track your outreach to see activity here.</div>';
+
+  // ── Follow-ups Due ──
+  document.getElementById('dash-followups').innerHTML = queue.follow_ups_due > 0 ?
+    '<div style="padding:16px;text-align:center"><div style="font-size:32px;font-weight:700;color:var(--danger)">' + queue.follow_ups_due + '</div><div style="font-size:12px;color:var(--text-muted)">contacts need follow-up</div><button class="btn-secondary mt16" onclick="showTab(\'leads\')">View Leads</button></div>' :
+    '<div style="padding:20px;color:var(--text-muted);font-size:13px;text-align:center">No follow-ups due. 🎉</div>';
 }
 
 function renderMyDashboard(d) {
