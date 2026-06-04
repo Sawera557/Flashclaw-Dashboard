@@ -133,6 +133,28 @@ def delete_activity(activity_id):
     return jsonify({'success': True})
 
 
+@linkedin_bp.route('/api/linkedin/activities/batch-delete', methods=['POST'])
+@jwt_required()
+def batch_delete_activities():
+    current_user_id = get_jwt_identity()
+    user = _get_current_user(current_user_id)
+    if not user:
+        return jsonify({'error': 'User not found'}), 404
+
+    data = request.get_json() or {}
+    ids = data.get('ids', [])
+    if not ids:
+        return jsonify({'error': 'No IDs provided'}), 400
+
+    deleted = LinkedInActivity.query.filter(
+        LinkedInActivity.id.in_(ids),
+        LinkedInActivity.workspace_id == user.workspace_id
+    ).delete(synchronize_session=False)
+    db.session.commit()
+
+    return jsonify({'success': True, 'deleted': deleted})
+
+
 @linkedin_bp.route('/api/linkedin/stats', methods=['GET'])
 @jwt_required()
 def get_linkedin_stats():

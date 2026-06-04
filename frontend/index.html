@@ -364,7 +364,7 @@ tr:last-child td{border-bottom:none}
     <div class="nav-item" onclick="showTab('leads')"><span class="nav-icon">👥</span><span>Leads Database</span></div>
     <div class="nav-item" onclick="showTab('email-gen')"><span class="nav-icon">✉️</span><span>Email Generator</span></div>
     <div class="nav-item" onclick="showTab('linkedin-tracker')"><span class="nav-icon">🔗</span><span>LinkedIn Tracker</span></div>
-    <div class="nav-item" onclick="showTab('hubspot')"><span class="nav-icon">🔄</span><span>Anna Jordan Pipeline</span></div>
+    <div class="nav-item" onclick="showTab('hubspot')"><span class="nav-icon">🔄</span><span>Kathy Roggers Pipeline</span></div>
     <div class="nav-item" onclick="showTab('activity')"><span class="nav-icon">📋</span><span>SDR Activity</span></div>
 
     <div class="nav-section">Intelligence</div>
@@ -578,7 +578,8 @@ tr:last-child td{border-bottom:none}
         <span class="quick-prompt" onclick="sendQuickPrompt('Draft a cold LinkedIn message for a VP of Sales')">Draft LI message</span>
         <span class="quick-prompt" onclick="sendQuickPrompt('Analyze my pipeline performance')">Analyze pipeline</span>
         <span class="quick-prompt" onclick="sendQuickPrompt('Summarize best SDR outreach strategies')">SDR strategies</span>
-        <span class="quick-prompt" onclick="sendLinkedInGmailActivity()">📧 LI Email Activity</span>
+        <span class="quick-prompt" onclick="fillLinkedInGmailPrompt()">📧 LinkedIn Email Activity</span>
+        <span class="quick-prompt" onclick="fillLinkedInNetworkingPrompt()">🔗 LinkedIn Networking</span>
       </div>
       <div class="chat-input-area">
         <textarea id="chat-input" placeholder="Ask the AI agent... (Shift+Enter for new line, Enter to send)" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChatMessage()}"></textarea>
@@ -653,7 +654,7 @@ tr:last-child td{border-bottom:none}
 <!-- HUBSPOT PIPELINE -->
 <div class="tab-content" id="tab-hubspot">
   <div class="flex align-center gap8 mb16">
-    <div class="section-title" style="margin-bottom:0">📊 Anna Jordan — 30 Day Deals</div>
+    <div class="section-title" style="margin-bottom:0">📊 Kathy Roggers — Deals</div>
     <span id="hs-status" style="font-size:12px;padding:4px 10px;border-radius:20px;background:rgba(124,109,250,.12);color:var(--accent)">checking...</span>
     <button class="btn-sm ml-auto" onclick="loadHubSpot()">🔄 Refresh</button>
   </div>
@@ -664,7 +665,6 @@ tr:last-child td{border-bottom:none}
     <div class="grid-card"><div style="font-size:24px;font-weight:700" id="hs-avg">—</div><div style="font-size:12px;color:var(--text-muted)">Avg Deal Size</div></div>
   </div>
   <div style="display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap">
-    <input id="hs-search" placeholder="Search owner..." class="input" style="flex:1;min-width:180px" oninput="hsFilter()">
     <select id="hs-sort" class="input" style="width:auto" onchange="hsRender()">
       <option value="deals">Sort by deals</option>
       <option value="value">Sort by value</option>
@@ -855,7 +855,7 @@ tr:last-child td{border-bottom:none}
 </div>
 
 <script>
-const API_BASE = 'https://volunteer-efficient-discussions-laid.trycloudflare.com';
+const API_BASE = 'https://receptors-latino-auction-housewares.trycloudflare.com';
 let authToken = localStorage.getItem('lhai_token') || null;
 let useDemo = false;
 let activeStreamReader = null;
@@ -875,7 +875,7 @@ const pageTitles = {
   'integrations': ['Integrations', 'Connected tools & APIs'],
   'api-config': ['API Config', 'Keys & model settings'],
   'admin': ['Admin Panel', 'Team & system management'],
-  'hubspot': ['Anna Jordan', '30-day deal activity'],
+  'hubspot': ['Kathy Roggers', 'Deal activity'],
 };
 
 const DEMO = {
@@ -1057,7 +1057,7 @@ function showApp() {
   document.getElementById('api-url-display').textContent = API_BASE;
   var tok = authToken || '......';
   document.getElementById('token-display').textContent = tok.length > 20 ? tok.slice(0, 20) + '...' : tok;
-  document.getElementById('sidebar-user').textContent = useDemo ? 'Demo Mode' : 'Anna Jordan';
+  document.getElementById('sidebar-user').textContent = useDemo ? 'Demo Mode' : 'Kathy Roggers';
   showTab('dashboard');
 }
 
@@ -1107,7 +1107,7 @@ function showTab(name) {
 
 /** HubSpot tab — load owner pipeline from API */
 var HS_DATA = {};
-var HS_CURRENT_OWNER = '101551557';  // Anna Jordan
+var HS_CURRENT_OWNER = '555925314';  // Kathy Roggers
 
 function loadHubSpot() {
   var grid = document.getElementById('hs-grid');
@@ -1116,15 +1116,15 @@ function loadHubSpot() {
   grid.style.display = 'none';
   errEl.style.display = 'none';
   loading.style.display = 'block';
-  document.getElementById('hs-status').textContent = 'loading last 30 days...';
+  document.getElementById('hs-status').textContent = 'loading deals...';
 
-  // Load Anna Jordan's last 30 days deals
-  api('/api/hubspot/owner/101551557/deals?limit=50&last_days=30').then(function(d) {
+  // Load Kathy Roggers's deals
+  api('/api/hubspot/owner/555925314/deals?limit=50&last_days=180').then(function(d) {
     HS_DATA = d;
     hsRender();
     loading.style.display = 'none';
     grid.style.display = 'block';
-    document.getElementById('hs-status').textContent = d.count + ' deals (30d)';
+    document.getElementById('hs-status').textContent = '';
   }).catch(function(e) {
     loading.style.display = 'none';
     errEl.style.display = 'block';
@@ -1141,12 +1141,9 @@ function hsRender() {
   var totalVal = deals.reduce(function(s, dl) { return s + parseInt(dl.amount || 0, 10); }, 0);
   
   document.getElementById('hs-open-deals').textContent = d.count;
-  document.getElementById('hs-owners').textContent = d.owner ? d.owner.name : 'Anna Jordan';
+  document.getElementById('hs-owners').textContent = d.owner ? d.owner.name : 'Kathy Roggers';
   document.getElementById('hs-value').textContent = '$' + totalVal.toLocaleString();
   document.getElementById('hs-avg').textContent = d.count ? '$' + Math.round(totalVal / d.count).toLocaleString() : '$0';
-
-  var q = document.getElementById('hs-search').value.toLowerCase().trim();
-  if (q) deals = deals.filter(function(dl) { return dl.name.toLowerCase().indexOf(q) !== -1; });
 
   document.getElementById('hs-grid').innerHTML = deals.map(function(dl) {
     return '<div class="card" style="padding:14px;display:flex;justify-content:space-between;align-items:center">' +
@@ -1160,7 +1157,6 @@ function hsRender() {
   }
 }
 
-function hsFilter() { hsRender(); }
 function hsModal(ownerId) { /* not needed for owner-specific view */ }
 
 /* === DASHBOARD — Full SDR Command Center === */
@@ -1295,7 +1291,7 @@ function renderRealDashboard(d) {
 
 function renderMyDashboard(d) {
   document.getElementById('dash-stats').innerHTML = [
-    { label: 'My Deals (30d)', value: d.total_deals, change: 'Last 30 days', dir: 'up' },
+    { label: 'My Deals', value: d.total_deals, change: 'Last 180 days', dir: 'up' },
     { label: 'Pipeline Value', value: '$' + d.total_value.toLocaleString(), change: '', dir: 'up' },
     { label: 'Avg Deal Size', value: '$' + d.avg_deal.toLocaleString(), change: '', dir: 'up' },
     { label: 'Deal Stages', value: (d.stages || []).length, change: 'different stages', dir: 'up' }
@@ -1338,50 +1334,16 @@ function renderMyDashboard(d) {
 
 
 function renderDashboardDemo() {
-  var s = DEMO.stats;
-  document.getElementById('dash-stats').innerHTML = [
-    { label: 'Leads Found', value: s.leads, change: '+12%', dir: 'up' },
-    { label: 'Emails Sent', value: s.emails.toLocaleString(), change: '+5%', dir: 'up' },
-    { label: 'Email Replies', value: s.emailReplies, change: '+8%', dir: 'up' },
-    { label: 'LI Connections', value: s.liConnections, change: '+23%', dir: 'up' },
-    { label: 'LI DMs Sent', value: s.liDMs, change: '+15%', dir: 'up' },
-    { label: 'Meetings Booked', value: s.meetings, change: '+3', dir: 'up' },
-    { label: 'Interested Leads', value: s.interested, change: '+7', dir: 'up' },
-    { label: 'Pipeline Value', value: '$' + s.pipelineValue.toLocaleString(), change: '+$18K', dir: 'up' }
-  ].map(function(c) {
-    return '<div class="stat-card"><div class="stat-label">' + c.label + '</div><div class="stat-value" style="color:var(--accent)">' + c.value + '</div><div class="stat-change ' + c.dir + '">' + c.change + '</div></div>';
-  }).join('');
-
-  document.getElementById('dash-timeline').innerHTML = DEMO.timeline.map(function(i) {
-    return '<div class="timeline-item"><div class="time">' + i.time + '</div><div class="desc">' + i.desc + '</div><div class="meta">' + i.meta + '</div></div>';
-  }).join('');
-
-  renderTargets(DEMO.targets, 'dash-targets');
-
-  document.getElementById('li-pipeline-snapshot').innerHTML = DEMO.pipelineSnapshot.map(function(p) {
-    var color = p.pct >= 70 ? 'var(--success)' : p.pct >= 30 ? 'var(--warning)' : 'var(--accent)';
-    return '<div class="pipeline-bar"><div class="pl-label">' + p.label + '</div><div class="pl-track"><div class="pl-fill" style="width:' + p.pct + '%;background:' + color + '">' + p.val + '</div></div></div>';
-  }).join('');
-
-  document.getElementById('dash-li-feed').innerHTML = DEMO.liActivity.slice(0, 4).map(function(a) {
-    var icons = { connection_request: '🔗', connection_accepted: '✅', message: '💬', profile_view: '👤', reply_received: '📥' };
-    return '<div class="activity-item"><div class="activity-icon" style="font-size:16px">' + (icons[a.type] || '📌') + '</div><div class="activity-body"><div class="act-title">' + a.title + '</div><div class="act-meta">' + a.meta + '</div></div></div>';
-  }).join('');
-
-  document.getElementById('dash-followups').innerHTML = DEMO.followups.map(function(f) {
-    return '<div class="li-row"><div class="li-name"><strong>' + f.name + '</strong><span style="color:var(--text-muted);font-size:11px;display:block">' + f.company + '</span></div><div class="li-status" style="color:' + (f.due === 'Today' ? 'var(--danger)' : 'var(--warning)') + ';font-size:11px">' + f.due + '</div></div>';
-  }).join('') || '<div style="color:var(--text-muted);padding:10px;font-size:13px">No follow-ups due</div>';
-
-  document.getElementById('dash-sources').innerHTML = DEMO.topSources.map(function(s) {
-    return '<div class="progress-label mb16"><span class="prog-name">' + s.name + ' <span style="color:var(--text-muted);font-size:11px">(' + s.count + ')</span></span><span class="prog-val" style="color:var(--accent)">' + s.pct + '%</span></div><div class="progress-track mb16"><div class="progress-fill" style="width:' + s.pct + '%;background:var(--accent)"></div></div>';
-  }).join('');
+  renderNoDataDashboard();
 }
 
-function fetchDashboardStats() {
-  var p1 = api('/api/leads').then(function(d) { if (!useDemo && d) { var leads = Array.isArray(d) ? d : (d.leads || d.data || []); DEMO.stats.leads = leads.length; } }).catch(function() {});
-  var p2 = api('/api/linkedin/stats').then(function(s) { if (s) Object.assign(DEMO.stats, s); }).catch(function() {});
-  var p3 = api('/api/analytics/pipeline').then(function(p) { if (p) { var items = Array.isArray(p) ? p : (p.stages || p.pipeline || []); if (items.length) DEMO.timeline = items.map(function(x) { return { desc: x.stage + ': ' + x.count + ' leads', time: x.updated_at || '', meta: '' }; }); } }).catch(function() {});
-  Promise.all([p1, p2, p3]).then(function() { renderDashboardDemo(); }).catch(function() { renderDashboardDemo(); });
+function renderNoDataDashboard() {
+  document.getElementById('dash-stats').innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text-muted)">Unable to load dashboard data. <a href="#" onclick="loadDashboard();return false" style="color:var(--accent)">Try again</a></div>';
+  document.getElementById('dash-timeline').innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-muted)">No activity data</div>';
+  document.getElementById('li-pipeline-snapshot').innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-muted)">No pipeline data</div>';
+  document.getElementById('dash-li-feed').innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-muted)">No LinkedIn activity</div>';
+  document.getElementById('dash-followups').innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-muted)">No follow-ups</div>';
+  document.getElementById('dash-sources').innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-muted)">No source data</div>';
 }
 
 function renderTargets(items, elId) {
@@ -1533,10 +1495,10 @@ function generateEmail() {
         'sequence': payload.name + ' — Part 1 of 3: Your Growth Stack'
       };
       var bodies = {
-        'cold': 'Hi ' + (payload.name || '{name}') + ',\n\nI\'ve been following ' + (payload.company || '{company}') + '\'s growth in the ' + (payload.industry || 'industry') + ' space and noticed your team is doing impressive work.\n\nWe help companies like yours streamline lead generation and automate outreach — cutting manual SDR work by 60% while increasing reply rates by 35%.\n\nWould you be open to a 15-minute call this week to explore if this could help ' + (payload.company || 'your team') + '?\n\nBest,\nSarah Johnson\nLead Hunter AI',
-        'followup': 'Hi ' + (payload.name || '{name}') + ',\n\nFollowing up on my previous email. I know you\'re busy, but I wanted to share a quick case study of how we helped a similar ' + (payload.industry || '') + ' company increase their pipeline by 3x in 60 days.\n\nWould 10 minutes next Tuesday work to show you how?\n\nBest,\nSarah Johnson',
+        'cold': 'Hi ' + (payload.name || '{name}') + ',\n\nI\'ve been following ' + (payload.company || '{company}') + '\'s growth in the ' + (payload.industry || 'industry') + ' space and noticed your team is doing impressive work.\n\nWe help companies like yours streamline lead generation and automate outreach — cutting manual SDR work by 60% while increasing reply rates by 35%.\n\nWould you be open to a 15-minute call this week to explore if this could help ' + (payload.company || 'your team') + '?\n\nBest regards,\nKathy Roggers\nFlashlabs',
+        'followup': 'Hi ' + (payload.name || '{name}') + ',\n\nFollowing up on my previous email. I know you\'re busy, but I wanted to share a quick case study of how we helped a similar ' + (payload.industry || '') + ' company increase their pipeline by 3x in 60 days.\n\nWould 10 minutes next Tuesday work to show you how?\n\nBest regards,\nKathy Roggers\nFlashlabs',
         'linkedin-dm': 'Hi ' + (payload.name || '{name}') + '! I came across your profile and was impressed by your work at ' + (payload.company || '{company}') + '. I help SDR teams automate lead gen — would you be open to a quick chat? 🚀',
-        'sequence': 'Hi ' + (payload.name || '{name}') + ',\n\nThis is part 1 of a 3-email series on how top SDR teams are hitting 200%+ of quota using AI-powered outreach.\n\n' + (payload.industry || 'Your') + ' companies that automate lead gen see 40% higher conversion rates.\n\nStay tuned for part 2 tomorrow.\n\nBest,\nSarah Johnson'
+        'sequence': 'Hi ' + (payload.name || '{name}') + ',\n\nThis is part 1 of a 3-email series on how top SDR teams are hitting 200%+ of quota using AI-powered outreach.\n\n' + (payload.industry || 'Your') + ' companies that automate lead gen see 40% higher conversion rates.\n\nStay tuned for part 2 tomorrow.\n\nBest regards,\nKathy Roggers\nFlashlabs'
       };
       subject.textContent = subjects[currentEmailType] || 'Generated Email';
       output.textContent = bodies[currentEmailType] || 'Hi ' + (payload.name || '{name}') + ',\n\nSample outreach email body...';
@@ -1635,17 +1597,41 @@ function sendQuickPrompt(text) {
   sendChatMessage(text);
 }
 
-function sendLinkedInGmailActivity() {
-  var prompt = `Analyze my last 7 days of Gmail emails related to LinkedIn and create an activity tracking table.
+function fillLinkedInGmailPrompt() {
+  var ta = document.getElementById('chat-input');
+  ta.value = `Analyze my last 10 days of Gmail emails related to LinkedIn and create a table.
 
-Include LinkedIn activities such as connection accepted, profile view, message reply, new message, and any other useful LinkedIn notification.
+Include only useful activity:
+status can be Connection accepted, Profile viewed, Message replied, New message, Waiting for response, Job posting, or Other.
 
 Table columns:
-Name | Date | Time | LinkedIn Link | Status | Key Details
+Name, Title, Activity, LinkedIn Link, Status
 
-Make the status short and clear, for example:
-Connection accepted, Profile viewed, Message replied, New message, or Other.`;
-  sendQuickPrompt(prompt);
+if any of detail is not available just write --- in that column
+
+Remove any row where the Name is:
+LinkedIn, Lnkedin, LinkedIn Team, or any generic LinkedIn sender.
+Also if linkedin Link is not person's linkedin DOn't write in table
+
+Also ignore generic promo emails like app prompts, weekly tips, recommendations, or emails with no real person/activity.
+
+Only include real people, recruiters, companies, or meaningful LinkedIn activity.`;
+  ta.focus();
+  ta.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function fillLinkedInNetworkingPrompt() {
+  var ta = document.getElementById('chat-input');
+  ta.value = `You have basic information of my LinkedIn connections I sent create a clean table
+
+Table columns:
+Name, Title, Activity, LinkedIn Link, Status
+
+Status should be Connection sent
+
+Withdraw word is not company don't take this into consideration`;
+  ta.focus();
+  ta.scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
 function formatChatResponse(text) {
@@ -1796,7 +1782,7 @@ function renderLinkedInTracker() {
     { val: 'followup_sent', icon: '🔄', label: 'Follow-up' }
   ];
 
-  document.getElementById('li-feed').innerHTML = feed.length ? ('<div class="table-container" style="overflow-x:auto"><table><thead><tr><th style="padding:8px 10px;font-size:11px">Name</th><th style="padding:8px 10px;font-size:11px">Title</th><th style="padding:8px 10px;font-size:11px">Company</th><th style="padding:8px 10px;font-size:11px">LinkedIn</th><th style="padding:8px 10px;font-size:11px">Status</th><th style="padding:8px 10px;font-size:11px">Actions</th></tr></thead><tbody>' + feed.map(function(a) {
+  document.getElementById('li-feed').innerHTML = '<div style="margin-bottom:8px;display:flex;gap:8px;align-items:center"><label style="font-size:12px;color:var(--text-sec);display:flex;align-items:center;gap:4px;cursor:pointer"><input type="checkbox" id="li-select-all" onchange="liToggleAll(this)"> Select All</label><button class="btn-sm btn-danger" onclick="liDeleteSelected()" id="li-delete-selected" style="display:none">🗑️ Delete Selected (<span id="li-selected-count">0</span>)</button></div>' + (feed.length ? ('<div class="table-container" style="overflow-x:auto"><table><thead><tr><th style="padding:8px 10px;font-size:11px;width:30px"></th><th style="padding:8px 10px;font-size:11px">Name</th><th style="padding:8px 10px;font-size:11px">Title</th><th style="padding:8px 10px;font-size:11px">Activity</th><th style="padding:8px 10px;font-size:11px">LinkedIn</th><th style="padding:8px 10px;font-size:11px">Status</th><th style="padding:8px 10px;font-size:11px">Actions</th></tr></thead><tbody>' + feed.map(function(a) {
     var curIcon = '+';
     var curLabel = (a.type || '').replace(/_/g, ' ');
     for (var i = 0; i < statusOptions.length; i++) {
@@ -1807,6 +1793,7 @@ function renderLinkedInTracker() {
     }).join('');
 
     return '<tr>' +
+      '<td style="padding:8px 10px;border-bottom:1px solid var(--border);text-align:center"><input type="checkbox" class="li-checkbox" value="' + a._id + '" onchange="liUpdateSelected()"></td>' +
       '<td style="padding:8px 10px;border-bottom:1px solid var(--border);font-weight:600;font-size:13px;color:var(--text)">' + (a.name || '—') + '</td>' +
       '<td style="padding:8px 10px;border-bottom:1px solid var(--border);font-size:12px;color:var(--text-sec)">' + (a.title || '—') + '</td>' +
       '<td style="padding:8px 10px;border-bottom:1px solid var(--border);font-size:12px;color:var(--accent)">' + (a.company || '—') + '</td>' +
@@ -1818,7 +1805,7 @@ function renderLinkedInTracker() {
         '<button class="btn-sm btn-danger" onclick="deleteLiActivity(' + a._id + ')" title="Delete Activity">🗑️</button>' +
       '</td>' +
     '</tr>';
-  }).join('') + '</tbody></table></div>') : '<div style="color:var(--text-muted);padding:20px;text-align:center">No activities yet. Parse LinkedIn data or add manually.</div>';
+  }).join('') + '</tbody></table></div>') : '<div style="color:var(--text-muted);padding:20px;text-align:center">No activities yet. Parse LinkedIn data or add manually.</div>');
 
   document.getElementById('li-performance').innerHTML = DEMO.liPerformance.map(function(p) {
     return '<div class="li-row"><span style="flex:1;font-size:13px;color:var(--text-sec)">' + p.label + '</span><span style="font-size:14px;font-weight:600;color:' + (p.good ? 'var(--success)' : 'var(--warning)') + '">' + p.val + '</span></div>';
@@ -1921,63 +1908,168 @@ function parseSmartDump() {
 
 /* === ANALYTICS === */
 function loadAnalytics() {
-  var ok = false;
-  api('/api/analytics/pipeline').then(function() { ok = true; }).catch(function() {}).then(function() {
-    if (ok) {
-      fetchPipeline();
-      fetchBySource();
-    } else {
-      renderAnalyticsDemo();
-    }
+  // Fetch real data from all available APIs
+  Promise.all([
+    api('/api/analytics/pipeline').catch(function() { return null; }),
+    api('/api/analytics/by-source').catch(function() { return null; }),
+    api('/api/leads').catch(function() { return null; }),
+    api('/api/linkedin/stats').catch(function() { return null; }),
+    api('/api/dashboard/summary').catch(function() { return null; })
+  ]).then(function(results) {
+    var pipeline = results[0];
+    var bySource = results[1];
+    var leads = results[2];
+    var liStats = results[3];
+    var summary = results[4];
+    renderAnalytics(pipeline, bySource, leads, liStats, summary);
+  }).catch(function() {
+    renderAnalytics(null, null, null, null, null);
   });
 }
 
-function renderAnalyticsDemo() {
-  var as = DEMO.analytics.stats;
+function renderAnalytics(pipeline, bySource, leadsData, liStats, summary) {
+  // Stats cards
+  var s = summary && summary.stats ? summary.stats : {};
+  var conv = s.conversion_rate != null ? s.conversion_rate + '%' : '—';
+  var replyR = s.reply_rate != null ? s.reply_rate + '%' : '—';
+  var avgSc = summary && summary.sdr_profile ? summary.sdr_profile.rank || '—' : '—';
+  var mtgs = s.meetings_booked != null ? s.meetings_booked : '—';
+  var cpl = pipeline && pipeline.leads_found != null && pipeline.emails_generated != null ? '$' + (pipeline.emails_generated > 0 ? (pipeline.emails_generated / (pipeline.leads_found || 1)).toFixed(2) : '0.00') : '—';
   document.getElementById('analytics-stats').innerHTML = [
-    { label: 'Conversion Rate', val: as.conversionRate, color: 'var(--success)' },
-    { label: 'Reply Rate', val: as.replyRate, color: 'var(--accent)' },
-    { label: 'Avg Score', val: as.avgScore, color: 'var(--warning)' },
-    { label: 'Meetings/Week', val: as.meetingsPerWeek, color: 'var(--success)' },
-    { label: 'Cost Per Lead', val: as.costPerLead, color: 'var(--text)' }
-  ].map(function(s) {
-    return '<div class="stat-card"><div class="stat-label">' + s.label + '</div><div class="stat-value" style="color:' + s.color + '">' + s.val + '</div></div>';
+    { label: 'Conversion Rate', val: conv, color: 'var(--success)' },
+    { label: 'Reply Rate', val: replyR, color: 'var(--accent)' },
+    { label: 'Total Leads', val: (s.total_leads || pipeline && pipeline.leads_found || 0), color: 'var(--warning)' },
+    { label: 'Meetings', val: mtgs, color: 'var(--success)' },
+    { label: 'Emails Sent', val: (s.emails_sent || pipeline && pipeline.emails_sent || 0), color: 'var(--text)' }
+  ].map(function(si) {
+    return '<div class="stat-card"><div class="stat-label">' + si.label + '</div><div class="stat-value" style="color:' + si.color + '">' + si.val + '</div></div>';
   }).join('');
 
-  var pipeline = DEMO.analytics.pipeline;
+  // Pipeline chart
+  var stages = [];
+  if (pipeline && pipeline.leads_found != null) {
+    stages = [
+      { stage: 'Leads', count: pipeline.leads_found },
+      { stage: 'Emails', count: pipeline.emails_sent || 0 },
+      { stage: 'Replies', count: pipeline.replies || 0 },
+      { stage: 'Meetings', count: pipeline.meetings || 0 },
+      { stage: 'Interested', count: pipeline.interested || 0 }
+    ];
+  }
+  if (!stages.length) {
+    stages = [
+      { stage: 'Lead', count: s.total_leads || 0 },
+      { stage: 'Connected', count: 0 },
+      { stage: 'Meeting', count: s.meetings_booked || 0 },
+      { stage: 'Proposal', count: 0 },
+      { stage: 'Won', count: 0 }
+    ];
+  }
   var maxC = 1;
-  pipeline.forEach(function(p) { if (p.count > maxC) maxC = p.count; });
-  var colors = { Lead: 'pl-lead', Connected: 'pl-connected', Meeting: 'pl-meeting', Proposal: 'pl-proposal', Won: 'pl-won' };
-  document.getElementById('pipeline-chart').innerHTML = pipeline.map(function(p) {
+  stages.forEach(function(p) { if (p.count > maxC) maxC = p.count; });
+  var colors = { Lead: 'pl-lead', Leads: 'pl-lead', Connected: 'pl-connected', Emails: 'pl-connected', Replies: 'pl-meeting', Meetings: 'pl-meeting', Meeting: 'pl-meeting', Interested: 'pl-proposal', Proposal: 'pl-proposal', Won: 'pl-won' };
+  document.getElementById('pipeline-chart').innerHTML = stages.map(function(p) {
     return '<div class="pipeline-bar"><div class="pl-label">' + p.stage + '</div><div class="pl-track"><div class="pl-fill ' + (colors[p.stage] || 'pl-lead') + '" style="width:' + Math.round(p.count / maxC * 100) + '%">' + p.count + '</div></div></div>';
   }).join('');
 
-  document.getElementById('by-source-body').innerHTML = DEMO.analytics.bySource.map(function(s) {
-    return '<tr><td>' + s.source + '</td><td>' + s.leads + '</td><td>' + s.contacted + '</td><td><span class="badge badge-high">' + s.conversion + '</span></td><td><div class="progress-track" style="width:80px;display:inline-block;vertical-align:middle"><div class="progress-fill" style="width:' + s.conversion.replace('%','') + '%;background:var(--accent)"></div></div></td></tr>';
-  }).join('');
-}
-
-function fetchPipeline() {
-  api('/api/analytics/pipeline').then(function(p) {
-    if (p) { var items = Array.isArray(p) ? p : (p.stages || p.pipeline || []); if (items.length) DEMO.analytics.pipeline = items; }
-    renderAnalyticsDemo();
-  }).catch(function() { renderAnalyticsDemo(); });
-}
-
-function fetchBySource() {
-  api('/api/analytics/by-source').then(function(s) {
-    if (s) { DEMO.analytics.bySource = Array.isArray(s) ? s : (s.sources || s.data || DEMO.analytics.bySource); }
-    renderAnalyticsDemo();
-  }).catch(function() { renderAnalyticsDemo(); });
+  // By source table
+  var sources = [];
+  if (bySource && Array.isArray(bySource)) {
+    sources = bySource;
+  } else if (leadsData) {
+    var leadsList = Array.isArray(leadsData) ? leadsData : (leadsData.leads || leadsData.data || []);
+    var srcMap = {};
+    leadsList.forEach(function(l) {
+      var src = l.source || 'unknown';
+      if (!srcMap[src]) srcMap[src] = { source: src, leads: 0, contacted: 0, quality_score: 0 };
+      srcMap[src].leads++;
+      srcMap[src].quality_score += l.lead_score || l.score || 0;
+    });
+    for (var k in srcMap) {
+      srcMap[k].quality_score = srcMap[k].leads > 0 ? Math.round(srcMap[k].quality_score / srcMap[k].leads) : 0;
+      sources.push(srcMap[k]);
+    }
+    sources.sort(function(a, b) { return b.leads - a.leads; });
+  }
+  document.getElementById('by-source-body').innerHTML = sources.length ? sources.map(function(s) {
+    return '<tr><td>' + s.source + '</td><td>' + (s.leads || 0) + '</td><td>' + (s.contacted || 0) + '</td><td><span class="badge badge-high">' + (s.reply_rate != null ? s.reply_rate + '%' : (s.quality_score || '—')) + '</span></td><td><div class="progress-track" style="width:80px;display:inline-block;vertical-align:middle"><div class="progress-fill" style="width:' + (s.quality_score || 50) + '%;background:var(--accent)"></div></div></td></tr>';
+  }).join('') : '<tr><td colspan="5" style="text-align:center;color:var(--text-muted)">No lead source data yet</td></tr>';
 }
 
 /* === SDR ACTIVITY === */
 function loadActivity() {
-  renderTargets(DEMO.targets, 'activity-targets');
-  var icons = { email_sent: '📧', call: '📞', meeting: '📅', linkedin: '🔗', research: '🔍', other: '📌' };
-  document.getElementById('activity-log-feed').innerHTML = DEMO.activities.map(function(a) {
-    return '<div class="activity-item"><div class="activity-icon sdr-activity" style="font-size:16px">' + (icons[a.type] || '📌') + '</div><div class="activity-body"><div class="act-title">' + a.title + '</div><div class="act-meta">' + a.meta + '</div></div></div>';
-  }).join('');
+  // Fetch real activity data from APIs
+  Promise.all([
+    api('/api/leads').catch(function() { return null; }),
+    api('/api/linkedin/activities?per_page=50').catch(function() { return null; }),
+    api('/api/dashboard/summary').catch(function() { return null; })
+  ]).then(function(results) {
+    var leadsData = results[0];
+    var liActivities = results[1];
+    var summary = results[2];
+    renderActivity(leadsData, liActivities, summary);
+  }).catch(function() {
+    renderActivity(null, null, null);
+  });
+}
+
+function renderActivity(leadsData, liActivities, summary) {
+  // Targets from summary if available
+  var queue = summary && summary.today_queue ? summary.today_queue : { follow_ups_due: 0, positive_replies_needing_response: 0, meetings_today: 0, leads_needing_enrichment: 0 };
+  var activityTargets = [
+    { name: 'Follow-ups Due', current: queue.follow_ups_due || 0, target: 10, color: 'var(--danger)' },
+    { name: 'Hot Replies', current: queue.positive_replies_needing_response || 0, target: 5, color: 'var(--warning)' },
+    { name: 'Meetings Today', current: queue.meetings_today || 0, target: 3, color: 'var(--success)' },
+    { name: 'Need Enrichment', current: queue.leads_needing_enrichment || 0, target: 10, color: 'var(--accent)' }
+  ];
+  renderTargets(activityTargets, 'activity-targets');
+
+  // Build activity feed from real data
+  var activities = [];
+
+  // LinkedIn activities
+  if (liActivities && liActivities.activities) {
+    liActivities.activities.forEach(function(a) {
+      var icon = '🔗';
+      if (a.activity_type === 'message' || a.activity_type === 'reply_received') icon = '💬';
+      if (a.activity_type === 'meeting_booked') icon = '📅';
+      if (a.activity_type === 'connection_accepted') icon = '✅';
+      if (a.activity_type === 'profile_view') icon = '👤';
+      if (a.activity_type === 'interested') icon = '⭐';
+      activities.push({
+        type: a.activity_type || 'linkedin',
+        title: (a.name || '') + ' — ' + (a.activity_type || '').replace(/_/g, ' '),
+        meta: a.date || a.created_at || '—',
+        icon: icon
+      });
+    });
+  }
+
+  // Lead activity from summary
+  if (summary && summary.recent_activities) {
+    summary.recent_activities.forEach(function(a) {
+      activities.push({
+        type: a.type || 'other',
+        title: a.description || '',
+        meta: a.timestamp || '',
+        icon: a.icon || '📌'
+      });
+    });
+  }
+
+  // Sort by time (most recent first)
+  activities.sort(function(a, b) {
+    return new Date(b.meta) - new Date(a.meta);
+  });
+
+  if (!activities.length) {
+    activities = [{ type: 'other', title: 'No activity data found', meta: '', icon: '📌' }];
+  }
+
+  var icons = { email_sent: '📧', call: '📞', meeting: '📅', linkedin: '🔗', research: '🔍', other: '📌', response: '💬', referral: '🎯' };
+  document.getElementById('activity-log-feed').innerHTML = activities.map(function(a) {
+    return '<div class="activity-item"><div class="activity-icon sdr-activity" style="font-size:16px">' + (icons[a.type] || a.icon || '📌') + '</div><div class="activity-body"><div class="act-title">' + escapeHtml(a.title) + '</div><div class="act-meta">' + escapeHtml(a.meta) + '</div></div></div>';
+  }).join('') || '<div style="padding:20px;text-align:center;color:var(--text-muted)">No activity yet</div>';
 }
 
 function logManualActivity() {
@@ -2048,6 +2140,35 @@ function deleteLiActivity(id) {
     api('/api/linkedin/activities/' + id, { method: 'DELETE' }).catch(function() {});
   }
   DEMO.liFeed = DEMO.liFeed.filter(function(a, i) { return i !== id; });
+  loadLinkedInTracker();
+}
+
+function liToggleAll(el) {
+  var cbs = document.querySelectorAll('.li-checkbox');
+  for (var i = 0; i < cbs.length; i++) cbs[i].checked = el.checked;
+  liUpdateSelected();
+}
+
+function liUpdateSelected() {
+  var cbs = document.querySelectorAll('.li-checkbox:checked');
+  var count = cbs.length;
+  var btn = document.getElementById('li-delete-selected');
+  document.getElementById('li-selected-count').textContent = count;
+  btn.style.display = count > 0 ? 'inline-block' : 'none';
+}
+
+function liDeleteSelected() {
+  var cbs = document.querySelectorAll('.li-checkbox:checked');
+  var ids = [];
+  for (var i = 0; i < cbs.length; i++) ids.push(cbs[i].value);
+  if (ids.length === 0) return;
+  if (!confirm('Delete ' + ids.length + ' selected activity/activities?')) return;
+  if (!useDemo) {
+    api('/api/linkedin/activities/batch-delete', {
+      method: 'POST',
+      body: JSON.stringify({ ids: ids })
+    }).catch(function() {});
+  }
   loadLinkedInTracker();
 }
 </script>

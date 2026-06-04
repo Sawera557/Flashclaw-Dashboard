@@ -62,10 +62,10 @@ def my_dashboard():
     try:
         # Cache owner info
         owners = get_owners()
-        me = next((o for o in owners if o['id'] == '101551557'), {'id': '101551557', 'name': 'Anna Jordan', 'email': ''})
+        me = next((o for o in owners if o['id'] == '555925314'), {'id': '555925314', 'name': 'Kathy Roggers', 'email': ''})
         
-        # My last 30 days deals
-        deals = get_deals_for_owner('101551557', limit=100, last_days=30)
+        # My last 6 months (180 days) deals
+        deals = get_deals_for_owner('555925314', limit=100, last_days=180)
         
         total_val = sum(int(float(d.get('amount', 0) or 0)) for d in deals)
         
