@@ -578,6 +578,7 @@ tr:last-child td{border-bottom:none}
         <span class="quick-prompt" onclick="sendQuickPrompt('Draft a cold LinkedIn message for a VP of Sales')">Draft LI message</span>
         <span class="quick-prompt" onclick="sendQuickPrompt('Analyze my pipeline performance')">Analyze pipeline</span>
         <span class="quick-prompt" onclick="sendQuickPrompt('Summarize best SDR outreach strategies')">SDR strategies</span>
+        <span class="quick-prompt" onclick="sendLinkedInGmailActivity()">📧 LI Email Activity</span>
       </div>
       <div class="chat-input-area">
         <textarea id="chat-input" placeholder="Ask the AI agent... (Shift+Enter for new line, Enter to send)" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChatMessage()}"></textarea>
@@ -854,7 +855,7 @@ tr:last-child td{border-bottom:none}
 </div>
 
 <script>
-const API_BASE = 'https://minds-poor-drawn-penetration.trycloudflare.com';
+const API_BASE = 'https://volunteer-efficient-discussions-laid.trycloudflare.com';
 let authToken = localStorage.getItem('lhai_token') || null;
 let useDemo = false;
 let activeStreamReader = null;
@@ -1632,6 +1633,19 @@ function sendQuickPrompt(text) {
   var ta = document.getElementById('chat-input');
   ta.value = text;
   sendChatMessage(text);
+}
+
+function sendLinkedInGmailActivity() {
+  var prompt = `Analyze my last 7 days of Gmail emails related to LinkedIn and create an activity tracking table.
+
+Include LinkedIn activities such as connection accepted, profile view, message reply, new message, and any other useful LinkedIn notification.
+
+Table columns:
+Name | Date | Time | LinkedIn Link | Status | Key Details
+
+Make the status short and clear, for example:
+Connection accepted, Profile viewed, Message replied, New message, or Other.`;
+  sendQuickPrompt(prompt);
 }
 
 function formatChatResponse(text) {
