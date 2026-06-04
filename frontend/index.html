@@ -300,6 +300,50 @@ tr:last-child td{border-bottom:none}
 .chart-bar-label{font-size:9px;color:var(--text-muted);margin-top:4px;white-space:nowrap;text-align:center}
 .chart-bar-val{font-size:10px;font-weight:600;color:var(--text);margin-bottom:2px}
 
+/* Chart containers for dashboard overhaul */
+.chart-container{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;box-shadow:var(--shadow)}
+.chart-title{font-size:13px;font-weight:600;margin-bottom:12px;color:var(--text)}
+
+/* Refresh indicator */
+.last-refresh{font-size:11px;color:var(--text-muted);display:flex;align-items:center;gap:6px}
+.last-refresh .refresh-dot{width:6px;height:6px;border-radius:50%;background:var(--success);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+@keyframes fadeInUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.stat-card updating{animation:fadeInUp .3s ease}
+
+/* Funnel chart */
+.funnel-chart{display:flex;flex-direction:column;align-items:center;gap:5px;padding:4px 0}
+.funnel-stage{display:flex;align-items:center;justify-content:center;height:34px;border-radius:6px;font-size:13px;font-weight:600;color:#fff;transition:width .5s cubic-bezier(.4,0,.2,1);white-space:nowrap;overflow:hidden;min-width:40px;position:relative;box-shadow:0 2px 8px rgba(0,0,0,.15)}
+.funnel-stage .funnel-label{position:absolute;left:12px;font-size:11px;font-weight:500;opacity:.95;text-shadow:0 1px 2px rgba(0,0,0,.2)}
+.funnel-stage .funnel-count{position:absolute;right:12px;font-size:12px;font-weight:700;text-shadow:0 1px 2px rgba(0,0,0,.2)}
+.funnel-stage .funnel-pct{position:absolute;right:12px;top:18px;font-size:9px;font-weight:500;opacity:.7}
+.funnel-connector{text-align:center;font-size:10px;color:var(--text-muted);line-height:1;padding:2px 0;opacity:.6}
+
+/* Horizontal bar for source performance */
+.hbar-chart{display:flex;flex-direction:column;gap:8px}
+.hbar-row{display:flex;align-items:center;gap:10px}
+.hbar-row .hbar-label{font-size:12px;color:var(--text-sec);flex-shrink:0;min-width:80px}
+.hbar-row .hbar-track{flex:1;height:22px;background:var(--card);border-radius:4px;overflow:hidden;position:relative}
+.hbar-row .hbar-fill{height:100%;border-radius:4px;transition:width .5s ease;display:flex;align-items:center;justify-content:flex-end;padding-right:8px;font-size:11px;font-weight:600;color:#fff;min-width:30px}
+.hbar-row .hbar-count{font-size:11px;color:var(--text-muted);flex-shrink:0;min-width:30px;font-family:'JetBrains Mono',monospace}
+
+/* Weekly bar chart */
+.weekly-chart{display:flex;align-items:flex-end;gap:4px;height:180px;padding:8px 0 4px}
+.weekly-col{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%}
+.weekly-bar{width:100%;max-width:32px;border-radius:3px 3px 0 0;min-height:2px;transition:height .3s}
+.weekly-bar-label{font-size:9px;color:var(--text-muted);margin-top:4px;white-space:nowrap;text-align:center}
+.weekly-bar-val{font-size:9px;font-weight:600;color:var(--text);margin-bottom:1px}
+
+/* Legend */
+.chart-legend{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:8px}
+.chart-legend-item{display:flex;align-items:center;gap:4px;font-size:10px;color:var(--text-muted)}
+.chart-legend-item .legend-dot{width:8px;height:8px;border-radius:2px}
+
+/* Pie donut mini */
+.mini-donut{display:flex;flex-wrap:wrap;gap:6px;justify-content:center}
+.mini-donut-item{font-size:10px;color:var(--text-muted);display:flex;align-items:center;gap:4px}
+.mini-donut-item .donut-dot{width:6px;height:6px;border-radius:50%}
+
 /* Dump panel */
 .dump-panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;min-height:200px;max-height:500px;overflow-y:auto}
 .dump-item{padding:10px 0;border-bottom:1px solid var(--border);font-size:13px}
@@ -393,15 +437,22 @@ tr:last-child td{border-bottom:none}
 <header class="topbar">
   <div>
     <h2 id="page-title">Dashboard</h2>
-    <div class="sub" id="page-sub">Sales Command Center · AI-Powered SDR Operating System</div>
+    <div class="flex gap8 items-center">
+      <div class="sub" id="page-sub">Sales Command Center · AI-Powered SDR Operating System</div>
+      <div class="last-refresh" id="refresh-indicator"><span class="refresh-dot"></span> <span id="refresh-text">auto-updating</span></div>
+    </div>
   </div>
-  <span style="font-size:12px;color:var(--text-muted)">v2.0</span>
+  <div class="flex gap8 items-center">
+    <button class="btn-secondary btn-sm" onclick="refreshDashboard()" id="refresh-btn" title="Refresh now">🔄</button>
+    <span style="font-size:12px;color:var(--text-muted)">v2.0</span>
+  </div>
 </header>
 
 <div class="content-area">
 
-<!-- DASHBOARD - SDR Command Center -->
+<!-- DASHBOARD - SDR Command Center (Overhauled) -->
 <div class="tab-content active" id="tab-dashboard">
+  <!-- SDR Identity Bar (enhanced) -->
   <div class="sdr-bar" id="sdr-bar">
     <div class="sdr-avatar">?</div>
     <div class="sdr-info">
@@ -415,29 +466,47 @@ tr:last-child td{border-bottom:none}
     </div>
   </div>
 
+  <!-- KPI Cards Row (7 stat cards) -->
   <div class="stat-grid" id="dash-stats">
     <div class="loading" style="grid-column:1/-1"><span class="spinner"></span> Loading dashboard data...</div>
   </div>
 
-  <div class="grid-2-1">
-    <div class="grid-card" style="grid-row:span 2;">
-      <div class="section-title">Activity Timeline</div>
-      <div class="timeline" id="dash-timeline"></div>
+  <!-- CHARTS ROW - grid-3 -->
+  <div class="grid-3 mb16">
+    <div class="chart-container">
+      <div class="chart-title">🔻 Pipeline Funnel</div>
+      <div class="funnel-chart" id="dash-funnel"></div>
+      <div id="funnel-stats" style="font-size:11px;color:var(--text-muted);margin-top:6px;text-align:center"></div>
+    </div>
+    <div class="chart-container">
+      <div class="chart-title">📊 Weekly Activity</div>
+      <div class="weekly-chart" id="dash-weekly-chart"></div>
+      <div class="chart-legend" id="dash-weekly-legend"></div>
+    </div>
+    <div class="chart-container">
+      <div class="chart-title">📋 Activity Timeline</div>
+      <div class="timeline" id="dash-timeline" style="max-height:280px;overflow-y:auto"></div>
+    </div>
+  </div>
+
+  <!-- Second Row - grid-2-1: Source Performance + Queue & AI stacked -->
+  <div class="grid-2-1 mb16">
+    <div class="chart-container" style="grid-row:span 2;">
+      <div class="chart-title">📈 Lead Source Performance</div>
+      <div class="hbar-chart" id="dash-sources"></div>
     </div>
     <div class="grid-card">
-      <div class="section-title">Today's Work Queue</div>
+      <div class="section-title" style="margin-top:0">Today's Work Queue</div>
       <div id="dash-targets"></div>
     </div>
     <div class="grid-card">
-      <div class="section-title">🤖 AI Recommended Actions</div>
+      <div class="section-title" style="margin-top:0">🤖 AI Recommended Actions</div>
       <div id="ai-rec-list"></div>
       <div class="mt16" style="font-size:12px;color:var(--text-muted)">Powered by Groq LPU Inference Engine</div>
     </div>
   </div>
 
-  <div class="section-title">Pipeline Snapshot</div>
-  <div class="card mb16" id="li-pipeline-snapshot"></div>
-
+  <!-- Bottom grid-3: Outreach, Follow-ups, Outreach by Type -->
   <div class="grid-3">
     <div class="grid-card">
       <div class="section-title">Recent Outreach Activity</div>
@@ -448,8 +517,9 @@ tr:last-child td{border-bottom:none}
       <div id="dash-followups"></div>
     </div>
     <div class="grid-card">
-      <div class="section-title">Lead Source Performance</div>
-      <div id="dash-sources"></div>
+      <div class="section-title">📊 Outreach by Type</div>
+      <div class="mini-donut" id="dash-outreach-type"></div>
+      <div id="dash-outreach-bars" style="margin-top:8px"></div>
     </div>
   </div>
 </div>
@@ -896,6 +966,8 @@ let activeStreamReader = null;
 let currentEmailType = 'cold';
 let selectedSources = new Set();
 let leadsPage = 1;
+let dashboardRefreshInterval = null;
+let lastDashboardData = null;
 
 const pageTitles = {
   'dashboard': ['Dashboard', 'Sales Command Center · AI-Powered SDR Operating System'],
@@ -1195,10 +1267,27 @@ function hsModal(ownerId) { /* not needed for owner-specific view */ }
 
 /* === DASHBOARD — Full SDR Command Center === */
 function loadDashboard() {
+  var refreshBtn = document.getElementById('refresh-btn');
+  if (refreshBtn) refreshBtn.textContent = '⏳';
+  
+  // Set up auto-refresh (every 60s)
+  if (dashboardRefreshInterval) clearInterval(dashboardRefreshInterval);
+  dashboardRefreshInterval = setInterval(function() {
+    api('/api/dashboard/summary').then(function(d) {
+      useDemo = false;
+      lastDashboardData = d;
+      renderRealDashboard(d);
+      updateRefreshTime();
+    }).catch(function() {});
+  }, 60000);
+
   api('/api/dashboard/summary')
     .then(function(d) {
       useDemo = false;
+      lastDashboardData = d;
       renderRealDashboard(d);
+      updateRefreshTime();
+      if (refreshBtn) refreshBtn.textContent = '🔄';
     })
     .catch(function() {
       // Fallback: try loading legacy stats, then demo
@@ -1245,7 +1334,7 @@ function renderRealDashboard(d) {
     { label: 'Pipeline Value', value: '$' + (stats.pipeline_value || 0).toLocaleString(), subtitle: '', color: 'var(--accent)' },
   ];
   document.getElementById('dash-stats').innerHTML = kpiCards.map(function(c) {
-    return '<div class="stat-card"><div class="stat-label">' + c.label + '</div><div class="stat-value" style="color:' + c.color + '">' + c.value + '</div><div class="stat-change up">' + c.subtitle + '</div></div>';
+    return '<div class="stat-card" style="animation:fadeInUp .3s ease"><div class="stat-label">' + c.label + '</div><div class="stat-value" style="color:' + c.color + '">' + c.value + '</div><div class="stat-change up">' + c.subtitle + '</div></div>';
   }).join('');
 
   // ── Activity Timeline ──
@@ -1281,29 +1370,16 @@ function renderRealDashboard(d) {
   }
 
   // ── Pipeline Snapshot ──
-  var pipelineStages = pipeline.stages || [];
-  var maxCount = 1;
-  pipelineStages.forEach(function(s) { if (s.count > maxCount) maxCount = s.count; });
-  if (pipelineStages.length > 0) {
-    document.getElementById('li-pipeline-snapshot').innerHTML = pipelineStages.map(function(s) {
-      var pct = Math.round(s.count / maxCount * 100);
-      var color = pct >= 70 ? 'var(--success)' : pct >= 30 ? 'var(--warning)' : 'var(--accent)';
-      var valStr = s.value ? ' ($' + s.value.toLocaleString() + ')' : '';
-      return '<div class="pipeline-bar"><div class="pl-label">' + s.stage + valStr + '</div><div class="pl-track"><div class="pl-fill" style="width:' + Math.max(pct,8) + '%;background:' + color + '">' + s.count + '</div></div></div>';
-    }).join('');
-  } else {
-    document.getElementById('li-pipeline-snapshot').innerHTML = '<div style="padding:20px;color:var(--text-muted);font-size:13px;text-align:center">No pipeline data yet — start hunting!</div>';
-  }
-
-  // ── Source Performance ──
+  // ── Source Performance (horizontal bars) ──
   var sourcesEl = document.getElementById('dash-sources');
   if (sources.length > 0) {
     var maxSourceLeads = 1;
     sources.forEach(function(s) { if (s.leads > maxSourceLeads) maxSourceLeads = s.leads; });
+    var sourceColors = {linkedin:'#5b8def', web: 'var(--accent)', referral: 'var(--success)', email: 'var(--warning)', manual: 'var(--text-muted)', google_maps: '#e8734a', apollo: '#c44dff', hunter: '#f5a623'};
     sourcesEl.innerHTML = sources.map(function(s) {
-      var pct = Math.round(s.leads / maxSourceLeads * 100);
-      return '<div class="progress-label mb16"><span class="prog-name">' + escapeHtml(s.source) + ' <span style="color:var(--text-muted);font-size:11px">(' + s.leads + ' leads · ' + s.reply_rate + '% reply)</span></span><span class="prog-val" style="color:var(--success)">' + (s.quality_score || 0) + '</span></div>' +
-        '<div class="progress-track mb16"><div class="progress-fill" style="width:' + pct + '%;background:var(--accent)"></div></div>';
+      var pct = Math.max(5, Math.round(s.leads / maxSourceLeads * 100));
+      var color = sourceColors[s.source] || 'var(--accent)';
+      return '<div class="hbar-row"><div class="hbar-label">' + escapeHtml(capitalize(s.source)) + '</div><div class="hbar-track"><div class="hbar-fill" style="width:' + pct + '%;background:' + color + '">' + s.leads + '</div></div><div class="hbar-count">' + (s.reply_rate || '—') + '% reply</div></div>';
     }).join('');
   } else {
     sourcesEl.innerHTML = '<div style="color:var(--text-muted);font-size:13px;padding:10px">Add leads from different sources to see performance here.</div>';
@@ -1321,6 +1397,117 @@ function renderRealDashboard(d) {
   document.getElementById('dash-followups').innerHTML = queue.follow_ups_due > 0 ?
     '<div style="padding:16px;text-align:center"><div style="font-size:32px;font-weight:700;color:var(--danger)">' + queue.follow_ups_due + '</div><div style="font-size:12px;color:var(--text-muted)">contacts need follow-up</div><button class="btn-secondary mt16" onclick="showTab(\'leads\')">View Leads</button></div>' :
     '<div style="padding:20px;color:var(--text-muted);font-size:13px;text-align:center">No follow-ups due. 🎉</div>';
+
+  // ── Pipeline Funnel Chart ──
+  var rawStages = pipeline.stages || [];
+  var funnelColors = ['#7c6dfa', '#5b8def', '#f5a623', '#3ecf8e', '#f5485a', '#c44dff'];
+  // Map to canonical sales order: New → Contacted → Replied → Interested → Meeting Booked
+  var stageOrder = { 'New':0, 'Contacted':1, 'Replied':2, 'Interested':3, 'Meeting_booked':4, 'Meeting Booked':4, 'Qualified':2, 'Closed':5 };
+  var sorted = [].concat(rawStages).sort(function(a,b) {
+    return (stageOrder[a.stage] !== undefined ? stageOrder[a.stage] : 99) - (stageOrder[b.stage] !== undefined ? stageOrder[b.stage] : 99);
+  });
+  var funnelEl = document.getElementById('dash-funnel');
+  if (sorted.length > 0) {
+    var topCount = sorted[0].count;
+    var bottomCount = sorted[sorted.length-1].count;
+    // Use sqrt scaling so the visual drop from 96→1 looks dramatic but 1-count stages are clearly smaller
+    var maxSqrt = 1;
+    sorted.forEach(function(s) { var sq = Math.sqrt(s.count); if (sq > maxSqrt) maxSqrt = sq; });
+    // Overall conversion rate (top to bottom)
+    document.getElementById('funnel-stats').innerHTML = topCount ? '<span style="color:var(--success);font-weight:600">' + Math.round(bottomCount / topCount * 100) + '%</span> overall · <span style="color:var(--accent);font-weight:500">' + topCount + '</span> leads in → <span style="color:var(--warning);font-weight:500">' + bottomCount + '</span> to close' : '';
+    funnelEl.innerHTML = sorted.map(function(s, i) {
+      var widthPct = Math.max(20, Math.round(Math.sqrt(s.count) / maxSqrt * 100));
+      var color = funnelColors[i % funnelColors.length];
+      var prevCount = i > 0 ? sorted[i-1].count : s.count;
+      var convPct = prevCount > 0 ? Math.round(s.count / prevCount * 100) : 100;
+      var valStr = s.value ? ' · $' + s.value.toLocaleString() : '';
+      var convStr = i > 0 ? '<span style="font-size:9px;opacity:.5;margin:0 4px;font-weight:400">' + convPct + '%→</span>' : '';
+      return '<div class="funnel-stage" style="width:' + widthPct + '%;background:linear-gradient(135deg,' + color + ',' + color + 'dd)">' +
+        '<span class="funnel-label">' + escapeHtml(s.stage.replace(/_/g,' ')) + '</span>' +
+        '<span class="funnel-count">' + convStr + s.count + valStr + '</span></div>';
+    }).join('');
+  } else {
+    funnelEl.innerHTML = '<div style="color:var(--text-muted);font-size:13px;padding:20px;text-align:center">No pipeline data yet</div>';
+  }
+
+  // ── Weekly Activity Bar Chart ──
+  var weeklyEl = document.getElementById('dash-weekly-chart');
+  var weeklyLegend = document.getElementById('dash-weekly-legend');
+  if (activities.length > 0) {
+    // Build 7-day map grouped by type (emails, linkedin, meetings)
+    var dayMap = {};
+    var now = new Date();
+    for (var i = 6; i >= 0; i--) {
+      var d = new Date(now);
+      d.setDate(d.getDate() - i);
+      var key = d.toISOString().slice(0, 10);
+      dayMap[key] = { date: key, emails: 0, linkedin: 0, meetings: 0 };
+    }
+    activities.forEach(function(a) {
+      if (!a.timestamp) return;
+      var dayKey = a.timestamp.slice(0, 10);
+      if (!dayMap[dayKey]) {
+        // If the activity falls outside our 7-day window, map it to the closest day
+        dayKey = Object.keys(dayMap)[0];
+      }
+      if (dayMap[dayKey]) {
+        var t = (a.type || '').toLowerCase();
+        if (t.indexOf('email') >= 0) dayMap[dayKey].emails++;
+        else if (t.indexOf('linkedin') >= 0 || t.indexOf('connection') >= 0 || t.indexOf('dm') >= 0) dayMap[dayKey].linkedin++;
+        else if (t.indexOf('meeting') >= 0 || t.indexOf('call') >= 0) dayMap[dayKey].meetings++;
+        else dayMap[dayKey].emails++; // default to emails
+      }
+    });
+    var days = Object.keys(dayMap).sort();
+    var maxDayVal = 1;
+    days.forEach(function(k) {
+      var total = dayMap[k].emails + dayMap[k].linkedin + dayMap[k].meetings;
+      if (total > maxDayVal) maxDayVal = total;
+    });
+    var barColors = { emails: 'var(--accent)', linkedin: '#5b8def', meetings: 'var(--success)' };
+    var barLabels = { emails: '📧', linkedin: '🔗', meetings: '📅' };
+    weeklyEl.innerHTML = days.map(function(k) {
+      var d = dayMap[k];
+      var total = d.emails + d.linkedin + d.meetings;
+      var hFactor = maxDayVal > 0 ? 160 / maxDayVal : 1;
+      var emailH = Math.max(2, Math.round(d.emails * hFactor));
+      var liH = Math.max(2, Math.round(d.linkedin * hFactor));
+      var meetH = Math.max(2, Math.round(d.meetings * hFactor));
+      return '<div class="weekly-col"><div class="weekly-bar-val">' + total + '</div>' +
+        '<div class="weekly-bar" style="height:' + meetH + 'px;background:' + barColors.meetings + ';opacity:.85"></div>' +
+        '<div class="weekly-bar" style="height:' + liH + 'px;background:' + barColors.linkedin + ';opacity:.85"></div>' +
+        '<div class="weekly-bar" style="height:' + emailH + 'px;background:' + barColors.emails + ';opacity:.85"></div>' +
+        '<div class="weekly-bar-label">' + (k.slice(5)) + '</div></div>';
+    }).join('');
+    weeklyLegend.innerHTML =
+      '<div class="chart-legend-item"><span class="legend-dot" style="background:' + barColors.emails + '"></span>Emails</div>' +
+      '<div class="chart-legend-item"><span class="legend-dot" style="background:' + barColors.linkedin + '"></span>LinkedIn</div>' +
+      '<div class="chart-legend-item"><span class="legend-dot" style="background:' + barColors.meetings + '"></span>Meetings</div>';
+  } else {
+    weeklyEl.innerHTML = '<div style="color:var(--text-muted);font-size:13px;padding:40px;text-align:center;width:100%">No recent activity data</div>';
+    weeklyLegend.innerHTML = '';
+  }
+
+  // ── Outreach by Type (mini bar chart) ──
+  var outreachTypes = { emails: 0, linkedin_connections: 0, linkedin_dms: 0, meetings: 0, replies: 0 };
+  activities.forEach(function(a) {
+    var t = (a.type || '').toLowerCase();
+    if (t.indexOf('email') >= 0) outreachTypes.emails++;
+    else if (t.indexOf('connection') >= 0) outreachTypes.linkedin_connections++;
+    else if (t.indexOf('dm') >= 0 || t.indexOf('message') >= 0) outreachTypes.linkedin_dms++;
+    else if (t.indexOf('meeting') >= 0 || t.indexOf('call') >= 0) outreachTypes.meetings++;
+    else if (t.indexOf('reply') >= 0) outreachTypes.replies++;
+  });
+  var totalOutreach = outreachTypes.emails + outreachTypes.linkedin_connections + outreachTypes.linkedin_dms + outreachTypes.meetings + outreachTypes.replies || 1;
+  var typeLabels = { emails: '📧 Emails', linkedin_connections: '🔗 LI Connects', linkedin_dms: '💬 LI DMs', meetings: '📅 Meetings', replies: '📥 Replies' };
+  var typeColors = { emails: 'var(--accent)', linkedin_connections: '#5b8def', linkedin_dms: 'var(--warning)', meetings: 'var(--success)', replies: '#c44dff' };
+  var outreachHtml = Object.keys(outreachTypes).map(function(k) {
+    var count = outreachTypes[k];
+    var pct = Math.round(count / totalOutreach * 100);
+    if (count === 0) return '';
+    return '<div class="hbar-row"><div class="hbar-label" style="font-size:11px;min-width:80px">' + typeLabels[k] + '</div><div class="hbar-track" style="height:18px"><div class="hbar-fill" style="width:' + pct + '%;background:' + typeColors[k] + ';height:18px;font-size:10px">' + count + '</div></div><div class="hbar-count" style="font-size:10px">' + pct + '%</div></div>';
+  }).filter(Boolean).join('');
+  document.getElementById('dash-outreach-bars').innerHTML = outreachHtml || '<div style="color:var(--text-muted);font-size:12px;text-align:center">No outreach data</div>';
 }
 
 function renderMyDashboard(d) {
@@ -1346,12 +1533,6 @@ function renderMyDashboard(d) {
       '<div class="progress-track"><div class="progress-fill" style="width:' + s.pct + '%;background:' + color + '"></div></div></div>';
   }).join('');
 
-  // Pipeline snapshot
-  document.getElementById('li-pipeline-snapshot').innerHTML = (d.stages || []).map(function(s) {
-    var color = s.pct >= 50 ? 'var(--success)' : s.pct >= 20 ? 'var(--warning)' : 'var(--accent)';
-    return '<div class="pipeline-bar"><div class="pl-label">' + s.stage + '</div><div class="pl-track"><div class="pl-fill" style="width:' + s.pct + '%;background:' + color + '">' + s.count + '</div></div></div>';
-  }).join('');
-
   // Source breakdown (by stage name for now)
   var totalDeals = d.total_deals || 1;
   document.getElementById('dash-sources').innerHTML = (d.stages || []).map(function(s) {
@@ -1371,10 +1552,41 @@ function renderDashboardDemo() {
   renderNoDataDashboard();
 }
 
+function updateRefreshTime() {
+  var el = document.getElementById('refresh-text');
+  if (!el) return;
+  el.textContent = 'updated ' + new Date().toLocaleTimeString();
+  var dot = document.querySelector('.refresh-dot');
+  if (dot) {
+    dot.style.animation = 'none';
+    setTimeout(function() { dot.style.animation = 'pulse 2s infinite'; }, 10);
+  }
+  var btn = document.getElementById('refresh-btn');
+  if (btn) btn.textContent = '🔄';
+}
+
+function refreshDashboard() {
+  var btn = document.getElementById('refresh-btn');
+  if (btn) btn.textContent = '⏳';
+  if (lastDashboardData) {
+    renderRealDashboard(lastDashboardData);
+    updateRefreshTime();
+    if (btn) btn.textContent = '🔄';
+  }
+  // Also fetch fresh data in background
+  api('/api/dashboard/summary').then(function(d) {
+    useDemo = false;
+    lastDashboardData = d;
+    renderRealDashboard(d);
+    updateRefreshTime();
+  }).catch(function() {});
+}
+
 function renderNoDataDashboard() {
   document.getElementById('dash-stats').innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text-muted)">Unable to load dashboard data. <a href="#" onclick="loadDashboard();return false" style="color:var(--accent)">Try again</a></div>';
   document.getElementById('dash-timeline').innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-muted)">No activity data</div>';
-  document.getElementById('li-pipeline-snapshot').innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-muted)">No pipeline data</div>';
+  document.getElementById('dash-funnel').innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-muted)">No pipeline data</div>';
+  document.getElementById('dash-weekly-chart').innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-muted)">No activity data</div>';
   document.getElementById('dash-li-feed').innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-muted)">No LinkedIn activity</div>';
   document.getElementById('dash-followups').innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-muted)">No follow-ups</div>';
   document.getElementById('dash-sources').innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-muted)">No source data</div>';
