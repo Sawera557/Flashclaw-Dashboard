@@ -292,6 +292,13 @@ tr:last-child td{border-bottom:none}
 .health-ok{background:var(--success);box-shadow:0 0 6px rgba(62,207,142,.4)}
 .health-warn{background:var(--warning);box-shadow:0 0 6px rgba(245,166,35,.4)}
 .health-fail{background:var(--danger);box-shadow:0 0 6px rgba(245,72,90,.4)}
+.btn-period{background:var(--card);border:1px solid var(--border);color:var(--text-sec);cursor:pointer;font-size:12px;padding:6px 16px;border-radius:var(--radius-sm)}
+.btn-period.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+.chart-bar-row{display:flex;align-items:flex-end;gap:4px;height:100px;padding:8px 0}
+.chart-bar-col{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%}
+.chart-bar{width:100%;max-width:30px;border-radius:3px 3px 0 0;min-height:2px;transition:height .3s}
+.chart-bar-label{font-size:9px;color:var(--text-muted);margin-top:4px;white-space:nowrap;text-align:center}
+.chart-bar-val{font-size:10px;font-weight:600;color:var(--text);margin-bottom:2px}
 
 /* Dump panel */
 .dump-panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;min-height:200px;max-height:500px;overflow-y:auto}
@@ -696,17 +703,35 @@ tr:last-child td{border-bottom:none}
 
 <!-- SDR ACTIVITY -->
 <div class="tab-content" id="tab-activity">
+  <!-- Period Tabs -->
+  <div class="period-tabs" style="display:flex;gap:8px;margin-bottom:16px">
+    <button class="btn-sm btn-period active" onclick="loadActivity('daily')" id="period-daily">📅 Daily</button>
+    <button class="btn-sm btn-period" onclick="loadActivity('weekly')" id="period-weekly">📆 Weekly</button>
+    <button class="btn-sm btn-period" onclick="loadActivity('monthly')" id="period-monthly">🗓️ Monthly</button>
+  </div>
+
+  <!-- Metrics Cards -->
+  <div class="stat-grid" id="activity-metrics">
+    <div class="stat-card"><div class="stat-label">Emails Sent</div><div class="stat-value" id="act-emails_sent" style="color:var(--accent)">—</div></div>
+    <div class="stat-card"><div class="stat-label">Connections Sent</div><div class="stat-value" id="act-connections_sent" style="color:#5b8def">—</div></div>
+    <div class="stat-card"><div class="stat-label">Replies</div><div class="stat-value" id="act-replies" style="color:var(--warning)">—</div></div>
+    <div class="stat-card"><div class="stat-label">Meetings</div><div class="stat-value" id="act-meetings" style="color:var(--success)">—</div></div>
+    <div class="stat-card"><div class="stat-label">Positive Replies</div><div class="stat-value" id="act-positive_replies" style="color:var(--danger)">—</div></div>
+  </div>
+
+  <!-- Charts -->
   <div class="grid-2">
     <div class="grid-card">
-      <div class="section-title">Activity Log</div>
-      <div class="activity-feed" id="activity-log-feed"></div>
+      <div class="section-title">Daily Trend</div>
+      <div id="act-chart-daily" style="min-height:160px;padding:12px"></div>
     </div>
     <div class="grid-card">
-      <div class="section-title">Today's Targets</div>
-      <div id="activity-targets"></div>
+      <div class="section-title">Weekly Trend</div>
+      <div id="act-chart-weekly" style="min-height:160px;padding:12px"></div>
     </div>
   </div>
 
+  <!-- Manual Activity Log (kept from original) -->
   <div class="card mt16">
     <div class="section-title">Manual Activity Log</div>
     <div class="form-row">
@@ -1100,7 +1125,7 @@ function showTab(name) {
   if (name === 'linkedin-tracker') loadLinkedInTracker();
   if (name === 'ai-agent') { /* chat already loaded */ }
   if (name === 'analytics') loadAnalytics();
-  if (name === 'activity') loadActivity();
+  if (name === 'activity') loadActivity('weekly');
   if (name === 'admin') loadAdmin();
   if (name === 'hubspot') loadHubSpot();
 }
@@ -1997,79 +2022,133 @@ function renderAnalytics(pipeline, bySource, leadsData, liStats, summary) {
 }
 
 /* === SDR ACTIVITY === */
-function loadActivity() {
-  // Fetch real activity data from APIs
-  Promise.all([
-    api('/api/leads').catch(function() { return null; }),
-    api('/api/linkedin/activities?per_page=50').catch(function() { return null; }),
-    api('/api/dashboard/summary').catch(function() { return null; })
-  ]).then(function(results) {
-    var leadsData = results[0];
-    var liActivities = results[1];
-    var summary = results[2];
-    renderActivity(leadsData, liActivities, summary);
-  }).catch(function() {
-    renderActivity(null, null, null);
-  });
+function loadActivity(period) {
+  if (!period) period = 'weekly';
+  // Update active tab
+  document.querySelectorAll('.btn-period').forEach(function(b) { b.classList.remove('active'); });
+  var btn = document.getElementById('period-' + period);
+  if (btn) btn.classList.add('active');
+
+  api('/api/activity?period=' + period)
+    .then(function(data) {
+      renderActivity(data);
+    })
+    .catch(function() {
+      // Fallback: show empty state
+      renderActivity(null);
+    });
 }
 
-function renderActivity(leadsData, liActivities, summary) {
-  // Targets from summary if available
-  var queue = summary && summary.today_queue ? summary.today_queue : { follow_ups_due: 0, positive_replies_needing_response: 0, meetings_today: 0, leads_needing_enrichment: 0 };
-  var activityTargets = [
-    { name: 'Follow-ups Due', current: queue.follow_ups_due || 0, target: 10, color: 'var(--danger)' },
-    { name: 'Hot Replies', current: queue.positive_replies_needing_response || 0, target: 5, color: 'var(--warning)' },
-    { name: 'Meetings Today', current: queue.meetings_today || 0, target: 3, color: 'var(--success)' },
-    { name: 'Need Enrichment', current: queue.leads_needing_enrichment || 0, target: 10, color: 'var(--accent)' }
+function renderActivity(data) {
+  if (!data || !data.totals) {
+    document.getElementById('activity-metrics').innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text-muted)">No activity data</div>';
+    document.getElementById('act-chart-daily').innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-muted)">No data</div>';
+    document.getElementById('act-chart-weekly').innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-muted)">No data</div>';
+    return;
+  }
+
+  var t = data.totals;
+  var metrics = [
+    { id: 'act-emails_sent', label: 'Emails Sent', val: t.emails_sent, color: 'var(--accent)' },
+    { id: 'act-connections_sent', label: 'Connections Sent', val: t.connections_sent, color: '#5b8def' },
+    { id: 'act-replies', label: 'Replies', val: t.replies, color: 'var(--warning)' },
+    { id: 'act-meetings', label: 'Meetings', val: t.meetings, color: 'var(--success)' },
+    { id: 'act-positive_replies', label: 'Positive Replies', val: t.positive_replies, color: 'var(--danger)' }
   ];
-  renderTargets(activityTargets, 'activity-targets');
 
-  // Build activity feed from real data
-  var activities = [];
-
-  // LinkedIn activities
-  if (liActivities && liActivities.activities) {
-    liActivities.activities.forEach(function(a) {
-      var icon = '🔗';
-      if (a.activity_type === 'message' || a.activity_type === 'reply_received') icon = '💬';
-      if (a.activity_type === 'meeting_booked') icon = '📅';
-      if (a.activity_type === 'connection_accepted') icon = '✅';
-      if (a.activity_type === 'profile_view') icon = '👤';
-      if (a.activity_type === 'interested') icon = '⭐';
-      activities.push({
-        type: a.activity_type || 'linkedin',
-        title: (a.name || '') + ' — ' + (a.activity_type || '').replace(/_/g, ' '),
-        meta: a.date || a.created_at || '—',
-        icon: icon
-      });
-    });
-  }
-
-  // Lead activity from summary
-  if (summary && summary.recent_activities) {
-    summary.recent_activities.forEach(function(a) {
-      activities.push({
-        type: a.type || 'other',
-        title: a.description || '',
-        meta: a.timestamp || '',
-        icon: a.icon || '📌'
-      });
-    });
-  }
-
-  // Sort by time (most recent first)
-  activities.sort(function(a, b) {
-    return new Date(b.meta) - new Date(a.meta);
+  metrics.forEach(function(m) {
+    var el = document.getElementById(m.id);
+    if (el) el.textContent = m.val;
   });
 
-  if (!activities.length) {
-    activities = [{ type: 'other', title: 'No activity data found', meta: '', icon: '📌' }];
-  }
+  // Build charts from daily_breakdown
+  var days = data.daily_breakdown || [];
+  var chartDaily = document.getElementById('act-chart-daily');
+  var chartWeekly = document.getElementById('act-chart-weekly');
 
-  var icons = { email_sent: '📧', call: '📞', meeting: '📅', linkedin: '🔗', research: '🔍', other: '📌', response: '💬', referral: '🎯' };
-  document.getElementById('activity-log-feed').innerHTML = activities.map(function(a) {
-    return '<div class="activity-item"><div class="activity-icon sdr-activity" style="font-size:16px">' + (icons[a.type] || a.icon || '📌') + '</div><div class="activity-body"><div class="act-title">' + escapeHtml(a.title) + '</div><div class="act-meta">' + escapeHtml(a.meta) + '</div></div></div>';
-  }).join('') || '<div style="padding:20px;text-align:center;color:var(--text-muted)">No activity yet</div>';
+  if (days.length <= 7) {
+    // Short period — show daily chart, no separate weekly
+    chartDaily.innerHTML = buildBarChart(days, ['emails_sent', 'connections_sent', 'replies', 'meetings']);
+    chartWeekly.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-muted)">Select a longer period for weekly trends</div>';
+  } else {
+    // Daily chart
+    chartDaily.innerHTML = buildBarChart(days, ['emails_sent', 'connections_sent', 'replies', 'meetings']);
+    // Weekly: group by week
+    var weeks = [];
+    var weekMap = {};
+    days.forEach(function(d) {
+      var dt = new Date(d.date);
+      var weekStart = new Date(dt);
+      weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+      var key = weekStart.toISOString().slice(0, 10);
+      if (!weekMap[key]) weekMap[key] = { date: key, emails_sent: 0, connections_sent: 0, replies: 0, meetings: 0, positive_replies: 0 };
+      weekMap[key].emails_sent += d.emails_sent;
+      weekMap[key].connections_sent += d.connections_sent;
+      weekMap[key].replies += d.replies;
+      weekMap[key].meetings += d.meetings;
+    });
+    weeks = Object.keys(weekMap).sort().map(function(k) { return weekMap[k]; });
+    chartWeekly.innerHTML = buildBarChart(weeks, ['emails_sent', 'connections_sent', 'replies', 'meetings']);
+  }
+}
+
+function buildBarChart(days, metrics) {
+  if (!days || !days.length) return '<div style="text-align:center;padding:40px;color:var(--text-muted)">No data</div>';
+
+  var maxVal = 0;
+  days.forEach(function(d) {
+    metrics.forEach(function(m) { if (d[m] > maxVal) maxVal = d[m]; });
+  });
+  if (maxVal === 0) maxVal = 1;
+
+  var colors = {
+    emails_sent: 'var(--accent)',
+    connections_sent: '#5b8def',
+    replies: 'var(--warning)',
+    meetings: 'var(--success)',
+    positive_replies: 'var(--danger)'
+  };
+  var labels = {
+    emails_sent: '📧',
+    connections_sent: '🔗',
+    replies: '💬',
+    meetings: '📅',
+    positive_replies: '⭐'
+  };
+
+  // For each day, render stacked bars for each metric
+  var html = '<div style="display:flex;justify-content:center;gap:8px;margin-bottom:4px">';
+  metrics.forEach(function(m) {
+    html += '<span style="font-size:10px;color:var(--text-muted);display:flex;align-items:center;gap:2px">' + (labels[m] || m) + '</span>';
+  });
+  html += '</div><div class="chart-bar-row">';
+
+  days.forEach(function(d) {
+    html += '<div class="chart-bar-col">';
+    // Layered bars
+    var totalH = 0;
+    metrics.forEach(function(m) {
+      var h = Math.max(2, Math.round(d[m] / maxVal * 95));
+      totalH += h;
+      html += '<div class="chart-bar" style="height:' + h + 'px;background:' + colors[m] + ';opacity:0.85;margin-bottom:1px" title="' + m + ': ' + d[m] + '"></div>';
+    });
+    html += '<div class="chart-bar-label">' + formatDateLabel(d.date) + '</div>';
+    html += '</div>';
+  });
+
+  html += '</div>';
+  return html;
+}
+
+function formatDateLabel(dateStr) {
+  if (!dateStr) return '';
+  var d = new Date(dateStr);
+  if (isNaN(d.getTime())) {
+    // If it's a week label like "2026-06-01", show short
+    var parts = dateStr.split('-');
+    return parts[1] + '/' + parts[2];
+  }
+  return (d.getMonth()+1) + '/' + d.getDate();
 }
 
 function logManualActivity() {
@@ -2086,7 +2165,6 @@ function logManualActivity() {
   document.getElementById('manual-act-notes').value = '';
   loadActivity();
 }
-
 /* === ADMIN === */
 function loadAdmin() {
   var healthDot = document.getElementById('health-dot');
