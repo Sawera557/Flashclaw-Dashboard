@@ -46,45 +46,92 @@ def ai_chat():
     import re
     import os
     import urllib.request, urllib.parse
+    from datetime import datetime, timedelta, timezone
     
     gmail_query = None
     user_msg = messages[-1]['content'] if messages else ''
     user_msg_lower = user_msg.lower()
     
     # Detect Gmail-related requests
-    if any(p in user_msg_lower for p in ['my last', 'my emails', 'my gmail', 'my emails from gmail', 'gmail emails', 'recent emails', 'show my inbox', 'last 5 emails']):
+    is_gmail_request = any(p in user_msg_lower for p in ['my last', 'my emails', 'my gmail', 'my emails from gmail', 'gmail emails', 'recent emails', 'show my inbox', 'last 5 emails', 'my email'])
+    is_linkedin_request = any(p in user_msg_lower for p in ['linkedin', 'li activity', 'activity tracking', 'linkedin notification'])
+    
+    if is_gmail_request or is_linkedin_request:
         limit_match = re.search(r'last (\d+)', user_msg_lower)
-        limit = int(limit_match.group(1)) if limit_match else 5
+        limit = int(limit_match.group(1)) if limit_match else 10
+        
+        # Detect date range: "last X days" or "7 days"
+        days_match = re.search(r'(\d+)\s*days?', user_msg_lower)
+        days = int(days_match.group(1)) if days_match else None
+        
+        # Build Gmail search query
+        search_terms = []
+        if is_linkedin_request:
+            search_terms.append('linkedin OR notification@linkedin OR linkedin.com OR connection OR "connection accepted" OR "profile view" OR "message reply" OR "new message"')
+        if days:
+            after_date = (datetime.now(timezone.utc) - timedelta(days=days)).strftime('%Y/%m/%d')
+            search_terms.append(f'after:{after_date}')
+        
+        gmail_query_str = ' '.join(search_terms) if search_terms else None
+        
         maton_key = os.environ.get('MATON_API_KEY', '')
         if maton_key:
             try:
                 import base64 as b64
-                # Get message list
-                req_url = f'https://api.maton.ai/google-mail/gmail/v1/users/me/messages?maxResults={limit}'
+                # Build request URL with optional search query
+                if gmail_query_str:
+                    encoded_query = urllib.parse.quote(gmail_query_str)
+                    req_url = f'https://api.maton.ai/google-mail/gmail/v1/users/me/messages?q={encoded_query}&maxResults=50'
+                else:
+                    req_url = f'https://api.maton.ai/google-mail/gmail/v1/users/me/messages?maxResults={limit}'
+                
                 req = urllib.request.Request(req_url)
                 req.add_header('Authorization', f'Bearer {maton_key}')
                 with urllib.request.urlopen(req) as resp:
                     msg_list = json.load(resp).get('messages', [])
                 
                 emails = []
-                for msg in msg_list:
-                    detail_req = urllib.request.Request(f'https://api.maton.ai/google-mail/gmail/v1/users/me/messages/{msg["id"]}?format=metadata&metadataHeaders=From&metadataHeaders=Subject&metadataHeaders=Date')
+                for msg in msg_list[:limit]:
+                    detail_req = urllib.request.Request(f'https://api.maton.ai/google-mail/gmail/v1/users/me/messages/{msg["id"]}?format=metadata&metadataHeaders=From&metadataHeaders=Subject&metadataHeaders=Date&metadataHeaders=To&metadataHeaders=References&metadataHeaders=In-Reply-To')
                     detail_req.add_header('Authorization', f'Bearer {maton_key}')
                     with urllib.request.urlopen(detail_req) as resp:
                         detail = json.load(resp)
                     payload = detail.get('payload', {})
                     headers = {h['name']: h['value'] for h in payload.get('headers', [])}
+                    
+                    # Check if this is a reply (has In-Reply-To or References header)
+                    has_reply = bool(headers.get('In-Reply-To', '') or headers.get('References', ''))
+                    
                     emails.append({
                         'from': headers.get('From', '?'),
                         'subject': headers.get('Subject', '?'),
                         'date': headers.get('Date', '?'),
+                        'to': headers.get('To', '?'),
                         'snippet': detail.get('snippet', ''),
+                        'has_reply': has_reply,
+                        'message_id': msg['id'],
                     })
+                    
+                    # If it has replies, also try to fetch the thread to show the full conversation
+                    if has_reply and 'References' in headers:
+                        thread_id = headers.get('References', '').split()[0] if headers.get('References', '') else ''
+                        if not thread_id:
+                            thread_id = headers.get('In-Reply-To', '').split()[0] if headers.get('In-Reply-To', '') else ''
                 
                 # Inject emails as context
-                email_context = '\n\n--- YOUR RECENT EMAILS FROM GMAIL ---\n'
+                if is_linkedin_request:
+                    email_context = f'\n\n--- YOUR LINKEDIN EMAILS FROM GMAIL (last {days or "7"} days) ---\n'
+                    email_context += f'Total LinkedIn-related emails found: {len(emails)}\n\n'
+                else:
+                    email_context = '\n\n--- YOUR RECENT EMAILS FROM GMAIL ---\n'
+                
                 for i, e in enumerate(emails, 1):
-                    email_context += f'{i}. From: {e["from"]}\n   Subject: {e["subject"]}\n   Date: {e["date"]}\n   Preview: {e["snippet"]}\n\n'
+                    reply_flag = ' [REPLY THREAD]' if e['has_reply'] else ''
+                    email_context += f'{i}. From: {e["from"]}{reply_flag}\n   Subject: {e["subject"]}\n   Date: {e["date"]}\n   Preview: {e["snippet"]}\n\n'
+                
+                if is_linkedin_request:
+                    email_context += 'IMPORTANT: The user asked for an activity tracking table. Please extract and format the above LinkedIn email data into a clean table with columns: Name | Date | Time | LinkedIn Link | Status | Key Details. If a LinkedIn profile URL is embedded in the email, extract it for the LinkedIn Link column.'
+                
                 system_prompt['content'] += email_context
             except Exception as e:
                 system_prompt['content'] += f'\n\nNote: Attempted to fetch Gmail but got error: {str(e)}'
