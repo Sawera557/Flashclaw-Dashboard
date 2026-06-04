@@ -1,4 +1,5 @@
 import json
+import logging
 
 from flask import Blueprint, request, jsonify, Response, stream_with_context
 from flask_jwt_extended import jwt_required, get_jwt_identity
@@ -8,6 +9,8 @@ from app.models.user import User
 from app.models.lead import Lead, GeneratedEmail
 from app.services.scoring import get_groq_client, score_lead_via_groq
 from app.services.hubspot_service import build_context_summary, search_owner_by_name, get_deals_for_owner, HubSpotError
+
+logger = logging.getLogger(__name__)
 
 ai_bp = Blueprint('ai', __name__)
 
@@ -28,61 +31,25 @@ def ai_chat():
         return jsonify({'error': 'Messages array is required'}), 400
 
     # System prompt for Lead Hunter
-    system_content = (
-        'You are Lead Hunter AI, an expert sales assistant. You help SDRs and sales teams '
-        'find leads, craft outreach emails, analyze ICP fit, and provide sales strategy advice. '
-        'Be concise, actionable, and data-driven. When asked to write emails, personalize them. '
-        'When analyzing leads, focus on buying signals. You can help with cold email copy, '
-        'LinkedIn messages, follow-up sequences, ICP definitions, and outreach strategy.'
-    )
+    system_prompt = {
+        'role': 'system',
+        'content': (
+            'You are Lead Hunter AI, an expert sales assistant. You help SDRs and sales teams '
+            'find leads, craft outreach emails, analyze ICP fit, and provide sales strategy advice. '
+            'Be concise, actionable, and data-driven. When asked to write emails, personalize them. '
+            'When analyzing leads, focus on buying signals. You can help with cold email copy, '
+            'LinkedIn messages, follow-up sequences, ICP definitions, and outreach strategy.'
+        ),
+    }
 
-    # Detect HubSpot questions and inject live context
-    user_msg = messages[-1]['content'] if messages else ''
-    user_msg_lower = user_msg.lower()
-    hs_keywords = ['deal', 'owner', 'pipeline', 'hubspot', 'jordan', 'anna', 'working on',
-                   'latest deal', 'open deal', 'stage', 'qualified', 'meeting scheduled']
-    if any(kw in user_msg_lower for kw in hs_keywords):
-        try:
-            hs_context = build_context_summary()
-            system_content += f'\n\n--- HUBSPOT CRM DATA (LIVE) ---\n{hs_context}\n--- END HUBSPOT DATA ---\n\n'
-            system_content += (
-                'You have live HubSpot CRM data above. The user can ask you about any owner\'s deals. '
-                'Owners are sales reps. If asked for details on a specific owner, describe their '
-                'deals, stages, and amounts. If the user names someone who is a HubSpot contact '
-                '(not an owner), say so and offer to search their owner. Be concise and data-driven.'
-            )
-        except HubSpotError:
-            pass
-
-    system_prompt = {'role': 'system', 'content': system_content}
-
-    # Check for HubSpot-specific owner queries — fetch deals for a specific person
+    # Check for Gmail-specific queries — fetch real emails and inject as context
     import re
     import os
     import urllib.request, urllib.parse
     
+    gmail_query = None
     user_msg = messages[-1]['content'] if messages else ''
     user_msg_lower = user_msg.lower()
-
-    # Detect "what deals is [name] working on" pattern
-    owner_match = re.search(r'(?:what|which)\s+deals\s+(?:is|does)\s+(.+?)\s+(?:working on|have|own)', user_msg_lower)
-    if owner_match:
-        name_query = owner_match.group(1).strip()
-        try:
-            matched_owners = search_owner_by_name(name_query)
-            if matched_owners:
-                owner = matched_owners[0]
-                deals = [None]  # lazy: use search endpoint
-                from app.services.hubspot_service import get_deals_for_owner
-                deals = get_deals_for_owner(owner['id'], limit=10)
-                if deals:
-                    deal_lines = [f'Deals for {owner["name"]} ({owner["email"]}):']
-                    for d in deals:
-                        amt = f"${d['amount']}" if d['amount'] != '0' else '$0'
-                        deal_lines.append(f'  · {d["name"]} — {amt} — {d["stage"]} (last: {d["modified"]})')
-                    system_content += '\n\n--- HUBSPOT RESULT ---\n' + '\n'.join(deal_lines) + '\n--- END HUBSPOT RESULT ---'
-        except Exception:
-            pass
     
     # Detect Gmail-related requests
     if any(p in user_msg_lower for p in ['my last', 'my emails', 'my gmail', 'my emails from gmail', 'gmail emails', 'recent emails', 'show my inbox', 'last 5 emails']):
@@ -192,13 +159,22 @@ def generate_email():
             messages=[{'role': 'user', 'content': prompt}],
             temperature=0.7,
             max_tokens=1024,
+            response_format={"type": "json_object"},
         )
-        result = json.loads(completion.choices[0].message.content)
+        raw = completion.choices[0].message.content.strip()
+        result = json.loads(raw)
     except Exception as e:
+        logger.warning(f'Groq email generation failed: {e}, using template fallback')
         return _generate_template_email(lead_data, email_type, user.id, lead_id)
 
     subject = result.get('subject', '')[:500]
     body = result.get('body', '')
+    
+    # Replace placeholder sender with actual user name
+    user_name = user.name if user else ''
+    if user_name:
+        body = body.replace('[Your Name]', user_name).replace('[your name]', user_name).replace('[YOUR NAME]', user_name)
+        body = body.replace('Your Name', user_name)
 
     # Save to database if lead_id provided
     if lead_id:
@@ -228,25 +204,27 @@ def _build_email_prompt(lead_data, email_type):
     pain_points = lead_data.get('pain_points', '')
 
     type_guidance = {
-        'cold': 'A first-touch cold outreach email. Keep it short (3-5 sentences), personalized, with a clear value proposition. Don\'t ask for a meeting in the first email.',
-        'followup': 'A follow-up email to someone you already reached out to. Reference the previous email, add new value, and include a soft CTA.',
-        'linkedin': 'A LinkedIn connection request message (300 chars max) or InMail. Brief, professional, and personalized.',
+        'cold': 'A first-touch cold outreach email. Personalize it around their role and company. Reference a specific trigger (recent funding, job change, company news) or industry trend relevant to them. Keep it to 3-4 short sentences. End with a soft CTA — offer a relevant resource, not a meeting request.',
+        'followup': 'A follow-up email to a lead you reached out to before. Reference the previous email. Add a new piece of value: a case study, relevant article, or specific insight about their company. Include a call to action.',
+        'linkedin': 'A LinkedIn connection request or InMail. Maximum 300 characters. Must be extremely concise. Reference something specific about their work or company. Ask a single relevant question.',
         'sequence': 'Generate an email sequence: subjects and bodies for 3 emails (initial, follow-up, break-up). Return as JSON with keys sequence.[0-2].subject and sequence.[0-2].body.',
     }
 
     guidance = type_guidance.get(email_type, type_guidance['cold'])
 
-    return f"""Write a personalized {email_type} email for this lead:
+    return f"""You are a professional SDR copywriter. Write a personalized {email_type} email for this lead.
 
-Name: {name}
-Company: {company}
-Title: {title}
-Industry: {industry}
-Pain points: {pain_points}
+LEAD DATA:
+- Name: {name}
+- Company: {company}
+- Title: {title}
+- Industry: {industry}
+- Pain points: {pain_points}
 
-Guidance: {guidance}
+WRITING GUIDELINES:
+{guidance}
 
-Return ONLY valid JSON: {{"subject": "...", "body": "..."}}"""
+Respond with a JSON object containing "subject" and "body" keys. The body should use plain text with newlines, no markdown."""
 
 
 def _generate_template_email(lead_data, email_type, user_id, lead_id):
@@ -353,7 +331,8 @@ def ai_score_lead():
 @ai_bp.route('/api/ai/parse-linkedin', methods=['POST'])
 @jwt_required()
 def parse_linkedin_notes():
-    """Parse raw LinkedIn activity notes into structured activities using AI."""
+    """Parse raw LinkedIn activity notes into structured activities using AI.
+    Saves parsed people to the LinkedInActivity database."""
     current_user_id = get_jwt_identity()
     user = User.query.get(int(current_user_id))
     if not user:
@@ -366,45 +345,147 @@ def parse_linkedin_notes():
         return jsonify({'error': 'Text to parse is required'}), 400
 
     client = get_groq_client()
-    if not client:
-        return jsonify({
-            'activities': [
-                {'lead_name': 'Unknown', 'activity_type': 'dm_sent',
-                 'activity_date': '', 'notes': raw_text[:200], 'source': 'ai_dump'}
-            ]
-        })
+    
+    # Pre-extract LinkedIn URLs from raw text
+    import re
+    urls_found = re.findall(r'(https?://(?:www\.)?linkedin\.com/[^\s)\]]+)', raw_text)
+    urls_hint = '\n'.join(urls_found) if urls_found else '(none found by regex)'
+    
+    prompt = f"""Parse these LinkedIn connection data entries into structured activities.
 
-    prompt = f"""Parse these raw LinkedIn activity notes into structured activities.
+RAW DATA:
+{raw_text[:4000]}
 
-RAW NOTES:
-{raw_text}
+PRE-EXTRACTED LINKEDIN URLS FROM DATA (assign to correct person):
+{urls_hint}
 
-Activity types can be: connection_sent, connection_accepted, dm_sent, reply_received,
-interested, not_interested, meeting_booked, followup_sent, profile_viewed.
+For each person, extract: name, job title, company name, linkedin_url (profile URL),
+and activity type (connection_sent, connection_accepted, dm_sent, reply_received,
+interested, not_interested, meeting_booked, followup_sent, profile_viewed).
 
-Extract lead name, company, activity type, date, and clean notes.
+The linkedin_url field is CRITICAL - include it for EVERY person. Look carefully at
+each row for a linkedin.com/in/... URL.
 
-Return ONLY valid JSON: {{"activities": [{{"lead_name": "...", "company": "...", "linkedin_url": "", "activity_type": "...", "activity_date": "...", "notes": "..."}}]}}"""
+Return ONLY valid JSON with a "people" key containing an array of objects:
+{{"people": [{{"name": "...", "title": "...", "company": "...", "linkedin_url": "https://linkedin.com/in/...", "activity_type": "connection_sent"}}]}}"""
 
-    try:
-        completion = client.chat.completions.create(
-            model="llama-3.1-8b-instant",
-            messages=[{'role': 'user', 'content': prompt}],
-            temperature=0.2,
-            max_tokens=2000,
+    people = []
+    if client:
+        try:
+            completion = client.chat.completions.create(
+                model="llama-3.1-8b-instant",
+                messages=[{'role': 'user', 'content': prompt}],
+                temperature=0.2,
+                max_tokens=2000,
+            )
+            result = json.loads(completion.choices[0].message.content)
+            people = result.get('people', result.get('activities', []))
+        except Exception as e:
+            logger.warning(f'Groq parse error: {e}')
+
+    if not people:
+        # Fallback: parse table format manually
+        people = _parse_table_fallback(raw_text)
+
+    # Post-process: inject regex-extracted URLs for any person missing one
+    # Also map 'title' to 'notes' for storage
+    if people and urls_found:
+        url_idx = 0
+        for p in people:
+            if not p.get('linkedin_url') and url_idx < len(urls_found):
+                p['linkedin_url'] = urls_found[url_idx]
+                url_idx += 1
+    for p in people:
+        if p.get('title') and not p.get('notes'):
+            p['notes'] = p['title']
+
+    # Save each parsed person to the DB
+    from app.models.lead import LinkedInActivity
+    saved_count = 0
+    for p in people:
+        activity_type = p.get('activity_type', 'connection_sent')
+        name = p.get('name', '')[:200]
+        company = p.get('company', '')[:255]
+        url = p.get('linkedin_url', '')[:500]
+        
+        activity = LinkedInActivity(
+            workspace_id=user.workspace_id,
+            user_id=user.id,
+            lead_name=name,
+            company=company,
+            linkedin_url=url,
+            activity_type=activity_type,
+            activity_date='',
+            notes=p.get('title', ''),
+            source='ai_dump',
         )
-        result = json.loads(completion.choices[0].message.content)
-        activities = result.get('activities', [])
+        db.session.add(activity)
+        saved_count += 1
 
-        # Mark source
-        for activity in activities:
-            activity['source'] = 'ai_dump'
+    db.session.commit()
+    logger.info(f'Parsed and saved {saved_count} LinkedIn activities from dump')
 
-        return jsonify({'activities': activities})
-    except Exception as e:
-        return jsonify({
-            'activities': [
-                {'lead_name': 'Unknown', 'activity_type': 'dm_sent',
-                 'activity_date': '', 'notes': raw_text[:200], 'source': 'ai_dump'}
-            ]
-        })
+    for p in people:
+        p['source'] = 'ai_dump'
+
+    return jsonify({'people': people, 'saved': saved_count})
+
+
+def _parse_table_fallback(raw_text):
+    """Parse a markdown table or pipe-delimited data without AI."""
+    status_words = {'connection sent', 'connection accepted', 'connected', 'pending',
+                    'invitation sent', 'accepted', 'not interested', 'interested'}
+    people = []
+    lines = raw_text.strip().split('\n')
+    for line in lines:
+        line = line.strip()
+        if not line or line.startswith('|---') or line.startswith('| -'):
+            continue
+        # Parse pipe-delimited rows
+        if line.startswith('|'):
+            parts = [p.strip() for p in line.split('|')]
+            parts = [p for p in parts if p]  # remove empty first/last from pipes
+            if len(parts) >= 3 and 'Name' not in parts[0] and 'Title' not in parts[0]:
+                name = parts[0]
+                title = parts[1] if len(parts) > 1 else ''
+                url = ''
+                company = ''
+            # URL is any http/https field or linkedin pattern
+                for p in parts:
+                    if p.startswith('http') or 'linkedin.com' in p.lower():
+                        url = p
+                        break
+                # Company: first non-name, non-title, non-url, non-status field
+                for p in parts[1:]:
+                    if (p.startswith('http') or p == name or p == title
+                        or p.lower() in status_words
+                        or 'linkedin' in p.lower()):
+                        continue
+                    company = p
+                    break
+                # Determine activity type from last column (status)
+                activity_type = 'connection_sent'
+                status_str = parts[-1].lower() if parts else ''
+                status_map = {
+                    'connection_sent': 'connection_sent', 'connection': 'connection_sent',
+                    'accepted': 'connection_accepted', 'connection_accepted': 'connection_accepted',
+                    'message': 'dm_sent', 'dm_sent': 'dm_sent', 'dm': 'dm_sent',
+                    'reply': 'reply_received', 'reply_received': 'reply_received',
+                    'meeting': 'meeting_booked', 'meeting_booked': 'meeting_booked',
+                    'interested': 'interested', 'not_interested': 'not_interested',
+                    'follow-up': 'followup_sent', 'followup_sent': 'followup_sent',
+                    'profile_view': 'profile_viewed', 'profile_viewed': 'profile_viewed',
+                }
+                for key, val in status_map.items():
+                    if key in status_str:
+                        activity_type = val
+                        break
+                people.append({
+                    'name': name,
+                    'title': title,
+                    'company': company,
+                    'linkedin_url': url,
+                    'activity_type': activity_type,
+                    'source': 'ai_dump',
+                })
+    return people

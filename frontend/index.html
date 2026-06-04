@@ -152,21 +152,30 @@ tr:last-child td{border-bottom:none}
 .pagination .page-info{font-size:13px;color:var(--text-muted)}
 
 /* Chat */
-.chat-container{display:flex;flex-direction:column;height:550px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
-.chat-messages{flex:1;overflow-y:auto;padding:20px}
-.chat-msg{margin-bottom:16px;max-width:85%}
+.chat-container{display:flex;flex-direction:column;height:calc(100vh - 220px);min-height:500px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+.chat-messages{flex:1;overflow-y:auto;padding:24px}
+.chat-msg{margin-bottom:20px;max-width:88%}
 .chat-msg.user{margin-left:auto}
 .chat-msg.ai{margin-right:auto}
-.chat-msg .bubble{padding:12px 16px;border-radius:12px;font-size:14px;line-height:1.5;white-space:pre-wrap}
+.chat-msg .bubble{padding:14px 18px;border-radius:14px;font-size:14px;line-height:1.7;white-space:pre-wrap;word-wrap:break-word}
 .chat-msg.user .bubble{background:var(--accent);color:#fff;border-bottom-right-radius:4px}
-.chat-msg.ai .bubble{background:var(--card);border:1px solid var(--border);border-bottom-left-radius:4px}
+.chat-msg.ai .bubble{background:var(--card);border:1px solid var(--border);border-bottom-left-radius:4px;box-shadow:0 2px 8px rgba(0,0,0,0.15)}
 .chat-msg .sender{font-size:11px;color:var(--text-muted);margin-bottom:4px;font-family:'JetBrains Mono',monospace}
 .chat-input-area{display:flex;gap:8px;padding:12px 16px;border-top:1px solid var(--border);background:var(--card)}
-.chat-input-area input{flex:1;padding:10px 14px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-family:'Sora',sans-serif;font-size:13px;outline:none}
-.chat-input-area input:focus{border-color:var(--accent)}
+.chat-input-area textarea{flex:1;padding:12px 14px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-family:'Sora',sans-serif;font-size:13px;line-height:1.5;outline:none;resize:none;min-height:48px;max-height:120px}
+.chat-input-area textarea:focus{border-color:var(--accent)}
 .quick-prompts{display:flex;gap:8px;padding:10px 16px;border-top:1px solid var(--border);flex-wrap:wrap}
 .quick-prompt{padding:5px 12px;background:var(--card);border:1px solid var(--border);border-radius:20px;color:var(--text-sec);font-size:12px;cursor:pointer;transition:all .15s;font-family:'Sora',sans-serif}
-.quick-prompt:hover{border-color:var(--accent);color:var(--accent)}
+.quick-prompt:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-glow)}
+.chat-msg.ai .bubble table{width:100%;border-collapse:collapse;margin:8px 0;font-size:13px}
+.chat-msg.ai .bubble table th,.chat-msg.ai .bubble table td{border:1px solid var(--border);padding:6px 10px;text-align:left}
+.chat-msg.ai .bubble table th{background:var(--border);color:var(--text-sec);font-weight:600}
+.chat-msg.ai .bubble table td{color:var(--text)}
+.chat-msg.ai .bubble strong{color:var(--accent)}
+.chat-msg.ai .bubble h3,.chat-msg.ai .bubble h4{margin:12px 0 6px;color:var(--accent)}
+.chat-msg.ai .bubble code{background:var(--bg);padding:2px 6px;border-radius:4px;font-size:12px;font-family:'JetBrains Mono',monospace}
+.chat-msg.ai .bubble .lead-entry{margin:8px 0;padding:8px 12px;background:rgba(124,109,250,0.08);border:none;border-radius:6px;font-size:13px;line-height:1.6}
+.chat-msg.ai .bubble .lead-entry strong{color:var(--warning);font-size:13px;font-weight:700}
 
 /* Pipeline chart */
 .pipeline-chart{display:flex;flex-direction:column;gap:12px}
@@ -384,22 +393,24 @@ tr:last-child td{border-bottom:none}
 
 <div class="content-area">
 
-<!-- DASHBOARD -->
+<!-- DASHBOARD - SDR Command Center -->
 <div class="tab-content active" id="tab-dashboard">
   <div class="sdr-bar" id="sdr-bar">
-    <div class="sdr-avatar">SJ</div>
+    <div class="sdr-avatar">?</div>
     <div class="sdr-info">
-      <div class="name">Sarah Johnson</div>
-      <div class="role">Senior SDR · Team Alpha</div>
+      <div class="name">Loading...</div>
+      <div class="role">SDR · Loading...</div>
     </div>
     <div class="sdr-metrics">
-      <div><div class="val" style="color:var(--accent)">14</div><div class="lbl">Sprint Day</div></div>
-      <div><div class="val" style="color:var(--warning)">🔥 7</div><div class="lbl">Day Streak</div></div>
-      <div><div class="val" style="color:var(--success)">#2</div><div class="lbl">Team Rank</div></div>
+      <div><div class="val" style="color:var(--accent)"><span class="spinner"></span></div><div class="lbl">Streak</div></div>
+      <div><div class="val" style="color:var(--success)"><span class="spinner"></span></div><div class="lbl">Rank</div></div>
+      <div><div class="val" style="color:var(--warning)"><span class="spinner"></span></div><div class="lbl">Leads Gen.</div></div>
     </div>
   </div>
 
-  <div class="stat-grid" id="dash-stats"></div>
+  <div class="stat-grid" id="dash-stats">
+    <div class="loading" style="grid-column:1/-1"><span class="spinner"></span> Loading dashboard data...</div>
+  </div>
 
   <div class="grid-2-1">
     <div class="grid-card" style="grid-row:span 2;">
@@ -407,27 +418,22 @@ tr:last-child td{border-bottom:none}
       <div class="timeline" id="dash-timeline"></div>
     </div>
     <div class="grid-card">
-      <div class="section-title">Today's Targets</div>
+      <div class="section-title">Today's Work Queue</div>
       <div id="dash-targets"></div>
     </div>
     <div class="grid-card">
-      <div class="section-title">Groq AI Agent Quick Access</div>
-      <div class="flex gap8 flex-wrap mb16">
-        <button class="btn-secondary" onclick="showTab('ai-agent');setTimeout(function(){sendQuickPrompt('Research my top 5 leads')},100)">🧠 Research Leads</button>
-        <button class="btn-secondary" onclick="showTab('email-gen')">✉️ Draft Emails</button>
-        <button class="btn-secondary" onclick="showTab('ai-agent');setTimeout(function(){sendQuickPrompt('Analyze my pipeline health')},100)">📊 Pipeline Analysis</button>
-        <button class="btn-secondary" onclick="showTab('ai-agent');setTimeout(function(){sendQuickPrompt('Find new prospects in my ICP')},100)">🎯 Find Prospects</button>
-      </div>
-      <div style="font-size:12px;color:var(--text-muted)">Powered by Groq LPU Inference Engine · Llama 3 70B</div>
+      <div class="section-title">🤖 AI Recommended Actions</div>
+      <div id="ai-rec-list"></div>
+      <div class="mt16" style="font-size:12px;color:var(--text-muted)">Powered by Groq LPU Inference Engine</div>
     </div>
   </div>
 
-  <div class="section-title">LI Pipeline Snapshot</div>
+  <div class="section-title">Pipeline Snapshot</div>
   <div class="card mb16" id="li-pipeline-snapshot"></div>
 
   <div class="grid-3">
     <div class="grid-card">
-      <div class="section-title">Recent LinkedIn Activity</div>
+      <div class="section-title">Recent Outreach Activity</div>
       <div class="activity-feed" id="dash-li-feed"></div>
     </div>
     <div class="grid-card">
@@ -435,7 +441,7 @@ tr:last-child td{border-bottom:none}
       <div id="dash-followups"></div>
     </div>
     <div class="grid-card">
-      <div class="section-title">Top Lead Sources</div>
+      <div class="section-title">Lead Source Performance</div>
       <div id="dash-sources"></div>
     </div>
   </div>
@@ -558,36 +564,24 @@ tr:last-child td{border-bottom:none}
     </div>
   </div>
 
-  <div class="grid-1-2">
-    <div>
-      <div class="section-title">LinkedIn Dump</div>
-      <div class="dump-panel" id="linkedin-dump">
-        <div class="text-center" style="padding:40px;color:var(--text-muted);font-size:13px">Paste LinkedIn profile data here for AI parsing</div>
+  <div>
+    <div class="section-title">Chat with AI Agent</div>
+    <div class="chat-container">
+      <div class="chat-messages" id="chat-messages">
+        <div class="chat-msg ai">
+          <div class="sender">AI Agent</div>
+          <div class="bubble">Hi! I'm your Lead Hunter AI powered by Groq. Ask me to research leads, draft outreach, or analyze pipeline.</div>
+        </div>
       </div>
-      <div class="flex gap8 mt16">
-        <textarea id="li-dump-input" placeholder="Paste LinkedIn profile text..." style="width:100%;padding:10px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-family:'Sora',sans-serif;font-size:13px;min-height:100px;resize:vertical;outline:none"></textarea>
+      <div class="quick-prompts">
+        <span class="quick-prompt" onclick="sendQuickPrompt('Find me 5 SaaS companies in SF that need email marketing')">Find 5 SaaS leads</span>
+        <span class="quick-prompt" onclick="sendQuickPrompt('Draft a cold LinkedIn message for a VP of Sales')">Draft LI message</span>
+        <span class="quick-prompt" onclick="sendQuickPrompt('Analyze my pipeline performance')">Analyze pipeline</span>
+        <span class="quick-prompt" onclick="sendQuickPrompt('Summarize best SDR outreach strategies')">SDR strategies</span>
       </div>
-      <button class="btn-primary mt16" onclick="parseLinkedInDump()">🤖 Parse with AI</button>
-    </div>
-    <div>
-      <div class="section-title">Chat with AI Agent</div>
-      <div class="chat-container">
-        <div class="chat-messages" id="chat-messages">
-          <div class="chat-msg ai">
-            <div class="sender">AI Agent</div>
-            <div class="bubble">Hi! I'm your Lead Hunter AI powered by Groq. Ask me to research leads, draft outreach, or analyze pipeline. I can also parse LinkedIn profiles.</div>
-          </div>
-        </div>
-        <div class="quick-prompts">
-          <span class="quick-prompt" onclick="sendQuickPrompt('Find me 5 SaaS companies in SF that need email marketing')">Find 5 SaaS leads</span>
-          <span class="quick-prompt" onclick="sendQuickPrompt('Draft a cold LinkedIn message for a VP of Sales')">Draft LI message</span>
-          <span class="quick-prompt" onclick="sendQuickPrompt('Analyze my pipeline performance')">Analyze pipeline</span>
-          <span class="quick-prompt" onclick="sendQuickPrompt('Summarize best SDR outreach strategies')">SDR strategies</span>
-        </div>
-        <div class="chat-input-area">
-          <input type="text" id="chat-input" placeholder="Ask the AI agent..." onkeydown="if(event.key==='Enter') sendChatMessage()">
-          <button class="btn-primary" onclick="sendChatMessage()">Send</button>
-        </div>
+      <div class="chat-input-area">
+        <textarea id="chat-input" placeholder="Ask the AI agent... (Shift+Enter for new line, Enter to send)" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChatMessage()}"></textarea>
+        <button class="btn-primary" onclick="sendChatMessage()" style="align-self:flex-end">Send</button>
       </div>
     </div>
   </div>
@@ -617,7 +611,13 @@ tr:last-child td{border-bottom:none}
       </div>
       <div class="form-row" style="margin-top:8px">
         <div class="form-group"><label>Lead Name</label><input id="quick-li-name" placeholder="Name"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Title</label><input id="quick-li-title" placeholder="Job title"></div>
         <div class="form-group"><label>Company</label><input id="quick-li-company" placeholder="Company"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group" style="flex:2"><label>LinkedIn Link</label><input id="quick-li-link" placeholder="https://linkedin.com/in/..."></div>
       </div>
       <button class="btn-sm btn-secondary" onclick="logQuickCustom()">Log Activity</button>
     </div>
@@ -676,35 +676,6 @@ tr:last-child td{border-bottom:none}
 </div>
 
 <!-- ANALYTICS -->
-
-<!-- HUBSPOT PIPELINE -->
-<div class="tab-content" id="tab-hubspot">
-  <div class="flex align-center gap8 mb16">
-    <div class="section-title" style="margin-bottom:0">📊 HubSpot Pipeline</div>
-    <span id="hs-status" style="font-size:12px;padding:4px 10px;border-radius:20px;background:rgba(124,109,250,.12);color:var(--accent)">checking...</span>
-    <button class="btn-sm ml-auto" onclick="loadHubSpot()">🔄 Refresh</button>
-  </div>
-  
-  <div class="grid-4 mb16" id="hs-stat-cards">
-    <div class="grid-card"><div style="font-size:24px;font-weight:700" id="hs-open-deals">—</div><div style="font-size:12px;color:var(--text-muted)">Open Deals</div></div>
-    <div class="grid-card"><div style="font-size:24px;font-weight:700" id="hs-owners">—</div><div style="font-size:12px;color:var(--text-muted)">Active Owners</div></div>
-    <div class="grid-card"><div style="font-size:24px;font-weight:700" id="hs-value">—</div><div style="font-size:12px;color:var(--text-muted)">Pipeline Value</div></div>
-    <div class="grid-card"><div style="font-size:24px;font-weight:700" id="hs-avg">—</div><div style="font-size:12px;color:var(--text-muted)">Avg Deal Size</div></div>
-  </div>
-  
-  <div style="display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap">
-    <input id="hs-search" placeholder="🔍 Search owner..." class="input" style="flex:1;min-width:180px" oninput="hsFilter()">
-    <select id="hs-sort" class="input" style="width:auto" onchange="hsRender()">
-      <option value="deals">Sort by deals</option>
-      <option value="value">Sort by value</option>
-      <option value="name">Sort by name</option>
-    </select>
-  </div>
-  
-  <div id="hs-loading" style="text-align:center;padding:40px;color:var(--text-muted)"><span class="spinner"></span> Loading HubSpot data...</div>
-  <div id="hs-error" style="display:none;text-align:center;padding:40px;color:var(--danger)"></div>
-  <div id="hs-grid" style="display:none"></div>
-</div>
 <div class="tab-content" id="tab-analytics">
   <div class="stat-grid" id="analytics-stats"></div>
 
@@ -766,6 +737,7 @@ tr:last-child td{border-bottom:none}
       <span style="font-size:11px;color:var(--text-muted);display:block;margin-top:4px;">sawerakhadium557@gmail.com</span>
       <div style="margin-top:8px;" id="gmail-preview"><span class="spinner"></span> Loading emails...</div>
       <script>
+      setTimeout(function() {
       if (typeof gmailLoaded === 'undefined') { gmailLoaded = true;
         api('/api/gmail/emails?limit=3').then(function(d) {
           if (!d || !d.emails) return;
@@ -882,7 +854,7 @@ tr:last-child td{border-bottom:none}
 </div>
 
 <script>
-const API_BASE = 'https://surveys-advanced-mothers-type.trycloudflare.com';
+const API_BASE = 'https://minds-poor-drawn-penetration.trycloudflare.com';
 let authToken = localStorage.getItem('lhai_token') || null;
 let useDemo = false;
 let activeStreamReader = null;
@@ -1190,20 +1162,134 @@ function hsRender() {
 function hsFilter() { hsRender(); }
 function hsModal(ownerId) { /* not needed for owner-specific view */ }
 
-/* === DASHBOARD === */
+/* === DASHBOARD — Full SDR Command Center === */
 function loadDashboard() {
-  var ok = false;
-  api('/api/hubspot/my-dashboard').then(function(d) { 
-    ok = true;
-    renderMyDashboard(d);
-  }).catch(function() { 
-    ok = false;
-    // fallback to legacy leads endpoint
-    api('/api/leads').then(function() { ok = true; }).catch(function() {}).then(function() {
-      if (ok) fetchDashboardStats();
-      else renderDashboardDemo();
+  api('/api/dashboard/summary')
+    .then(function(d) {
+      useDemo = false;
+      renderRealDashboard(d);
+    })
+    .catch(function() {
+      // Fallback: try loading legacy stats, then demo
+      var p1 = api('/api/leads').then(function(d) { if (d && !useDemo) { var l = Array.isArray(d) ? d : (d.leads || d.data || []); DEMO.stats.leads = l.length; } }).catch(function(){});
+      var p2 = api('/api/linkedin/stats').then(function(s) { if (s) Object.assign(DEMO.liStats, s); }).catch(function(){});
+      var p3 = api('/api/analytics/pipeline').then(function(){}).catch(function(){});
+      Promise.all([p1, p2, p3]).then(function() { renderDashboardDemo(); }).catch(function() { renderDashboardDemo(); });
     });
-  });
+}
+
+function renderRealDashboard(d) {
+  if (!d || !d.stats) { renderDashboardDemo(); return; }
+
+  var stats = d.stats || {};
+  var profile = d.sdr_profile || {};
+  var queue = d.today_queue || {};
+  var activities = d.recent_activities || [];
+  var sources = d.source_performance || [];
+  var pipeline = d.pipeline_snapshot || {};
+  var recommendations = d.ai_recommendations || [];
+
+  // ── SDR Identity Card ──
+  var sdrHtml =
+    '<div class="sdr-avatar">' + (profile.avatar || '?') + '</div>' +
+    '<div class="sdr-info">' +
+      '<div class="name">' + escapeHtml(profile.name || 'SDR') + '</div>' +
+      '<div class="role">' + escapeHtml(profile.role || 'SDR') + ' · Team of ' + (profile.team_size || 1) + '</div>' +
+    '</div>' +
+    '<div class="sdr-metrics">' +
+      '<div><div class="val" style="color:var(--accent)">🔥 ' + (profile.streak || 0) + '</div><div class="lbl">Day Streak</div></div>' +
+      '<div><div class="val" style="color:var(--success);font-size:13px">' + escapeHtml(profile.rank || 'New Recruit') + '</div><div class="lbl">Rank</div></div>' +
+      '<div><div class="val" style="color:var(--warning)">' + (profile.leads_generated || 0) + '</div><div class="lbl">Leads Gen.</div></div>' +
+    '</div>';
+  document.getElementById('sdr-bar').innerHTML = sdrHtml;
+
+  // ── KPI Cards ──
+  var kpiCards = [
+    { label: 'Total Leads', value: stats.total_leads || 0, subtitle: (stats.new_today || 0) + ' new today', color: 'var(--accent)' },
+    { label: 'New Today', value: stats.new_today || 0, subtitle: '', color: 'var(--accent)' },
+    { label: 'Enriched Leads', value: stats.enriched_leads || 0, subtitle: 'of ' + (stats.total_leads || 0) + ' total', color: 'var(--success)' },
+    { label: 'Emails Sent', value: stats.emails_sent || 0, subtitle: (stats.reply_rate || 0) + '% reply rate', color: '#5b8def' },
+    { label: 'Replies Received', value: stats.replies_received || 0, subtitle: (stats.positive_replies || 0) + ' positive', color: 'var(--warning)' },
+    { label: 'Meetings Booked', value: stats.meetings_booked || 0, subtitle: (stats.conversion_rate || 0) + '% conversion', color: 'var(--success)' },
+    { label: 'Pipeline Value', value: '$' + (stats.pipeline_value || 0).toLocaleString(), subtitle: '', color: 'var(--accent)' },
+  ];
+  document.getElementById('dash-stats').innerHTML = kpiCards.map(function(c) {
+    return '<div class="stat-card"><div class="stat-label">' + c.label + '</div><div class="stat-value" style="color:' + c.color + '">' + c.value + '</div><div class="stat-change up">' + c.subtitle + '</div></div>';
+  }).join('');
+
+  // ── Activity Timeline ──
+  var timelineEl = document.getElementById('dash-timeline');
+  if (activities.length > 0) {
+    timelineEl.innerHTML = activities.map(function(a) {
+      var timeStr = a.timestamp ? new Date(a.timestamp).toLocaleDateString() + ' ' + new Date(a.timestamp).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) : '—';
+      return '<div class="timeline-item"><div class="time">' + timeStr + '</div><div class="desc"><span style="font-size:16px;margin-right:6px">' + (a.icon || '•') + '</span>' + escapeHtml(a.description || '') + '</div><div class="meta">' + escapeHtml(a.type || '') + '</div></div>';
+    }).join('');
+  } else {
+    timelineEl.innerHTML = '<div style="padding:20px;color:var(--text-muted);font-size:13px">No recent activity. Start your day with outreach!</div>';
+  }
+
+  // ── Today's Work Queue ──
+  var queueHtml =
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">' +
+    '<div style="padding:16px;background:var(--card);border-radius:var(--radius-sm);text-align:center"><div style="font-size:28px;font-weight:700;color:var(--danger)">' + (queue.follow_ups_due || 0) + '</div><div style="font-size:11px;color:var(--text-muted)">Follow-ups Due</div></div>' +
+    '<div style="padding:16px;background:var(--card);border-radius:var(--radius-sm);text-align:center"><div style="font-size:28px;font-weight:700;color:var(--warning)">' + (queue.positive_replies_needing_response || 0) + '</div><div style="font-size:11px;color:var(--text-muted)">Hot Replies to Respond</div></div>' +
+    '<div style="padding:16px;background:var(--card);border-radius:var(--radius-sm);text-align:center"><div style="font-size:28px;font-weight:700;color:var(--success)">' + (queue.meetings_today || 0) + '</div><div style="font-size:11px;color:var(--text-muted)">Meetings Today</div></div>' +
+    '<div style="padding:16px;background:var(--card);border-radius:var(--radius-sm);text-align:center"><div style="font-size:28px;font-weight:700;color:var(--accent)">' + (queue.leads_needing_enrichment || 0) + '</div><div style="font-size:11px;color:var(--text-muted)">Need Enrichment</div></div>' +
+    '</div>';
+  document.getElementById('dash-targets').innerHTML = queueHtml;
+
+  // ── AI Recommended Actions ──
+  if (recommendations.length > 0) {
+    document.getElementById('ai-rec-list').innerHTML = recommendations.map(function(r) {
+      var impactColor = r.impact === 'High' ? 'var(--danger)' : r.impact === 'Medium' ? 'var(--warning)' : 'var(--success)';
+      var iconMap = {messaging:'✉️',enrichment:'📊',response:'💬',pipeline:'📈',sourcing:'🔍',activity:'⚡',referral:'🎯'};
+      return '<div class="activity-item"><div class="activity-icon" style="font-size:16px;background:var(--accent-glow);color:var(--accent)">' + (iconMap[r.type] || '💡') + '</div><div class="activity-body"><div class="act-title">' + escapeHtml(r.action) + ' <span style="font-size:11px;color:' + impactColor + ';font-weight:600">[' + r.impact + ']</span></div><div class="act-meta">' + escapeHtml(r.reason) + '</div></div></div>';
+    }).join('');
+  } else {
+    document.getElementById('ai-rec-list').innerHTML = '<div style="padding:10px;color:var(--text-muted);font-size:13px">No recommendations yet. Keep working your pipeline.</div>';
+  }
+
+  // ── Pipeline Snapshot ──
+  var pipelineStages = pipeline.stages || [];
+  var maxCount = 1;
+  pipelineStages.forEach(function(s) { if (s.count > maxCount) maxCount = s.count; });
+  if (pipelineStages.length > 0) {
+    document.getElementById('li-pipeline-snapshot').innerHTML = pipelineStages.map(function(s) {
+      var pct = Math.round(s.count / maxCount * 100);
+      var color = pct >= 70 ? 'var(--success)' : pct >= 30 ? 'var(--warning)' : 'var(--accent)';
+      var valStr = s.value ? ' ($' + s.value.toLocaleString() + ')' : '';
+      return '<div class="pipeline-bar"><div class="pl-label">' + s.stage + valStr + '</div><div class="pl-track"><div class="pl-fill" style="width:' + Math.max(pct,8) + '%;background:' + color + '">' + s.count + '</div></div></div>';
+    }).join('');
+  } else {
+    document.getElementById('li-pipeline-snapshot').innerHTML = '<div style="padding:20px;color:var(--text-muted);font-size:13px;text-align:center">No pipeline data yet — start hunting!</div>';
+  }
+
+  // ── Source Performance ──
+  var sourcesEl = document.getElementById('dash-sources');
+  if (sources.length > 0) {
+    var maxSourceLeads = 1;
+    sources.forEach(function(s) { if (s.leads > maxSourceLeads) maxSourceLeads = s.leads; });
+    sourcesEl.innerHTML = sources.map(function(s) {
+      var pct = Math.round(s.leads / maxSourceLeads * 100);
+      return '<div class="progress-label mb16"><span class="prog-name">' + escapeHtml(s.source) + ' <span style="color:var(--text-muted);font-size:11px">(' + s.leads + ' leads · ' + s.reply_rate + '% reply)</span></span><span class="prog-val" style="color:var(--success)">' + (s.quality_score || 0) + '</span></div>' +
+        '<div class="progress-track mb16"><div class="progress-fill" style="width:' + pct + '%;background:var(--accent)"></div></div>';
+    }).join('');
+  } else {
+    sourcesEl.innerHTML = '<div style="color:var(--text-muted);font-size:13px;padding:10px">Add leads from different sources to see performance here.</div>';
+  }
+
+  // ── Recent Outreach Activity ──
+  var liActivities = activities.filter(function(a) { return a.type.indexOf('linkedin_') === 0 || a.type.indexOf('email_') === 0; }).slice(0, 5);
+  document.getElementById('dash-li-feed').innerHTML = liActivities.length > 0 ?
+    liActivities.map(function(a) {
+      return '<div class="activity-item"><div class="activity-icon" style="font-size:16px">' + (a.icon || '📌') + '</div><div class="activity-body"><div class="act-title">' + escapeHtml(a.description) + '</div><div class="act-meta">' + (a.timestamp ? new Date(a.timestamp).toLocaleString() : '') + '</div></div></div>';
+    }).join('') :
+    '<div style="padding:20px;color:var(--text-muted);font-size:13px;text-align:center">Track your outreach to see activity here.</div>';
+
+  // ── Follow-ups Due ──
+  document.getElementById('dash-followups').innerHTML = queue.follow_ups_due > 0 ?
+    '<div style="padding:16px;text-align:center"><div style="font-size:32px;font-weight:700;color:var(--danger)">' + queue.follow_ups_due + '</div><div style="font-size:12px;color:var(--text-muted)">contacts need follow-up</div><button class="btn-secondary mt16" onclick="showTab(\'leads\')">View Leads</button></div>' :
+    '<div style="padding:20px;color:var(--text-muted);font-size:13px;text-align:center">No follow-ups due. 🎉</div>';
 }
 
 function renderMyDashboard(d) {
@@ -1500,7 +1586,7 @@ function sendChatMessage(text) {
       function tryRead() {
         reader.read().then(function(res2) {
           if (res2.done) {
-            bubble.textContent = fullText || 'No response';
+            bubble.innerHTML = formatChatResponse(fullText) || 'No response';
             msgsEl.scrollTop = msgsEl.scrollHeight;
             return;
           }
@@ -1515,10 +1601,10 @@ function sendChatMessage(text) {
               catch(e) { fullText += data; }
             }
           }
-          bubble.textContent = fullText || '...';
+          bubble.innerHTML = formatChatResponse(fullText) || '...';
           msgsEl.scrollTop = msgsEl.scrollHeight;
           tryRead();
-        }).catch(function() { bubble.textContent = fullText || 'Error reading stream'; });
+        }).catch(function() { bubble.innerHTML = formatChatResponse(fullText || 'Error reading stream'); });
       }
       tryRead();
     }).catch(function() { demoChatResponse(msgsEl, bubble, msg); });
@@ -1537,14 +1623,40 @@ function demoChatResponse(msgsEl, bubble, msg) {
     'Based on your data, your highest-converting source is LinkedIn connections (42% of qualified leads). I recommend increasing daily connection requests by 20%.'
   ];
   setTimeout(function() {
-    bubble.textContent = responses[Math.floor(Math.random() * responses.length)];
+    bubble.innerHTML = formatChatResponse(responses[Math.floor(Math.random() * responses.length)]);
     msgsEl.scrollTop = msgsEl.scrollHeight;
   }, 800);
 }
 
 function sendQuickPrompt(text) {
-  document.getElementById('chat-input').value = text;
+  var ta = document.getElementById('chat-input');
+  ta.value = text;
   sendChatMessage(text);
+}
+
+function formatChatResponse(text) {
+  if (!text) return '...';
+  var html = escapeHtml(text);
+  // Bold: **text**
+  html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  // Numbered items: "N. Title: description" — wrap in lead-entry card
+  // Handles "1. Title: desc" or "1. Title — desc" or "1. Title" followed by content
+  html = html.replace(/(\d+)\.\s+(.+?):\s+/g, '<div class="lead-entry"><strong>$1. $2:</strong> ');
+  html = html.replace(/(\d+)\.\s+(.+?)<br><br>/g, '<div class="lead-entry"><strong>$1. $2</strong></div>');
+  html = html.replace(/(\d+)\.\s+(.+?)(?=<br>\d|"|$)/g, '<div class="lead-entry"><strong>$1. $2</strong></div>');
+  // Close any unclosed lead-entry divs (div opened with colon but no explicit close)
+  var openCount = (html.match(/<div class="lead-entry">/g) || []).length;
+  var closeCount = (html.match(/<\/div>/g) || []).length;
+  // Also handle closing lead-entry before the next one or at end
+  html = html.replace(/(<div class="lead-entry">.*?)(?=<div class="lead-entry">|$)/g, '$1</div>');
+  // Sub-bullets like "* r/..." with indentation
+  html = html.replace(/<br>\*\s+/g, '<br>&nbsp;&nbsp;• ');
+  html = html.replace(/^\*\s+/gm, '&nbsp;&nbsp;• ');
+  // Newlines to <br>
+  html = html.replace(/\n/g, '<br>');
+  // Prevent double breaks
+  html = html.replace(/(<br>){3,}/g, '<br><br>');
+  return html;
 }
 
 function parseLinkedInDump() {
@@ -1557,13 +1669,31 @@ function parseLinkedInDump() {
   if (!useDemo) {
     api('/api/ai/parse-linkedin', { method: 'POST', body: JSON.stringify({ text: text }) })
       .then(function(r) {
-        var data = r.data || r;
-        panel.innerHTML = '<div class="dump-item"><div class="dump-label">Name</div>' + (data.name || '—') + '</div><div class="dump-item"><div class="dump-label">Title</div>' + (data.title || '—') + '</div><div class="dump-item"><div class="dump-label">Company</div>' + (data.company || '—') + '</div><div class="dump-item"><div class="dump-label">Location</div>' + (data.location || '—') + '</div><div class="dump-item"><div class="dump-label">Summary</div>' + (data.summary || text.slice(0, 200)) + '</div>';
+        var people = r.people || r.data || [];
+        if (!Array.isArray(people) || people.length === 0) {
+          demoParseLinkedIn(text, panel);
+          return;
+        }
+        displayParsedPeople(people, panel);
+        // Items already saved to DB by the API — reload tracker
+        loadLinkedInTracker();
       })
       .catch(function() { demoParseLinkedIn(text, panel); });
   } else {
     demoParseLinkedIn(text, panel);
   }
+}
+
+function displayParsedPeople(people, container) {
+  container.innerHTML = '<div style="margin-bottom:8px;font-size:13px;color:var(--text-sec)">Parsed ' + people.length + ' contacts</div>' +
+    '<div style="max-height:300px;overflow-y:auto">' +
+    people.map(function(p) {
+      return '<div style="padding:8px 10px;border-left:2px solid var(--accent);margin-bottom:6px;background:var(--card);border-radius:var(--radius-sm)">' +
+        '<div style="font-weight:600;font-size:13px">' + (p.name || '—') + '</div>' +
+        '<div style="font-size:12px;color:var(--text-sec)">' + (p.title || '') + (p.company ? ' @ ' + p.company : '') + '</div>' +
+        (p.linkedin_url ? '<div style="font-size:11px;color:var(--accent);overflow:hidden;text-overflow:ellipsis">' + p.linkedin_url + '</div>' : '') +
+        '</div>';
+    }).join('') + '</div>';
 }
 
 function demoParseLinkedIn(text, panel) {
@@ -1574,35 +1704,107 @@ function demoParseLinkedIn(text, panel) {
 
 /* === LINKEDIN TRACKER === */
 function loadLinkedInTracker() {
-  var ok = false;
-  api('/api/linkedin/stats').then(function() { ok = true; }).catch(function() {}).then(function() {
-    if (ok) {
-      fetchLiStats();
-      fetchLiActivities();
-    } else {
-      renderLinkedInDemo();
-    }
+  api('/api/linkedin/stats').then(function(s) { if (s) Object.assign(DEMO.liStats, s); }).catch(function() {}).then(function() {
+    api('/api/linkedin/activities?per_page=100').then(function(a) {
+      if (a && a.activities) {
+        DEMO.liFeed = a.activities.map(function(act) {
+          return {
+            _id: act.id,
+            name: act.lead_name,
+            company: act.company,
+            linkedin_url: act.linkedin_url,
+            title: act.notes,
+            type: act.activity_type,
+            created_at: act.created_at
+          };
+        });
+      }
+      renderLinkedInTracker();
+    }).catch(function() { renderLinkedInTracker(); });
   });
 }
 
-function renderLinkedInDemo() {
+function updateLiStatus(activityId, newType) {
+  var label = document.getElementById('li-status-' + activityId);
+  if (label) label.textContent = '⏳';
+  api('/api/linkedin/activities/' + activityId, {
+    method: 'PUT',
+    body: JSON.stringify({ activity_type: newType })
+  }).then(function() {
+    loadLinkedInTracker();
+  }).catch(function() {
+    loadLinkedInTracker();
+  });
+}
+
+function deleteLiActivity(activityId) {
+  if (!confirm('Are you sure you want to delete this activity?')) return;
+  api('/api/linkedin/activities/' + activityId, {
+    method: 'DELETE'
+  }).then(function() {
+    loadLinkedInTracker();
+  }).catch(function() {
+    loadLinkedInTracker();
+  });
+}
+
+function renderLinkedInTracker() {
   var ls = DEMO.liStats;
   document.getElementById('li-stats').innerHTML = [
-    { label: 'LI Leads Tracked', val: ls.connectionsSent + ls.dmsSent, color: 'var(--accent)' },
-    { label: 'Connections Accepted', val: ls.connectionsAccepted, color: 'var(--success)' },
-    { label: 'DMs Sent', val: ls.dmsSent, color: 'var(--accent)' },
-    { label: 'Replies', val: ls.replies, color: 'var(--warning)' },
-    { label: 'Meetings', val: ls.meetings, color: 'var(--success)' }
+    { label: 'Connections Sent', val: ls.connections_sent || ls.connectionsSent || 0, color: 'var(--accent)' },
+    { label: 'Accepted', val: ls.accepted || ls.connectionsAccepted || 0, color: 'var(--success)' },
+    { label: 'DMs Sent', val: ls.dms || ls.dmsSent || 0, color: 'var(--accent)' },
+    { label: 'Replies', val: ls.replies || 0, color: 'var(--warning)' },
+    { label: 'Meetings', val: ls.meetings || 0, color: 'var(--success)' }
   ].map(function(s) {
     return '<div class="li-stat-card"><div class="val" style="color:' + s.color + '">' + s.val + '</div><div class="lbl">' + s.label + '</div></div>';
   }).join('');
 
   var filter = document.getElementById('li-feed-filter').value;
-  var feed = DEMO.liFeed.filter(function(a) { return !filter || a.type === filter; });
-  var icons = { connection_request: '🔗', connection_accepted: '✅', message: '💬', profile_view: '👤', reply_received: '📥', meeting_booked: '📅' };
-  document.getElementById('li-feed').innerHTML = feed.length ? feed.map(function(a) {
-    return '<div class="activity-item"><div class="activity-icon" style="font-size:16px">' + (icons[a.type] || '📌') + '</div><div class="activity-body"><div class="act-title">' + a.title + '</div><div class="act-meta">' + a.meta + '</div></div></div>';
-  }).join('') : '<div style="color:var(--text-muted);padding:20px;text-align:center">No activities match this filter</div>';
+  var feed = DEMO.liFeed.filter(function(a) {
+    var typeMap = {
+      connection_request: 'connection_sent', connection_accepted: 'connection_accepted',
+      message: 'dm_sent', profile_view: 'profile_viewed', reply_received: 'reply_received',
+      meeting_booked: 'meeting_booked', note: 'interested', follow_up: 'followup_sent'
+    };
+    var dbType = a.type || '';
+    return !filter || typeMap[filter] === dbType || filter === dbType;
+  });
+
+  var statusOptions = [
+    { val: 'connection_sent', icon: '➕', label: 'Connection' },
+    { val: 'connection_accepted', icon: '✅', label: 'Accepted' },
+    { val: 'dm_sent', icon: '💬', label: 'Message' },
+    { val: 'profile_viewed', icon: '👤', label: 'Profile View' },
+    { val: 'reply_received', icon: '📥', label: 'Reply' },
+    { val: 'meeting_booked', icon: '📅', label: 'Meeting' },
+    { val: 'interested', icon: '📝', label: 'Note' },
+    { val: 'followup_sent', icon: '🔄', label: 'Follow-up' }
+  ];
+
+  document.getElementById('li-feed').innerHTML = feed.length ? ('<div class="table-container" style="overflow-x:auto"><table><thead><tr><th style="padding:8px 10px;font-size:11px">Name</th><th style="padding:8px 10px;font-size:11px">Title</th><th style="padding:8px 10px;font-size:11px">Company</th><th style="padding:8px 10px;font-size:11px">LinkedIn</th><th style="padding:8px 10px;font-size:11px">Status</th><th style="padding:8px 10px;font-size:11px">Actions</th></tr></thead><tbody>' + feed.map(function(a) {
+    var curIcon = '+';
+    var curLabel = (a.type || '').replace(/_/g, ' ');
+    for (var i = 0; i < statusOptions.length; i++) {
+      if (statusOptions[i].val === a.type) { curIcon = statusOptions[i].icon; curLabel = statusOptions[i].label; break; }
+    }
+    var opts = statusOptions.map(function(o) {
+      return '<option value="' + o.val + '"' + (o.val === a.type ? ' selected' : '') + '>' + o.icon + ' ' + o.label + '</option>';
+    }).join('');
+
+    return '<tr>' +
+      '<td style="padding:8px 10px;border-bottom:1px solid var(--border);font-weight:600;font-size:13px;color:var(--text)">' + (a.name || '—') + '</td>' +
+      '<td style="padding:8px 10px;border-bottom:1px solid var(--border);font-size:12px;color:var(--text-sec)">' + (a.title || '—') + '</td>' +
+      '<td style="padding:8px 10px;border-bottom:1px solid var(--border);font-size:12px;color:var(--accent)">' + (a.company || '—') + '</td>' +
+      '<td style="padding:8px 10px;border-bottom:1px solid var(--border);font-size:11px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + (a.linkedin_url ? '<a href="' + a.linkedin_url + '" target="_blank" style="color:var(--accent)">🔗 Link</a>' : '—') + '</td>' +
+      '<td style="padding:8px 10px;border-bottom:1px solid var(--border)">' + 
+        '<select id="li-status-' + a._id + '" onchange="updateLiStatus(' + a._id + ', this.value)" style="padding:4px 6px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-size:11px;cursor:pointer;outline:none;margin-right:8px">' + opts + '</select>' +
+      '</td>' +
+      '<td style="padding:8px 10px;border-bottom:1px solid var(--border)">' +
+        '<button class="btn-sm btn-danger" onclick="deleteLiActivity(' + a._id + ')" title="Delete Activity">🗑️</button>' +
+      '</td>' +
+    '</tr>';
+  }).join('') + '</tbody></table></div>') : '<div style="color:var(--text-muted);padding:20px;text-align:center">No activities yet. Parse LinkedIn data or add manually.</div>';
 
   document.getElementById('li-performance').innerHTML = DEMO.liPerformance.map(function(p) {
     return '<div class="li-row"><span style="flex:1;font-size:13px;color:var(--text-sec)">' + p.label + '</span><span style="font-size:14px;font-weight:600;color:' + (p.good ? 'var(--success)' : 'var(--warning)') + '">' + p.val + '</span></div>';
@@ -1613,43 +1815,67 @@ function renderLinkedInDemo() {
   }).join('') || '<div style="color:var(--text-muted);padding:10px">No follow-ups due</div>';
 }
 
-function fetchLiStats() {
-  api('/api/linkedin/stats').then(function(s) { if (s) Object.assign(DEMO.liStats, s); renderLinkedInDemo(); }).catch(function() { renderLinkedInDemo(); });
-}
-
-function fetchLiActivities() {
-  api('/api/linkedin/activities').then(function(a) { if (a) { DEMO.liFeed = Array.isArray(a) ? a : (a.activities || DEMO.liFeed); } renderLinkedInDemo(); }).catch(function() { renderLinkedInDemo(); });
-}
-
 function logLiActivity(type) {
+  var name = document.getElementById('quick-li-name').value.trim();
+  var title = document.getElementById('quick-li-title').value.trim();
+  var company = document.getElementById('quick-li-company').value.trim();
+  var linkedinUrl = document.getElementById('quick-li-link').value.trim();
+  if (!name) { alert('Enter a lead name'); return; }
+  var notes = (company ? name + ' (' + company + ')' : name);
   if (!useDemo && authToken && authToken !== 'demo-fallback-token') {
-    api('/api/linkedin/activities', { method: 'POST', body: JSON.stringify({ type: type, title: capitalize(type.replace(/_/g, ' ')), timestamp: new Date().toISOString() }) }).catch(function() {});
+    api('/api/linkedin/activities', { method: 'POST', body: JSON.stringify({
+      lead_name: name, company: company, linkedin_url: linkedinUrl,
+      activity_type: mapActivityType(type), notes: notes, source: 'manual'
+    }) }).catch(function() {});
   }
   var titles = {
     connection_request: 'Connection Request', connection_accepted: 'Connection Accepted', message: 'Message Sent',
     profile_view: 'Profile View', reply_received: 'Reply Received', meeting_booked: 'Meeting Booked',
     note: 'Note Added', follow_up: 'Follow-up Sent'
   };
-  DEMO.liFeed.unshift({ type: type, title: titles[type] || capitalize(type.replace(/_/g, ' ')), meta: 'Just now' });
+  var label = (name && company) ? titles[type] + ': ' + name + ' (' + company + ')' : (titles[type] || capitalize(type.replace(/_/g, ' ')));
+  DEMO.liFeed.unshift({ type: type, title: label, meta: 'Just now' });
   if (type === 'connection_request') DEMO.liStats.connectionsSent++;
   if (type === 'connection_accepted') DEMO.liStats.connectionsAccepted++;
   if (type === 'message') DEMO.liStats.dmsSent++;
   if (type === 'reply_received') DEMO.liStats.replies++;
   if (type === 'meeting_booked') DEMO.liStats.meetings++;
+  document.getElementById('quick-li-name').value = '';
+  document.getElementById('quick-li-title').value = '';
+  document.getElementById('quick-li-company').value = '';
+  document.getElementById('quick-li-link').value = '';
   loadLinkedInTracker();
+}
+
+function mapActivityType(type) {
+  var m = { connection_request: 'connection_sent', message: 'dm_sent', connection_accepted: 'connection_accepted',
+    profile_view: 'profile_viewed', reply_received: 'reply_received', meeting_booked: 'meeting_booked',
+    note: 'dm_sent', follow_up: 'followup_sent' };
+  return m[type] || type;
 }
 
 function logQuickCustom() {
   var name = document.getElementById('quick-li-name').value.trim();
+  var title = document.getElementById('quick-li-title').value.trim();
   var company = document.getElementById('quick-li-company').value.trim();
+  var linkedinUrl = document.getElementById('quick-li-link').value.trim();
   if (!name) { alert('Enter a lead name'); return; }
-  var title = 'Activity for ' + name + (company ? ' (' + company + ')' : '');
+  var notes = title ? (company ? name + ' — ' + title + ' at ' + company : name + ' — ' + title) : (company ? name + ' (' + company + ')' : name);
   if (!useDemo) {
-    api('/api/linkedin/activities', { method: 'POST', body: JSON.stringify({ type: 'note', title: title, timestamp: new Date().toISOString() }) }).catch(function() {});
+    api('/api/linkedin/activities', { method: 'POST', body: JSON.stringify({
+      lead_name: name,
+      company: company,
+      linkedin_url: linkedinUrl,
+      activity_type: 'note',
+      notes: notes,
+      source: 'manual'
+    }) }).catch(function() {});
   }
-  DEMO.liFeed.unshift({ type: 'note', title: title, meta: 'Just now' });
+  DEMO.liFeed.unshift({ type: 'note', title: notes, meta: 'Just now' });
   document.getElementById('quick-li-name').value = '';
+  document.getElementById('quick-li-title').value = '';
   document.getElementById('quick-li-company').value = '';
+  document.getElementById('quick-li-link').value = '';
   loadLinkedInTracker();
 }
 
@@ -1661,17 +1887,12 @@ function parseSmartDump() {
   if (!useDemo) {
     api('/api/ai/parse-linkedin', { method: 'POST', body: JSON.stringify({ text: text }) })
       .then(function(r) {
-        var data = Array.isArray(r) ? r : (r.data || [r]);
-        data.forEach(function(item) {
-          DEMO.liFeed.unshift({ type: item.type || 'note', title: item.title || item.name + ' - ' + item.action, meta: 'Parsed just now' });
-        });
+        // Items are saved to DB by the API; just reload the tracker
         loadLinkedInTracker();
+        input.value = '';
       })
       .catch(function() {
-        var lines = text.split('\n').filter(Boolean);
-        lines.slice(0, 5).forEach(function(line) {
-          DEMO.liFeed.unshift({ type: 'note', title: line.slice(0, 80), meta: 'Parsed just now' });
-        });
+        alert('Failed to parse LinkedIn dump. Please check your connection.');
         loadLinkedInTracker();
       });
   } else {
@@ -1815,134 +2036,6 @@ function deleteLiActivity(id) {
   DEMO.liFeed = DEMO.liFeed.filter(function(a, i) { return i !== id; });
   loadLinkedInTracker();
 }
-
-/* ── HUBSPOT PIPELINE ── */
-var hsCache = null;
-
-function loadHubSpot() {
-  document.getElementById('hs-loading').style.display = 'block';
-  document.getElementById('hs-grid').style.display = 'none';
-  document.getElementById('hs-error').style.display = 'none';
-  document.getElementById('hs-status').innerHTML = 'loading...';
-  
-  api('/api/hubspot/dashboard').then(function(d) {
-    if (!d || d.error) throw new Error(d && d.error || 'No data');
-    hsCache = d;
-    document.getElementById('hs-loading').style.display = 'none';
-    document.getElementById('hs-status').innerHTML = '<span style="color:var(--success)">✅ connected</span>';
-    
-    var total = d.total_open || 0;
-    var owners = d.total_owners || 0;
-    var values = (d.owners || []).map(function(o) { return o.total_value || 0; });
-    var totalVal = values.reduce(function(a,b) { return a+b; }, 0);
-    var avg = values.length ? Math.round(totalVal / values.length) : 0;
-    
-    document.getElementById('hs-open-deals').textContent = total.toLocaleString();
-    document.getElementById('hs-owners').textContent = owners;
-    document.getElementById('hs-value').textContent = '$' + totalVal.toLocaleString();
-    document.getElementById('hs-avg').textContent = '$' + avg.toLocaleString();
-    
-    hsRender();
-  }).catch(function(e) {
-    document.getElementById('hs-loading').style.display = 'none';
-    document.getElementById('hs-error').style.display = 'block';
-    document.getElementById('hs-error').textContent = 'HubSpot not connected. Set HUBSPOT_ACCESS_TOKEN.';
-    document.getElementById('hs-status').innerHTML = '<span style="color:var(--danger)">❌ offline</span>';
-  });
-}
-
-function hsRender() {
-  if (!hsCache) return;
-  var owners = JSON.parse(JSON.stringify(hsCache.owners));
-  var sort = document.getElementById('hs-sort').value;
-  if (sort === 'deals') owners.sort(function(a,b) { return b.deal_count - a.deal_count; });
-  else if (sort === 'value') owners.sort(function(a,b) { return (b.total_value||0) - (a.total_value||0); });
-  else owners.sort(function(a,b) { return a.name.localeCompare(b.name); });
-  
-  var grid = document.getElementById('hs-grid');
-  grid.style.display = 'grid';
-  grid.style.gridTemplateColumns = 'repeat(auto-fill, minmax(360px, 1fr))';
-  grid.style.gap = '12px';
-  
-  var stageColors = {
-    'Opp. Identified': 'rgba(124,109,250,.12)',
-    '1st Meeting Scheduled': 'rgba(245,166,35,.15)',
-    '1st Meeting Held, 2nd Scheduled': 'rgba(245,166,35,.15)',
-    '2nd Meeting Held, Eval Scheduled': 'rgba(62,207,142,.12)',
-    'Qualified to Buy': 'rgba(62,207,142,.15)',
-    'Presentation Scheduled': 'rgba(62,207,142,.15)',
-    'Dec. Makers Bought In': 'rgba(0,184,212,.12)',
-    'Contract Sent': 'rgba(245,72,90,.12)',
-    'Pricing/Negotiation': 'rgba(245,72,90,.12)',
-    'Needs Assessment': 'rgba(124,109,250,.1)',
-  };
-  
-  grid.innerHTML = owners.map(function(o) {
-    var deals = (o.latest_deals || []).slice(0, 4);
-    return '<div class="grid-card" style="cursor:pointer;border:1px solid var(--border);transition:all .2s" onclick="hsModal(\'' + o.id + '\',\'' + o.name.replace(/'/g,'%27') + '\')" onmouseover="this.style.borderColor=\'var(--accent)\'" onmouseout="this.style.borderColor=\'var(--border)\')">' +
-      '<div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:12px">' +
-        '<div><div style="font-weight:600;font-size:15px">' + o.name + '</div>' +
-        (o.email ? '<div style="font-size:11px;color:var(--text-muted)">' + o.email + '</div>' : '') + '</div>' +
-        '<span style="background:var(--accent-glow);color:var(--accent);padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600;white-space:nowrap">' + o.deal_count + ' deals</span>' +
-      '</div>' +
-      '<div style="font-size:11px;color:var(--text-muted);margin-bottom:8px">Pipeline: $' + (o.total_value||0).toLocaleString() + '</div>' +
-      deals.map(function(d) {
-        var bg = stageColors[d.stage] || 'rgba(255,255,255,.04)';
-        return '<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border);font-size:12px">' +
-          '<div style="flex:1"><div>' + d.name + '</div>' +
-          '<span style="font-size:10px;padding:1px 6px;border-radius:8px;background:' + bg + ';color:var(--text-sec)">' + (d.stage || '') + '</span></div>' +
-          '<div style="font-weight:600;color:var(--success);margin-left:8px">$' + parseInt(d.amount||0).toLocaleString() + '</div></div>';
-      }).join('') +
-      (o.deal_count > 4 ? '<div style="text-align:center;color:var(--accent);font-size:11px;padding:6px 0 0">+ ' + (o.deal_count-4) + ' more →</div>' : '') +
-    '</div>';
-  }).join('');
-}
-
-function hsFilter() {
-  if (!hsCache) return;
-  var q = document.getElementById('hs-search').value.toLowerCase().trim();
-  if (!q) { hsCache._filtered = null; hsRender(); return; }
-  var filtered = hsCache.owners.filter(function(o) {
-    return o.name.toLowerCase().indexOf(q) >= 0 || (o.email||'').toLowerCase().indexOf(q) >= 0;
-  });
-  var save = hsCache.owners;
-  hsCache.owners = filtered;
-  hsRender();
-  hsCache.owners = save;
-}
-
-function hsModal(id, name) {
-  var d = document.createElement('div');
-  d.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:200;display:flex;align-items:center;justify-content:center';
-  d.id = 'hs-modal';
-  d.innerHTML = '<div style="background:var(--surface);border-radius:14px;width:90%;max-width:750px;max-height:85vh;overflow-y:auto;padding:24px;box-shadow:0 20px 60px rgba(0,0,0,.5)">' +
-    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">' +
-      '<div><div style="font-size:18px;font-weight:700">' + name + '</div><div id="hs-modal-sub" style="font-size:12px;color:var(--text-muted)">loading...</div></div>' +
-      '<button onclick="document.getElementById(\'hs-modal\').remove()" style="background:none;border:none;color:var(--text-muted);font-size:22px;cursor:pointer">×</button>' +
-    '</div>' +
-    '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse"><thead><tr>' +
-      '<th style="text-align:left;font-size:11px;padding:8px;border-bottom:2px solid var(--border);color:var(--text-muted)">DEAL</th>' +
-      '<th style="text-align:right;font-size:11px;padding:8px;border-bottom:2px solid var(--border);color:var(--text-muted)">AMOUNT</th>' +
-      '<th style="text-align:left;font-size:11px;padding:8px;border-bottom:2px solid var(--border);color:var(--text-muted)">STAGE</th>' +
-      '<th style="text-align:left;font-size:11px;padding:8px;border-bottom:2px solid var(--border);color:var(--text-muted)">CREATED</th>' +
-    '</tr></thead><tbody id="hs-modal-body"><tr><td colspan="4" style="text-align:center;padding:20px"><span class="spinner"></span></td></tr></tbody></table>' +
-  '</div></div>';
-  document.body.appendChild(d);
-  
-  api('/api/hubspot/owner/' + id + '/deals?limit=50').then(function(r) {
-    var deals = r.deals || [];
-    document.getElementById('hs-modal-sub').textContent = deals.length + ' open deals';
-    document.getElementById('hs-modal-body').innerHTML = deals.map(function(d) {
-      return '<tr><td style="padding:10px 8px;border-bottom:1px solid var(--border);font-size:13px"><strong>' + d.name + '</strong></td>' +
-        '<td style="padding:10px 8px;border-bottom:1px solid var(--border);font-size:13px;text-align:right;color:var(--success);font-weight:600">$' + parseInt(d.amount||0).toLocaleString() + '</td>' +
-        '<td style="padding:10px 8px;border-bottom:1px solid var(--border);font-size:12px">' + (d.stage||'') + '</td>' +
-        '<td style="padding:10px 8px;border-bottom:1px solid var(--border);font-size:12px;color:var(--text-muted)">' + (d.created||'') + '</td></tr>';
-    }).join('');
-  }).catch(function() {
-    document.getElementById('hs-modal-body').innerHTML = '<tr><td colspan="4" style="text-align:center;padding:20px;color:var(--danger)">Failed to load deals</td></tr>';
-  });
-}
-
 </script>
 </body>
 </html>

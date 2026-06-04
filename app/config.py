@@ -1,7 +1,9 @@
 import os
 from dotenv import load_dotenv
 
-load_dotenv()
+# Use explicit path to ensure .env is always found
+_env_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '.env')
+load_dotenv(_env_path)
 
 
 class Config:
