@@ -1,6 +1,7 @@
 """HubSpot CRM routes — pipeline dashboard + owner drill-down."""
 
-import logging, os
+import logging, os, requests
+from datetime import datetime, timezone
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from app.services.hubspot_service import (
@@ -12,7 +13,134 @@ from app.services.hubspot_service import (
 hubspot_bp = Blueprint('hubspot', __name__)
 logger = logging.getLogger(__name__)
 
+SLACK_WEBHOOK_URL = os.getenv('SLACK_WEBHOOK_URL', '')
+HUBSPOT_PORTAL_ID = os.getenv('HUBSPOT_PORTAL_ID', '22606445')
 
+
+def _detect_activity_type(event):
+    st = str(event.get('subscriptionType', '')).lower()
+    pn = str(event.get('propertyName', '')).lower()
+    cs = str(event.get('changeSource', '')).lower()
+    text = f"{st} {pn} {cs}"
+    if 'deal' in text and 'dealstage' in text: return 'Deal stage changed'
+    if 'deal' in text and 'created' in text: return 'New deal created'
+    if 'deal' in text: return 'Deal updated'
+    if 'contact' in text and 'created' in text: return 'New contact created'
+    if 'contact' in text: return 'Contact updated'
+    if 'company' in text and 'created' in text: return 'New company created'
+    if 'company' in text: return 'Company updated'
+    if 'lifecyclestage' in text: return 'Lifecycle stage changed'
+    if 'hubspot_owner_id' in text: return 'Owner changed'
+    return 'HubSpot activity'
+
+
+def _hubspot_url(event):
+    oid = event.get('objectId')
+    st = str(event.get('subscriptionType', '')).split('.')[0].lower()
+    if not HUBSPOT_PORTAL_ID or not oid: return ''
+    base = f'https://app.hubspot.com/contacts/{HUBSPOT_PORTAL_ID}'
+    if st == 'contact': return f'{base}/contact/{oid}'
+    if st == 'company': return f'{base}/company/{oid}'
+    if st == 'deal': return f'{base}/deal/{oid}'
+    return base
+
+
+def _build_event_blocks(event):
+    """Build Slack blocks for one event as a single readable sentence."""
+    oid = event.get('objectId', 'unknown')
+    pn = event.get('propertyName', '')
+    pv = event.get('propertyValue', '')
+    po = event.get('previousValue', '')
+    cs = event.get('changeSource', '')
+    sid = event.get('sourceId', '')
+    st = event.get('subscriptionType', '')
+
+    url = _hubspot_url(event)
+    obj_link = f"<{url}|#{oid}>" if url else f"#{oid}"
+    ts = event.get('occurredAt')
+
+    # Timestamp badge
+    time_badge = ''
+    if ts:
+        try:
+            dt_utc = datetime.fromtimestamp(int(ts) / 1000, tz=timezone.utc)
+            dt_local = dt_utc.astimezone()
+            time_badge = dt_local.strftime('%I:%M %p').lstrip('0')
+        except Exception:
+            pass
+
+    ts_prefix = f"`[{time_badge}]` " if time_badge else ''
+
+    # Source label
+    source_map = {
+        'CRM_UI': 'HubSpot UI',
+        'API': 'API',
+        'IMPORT': 'Import',
+        'INTEGRATION': 'Integration',
+        'AUTOMATION': 'Workflow',
+    }
+    source_label = source_map.get(cs, cs.replace('_', ' ').title() if cs else '')
+    via = f" via {source_label}" if source_label else ""
+
+    # Object type
+    obj_type = st.split('.')[0] if '.' in st else 'record'
+    obj_name = {'deal': 'Deal', 'contact': 'Contact', 'company': 'Company'}.get(obj_type, obj_type.capitalize())
+
+    is_creation = 'creation' in st.lower()
+    is_stage = 'dealstage' == pn
+    is_owner = 'hubspot_owner_id' == pn
+
+    # --- Build natural sentence ---
+    action = ''
+    detail = ''
+
+    if is_creation:
+        action = 'was created'
+        if pn and pv:
+            detail = f" \u2014 {pn} set to *{pv}*"
+    elif is_stage and po and pv:
+        action = f"stage moved from *{po}* \u2192 *{pv}*"
+    elif is_owner and po and pv:
+        action = f"owner changed from *{po}* \u2192 *{pv}*"
+    elif po and pv:
+        action = f"*{pn}* changed from *{po}* \u2192 *{pv}*"
+    elif pv:
+        action = f"*{pn}* set to *{pv}*"
+    elif po:
+        action = f"*{pn}* was cleared (was {po})"
+    else:
+        action = 'was updated'
+
+    sentence = f"{ts_prefix}{obj_name} {obj_link} {action}{detail}{via}"
+
+    # Link footer
+    footer = f"<{url}|\U0001F517 Open in HubSpot>" if url else ''
+
+    blocks = [{'type': 'section', 'text': {'type': 'mrkdwn', 'text': sentence}}]
+    if footer:
+        blocks.append({'type': 'section', 'text': {'type': 'mrkdwn', 'text': footer}})      
+
+    return blocks
+
+
+def _send_batched_slack(events):
+    """Batch events into a single Slack message with dividers between cards."""
+    MAX_EVENTS = 10
+    for chunk in [events[i:i+MAX_EVENTS] for i in range(0, len(events), MAX_EVENTS)]:
+        blocks = []
+        for idx, event in enumerate(chunk):
+            if idx > 0:
+                blocks.append({'type': 'divider'})
+            blocks.extend(_build_event_blocks(event))
+
+        payload = {
+            'text': f"HubSpot: {len(chunk)} activity event(s)",
+            'blocks': blocks
+        }
+        try:
+            requests.post(SLACK_WEBHOOK_URL, json=payload, timeout=10)
+        except Exception as e:
+            logger.warning(f'Slack webhook batch failed: {e}')
 @hubspot_bp.route('/api/hubspot/status', methods=['GET'])
 @jwt_required()
 def status():
@@ -103,3 +231,29 @@ def deals_by_owner():
         r = search_deals_by_owner_name(q, limit=request.args.get('limit', 10, type=int))
         return jsonify({'results': r, 'count': len(r)})
     except HubSpotError as e: return jsonify({'error': str(e)}), 502
+
+
+@hubspot_bp.route('/api/hubspot/webhook/activity', methods=['POST', 'GET'])
+def hubspot_webhook_activity():
+    """Receives HubSpot activity webhooks and forwards to Slack."""
+    if request.method == 'GET':
+        return jsonify({'ok': True, 'message': 'HubSpot webhook endpoint is live'})
+    
+    try:
+        payload = request.get_json(force=True, silent=True)
+        if not payload:
+            payload = request.get_data(as_text=True) or '[]'
+            import json as _json
+            payload = _json.loads(payload)
+        
+        events = payload if isinstance(payload, list) else [payload]
+        sent = 0
+        
+        if SLACK_WEBHOOK_URL and events:
+            sent = len(events)
+            _send_batched_slack(events)
+        
+        return jsonify({'ok': True, 'received': len(events), 'batched_to_slack': sent})
+    except Exception as e:
+        logger.exception('hubspot_webhook_activity')
+        return jsonify({'ok': False, 'error': str(e)}), 500
