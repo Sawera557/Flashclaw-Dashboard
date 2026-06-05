@@ -2,18 +2,32 @@ from datetime import datetime, timezone
 
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
-from app import db
-from app.models.lead import LinkedInActivity
-from app.models.user import User
+from app.services.supabase import supabase, select, select_one, insert, update, delete, eq, in_
 
 linkedin_bp = Blueprint('linkedin', __name__)
 
 
 def _get_current_user(user_id_str):
     try:
-        return User.query.get(int(user_id_str))
+        return select_one('users', filters=[eq('id', int(user_id_str))])
     except (ValueError, TypeError):
         return None
+
+
+def _activity_to_dict(a):
+    return {
+        'id': a.get('id'),
+        'workspace_id': a.get('workspace_id'),
+        'user_id': a.get('user_id'),
+        'lead_name': a.get('lead_name', ''),
+        'company': a.get('company', ''),
+        'linkedin_url': a.get('linkedin_url', ''),
+        'activity_type': a.get('activity_type', ''),
+        'activity_date': a.get('activity_date', ''),
+        'notes': a.get('notes', ''),
+        'source': a.get('source', 'manual'),
+        'created_at': a.get('created_at'),
+    }
 
 
 @linkedin_bp.route('/api/linkedin/activities', methods=['GET'])
@@ -30,22 +44,36 @@ def list_activities():
     source = request.args.get('source', '', type=str)
 
     per_page = min(per_page, 100)
-    query = LinkedInActivity.query.filter_by(workspace_id=user.workspace_id)
+
+    q = supabase.table('linkedin_activities').select('*', count='exact').eq('workspace_id', user['workspace_id'])
 
     if activity_type:
-        query = query.filter(LinkedInActivity.activity_type == activity_type)
-
+        q = q.eq('activity_type', activity_type)
     if source:
-        query = query.filter(LinkedInActivity.source == source)
+        q = q.eq('source', source)
 
-    query = query.order_by(LinkedInActivity.created_at.desc())
-    pagination = query.paginate(page=page, per_page=per_page, error_out=False)
+    q = q.order('created_at', desc=True)
+
+    # Get total count
+    count_q = supabase.table('linkedin_activities').select('id', count='exact').eq('workspace_id', user['workspace_id'])
+    if activity_type:
+        count_q = count_q.eq('activity_type', activity_type)
+    if source:
+        count_q = count_q.eq('source', source)
+    count_result = count_q.execute()
+    total = int(count_result.count) if hasattr(count_result, 'count') else 0
+
+    # Paginate
+    offset_val = (page - 1) * per_page
+    q = q.limit(per_page).offset(offset_val)
+    result = q.execute()
+    activities = result.data
 
     return jsonify({
-        'activities': [a.to_dict() for a in pagination.items],
-        'total': pagination.total,
+        'activities': [_activity_to_dict(a) for a in activities],
+        'total': total,
         'page': page,
-        'pages': pagination.pages,
+        'pages': max(1, -(-total // per_page)) if total else 1,
     })
 
 
@@ -61,22 +89,24 @@ def create_activity():
     if not data:
         return jsonify({'error': 'No data provided'}), 400
 
-    activity = LinkedInActivity(
-        workspace_id=user.workspace_id,
-        user_id=user.id,
-        lead_name=data.get('lead_name', ''),
-        company=data.get('company', ''),
-        linkedin_url=data.get('linkedin_url', ''),
-        activity_type=data.get('activity_type', 'dm_sent'),
-        activity_date=data.get('activity_date', ''),
-        notes=data.get('notes', ''),
-        source=data.get('source', 'manual'),
-    )
+    now = datetime.now(timezone.utc).isoformat()
+    activity_data = {
+        'workspace_id': user['workspace_id'],
+        'user_id': user['id'],
+        'lead_name': data.get('lead_name', ''),
+        'company': data.get('company', ''),
+        'linkedin_url': data.get('linkedin_url', ''),
+        'activity_type': data.get('activity_type', 'dm_sent'),
+        'activity_date': data.get('activity_date', ''),
+        'notes': data.get('notes', ''),
+        'source': data.get('source', 'manual'),
+        'created_at': now,
+    }
 
-    db.session.add(activity)
-    db.session.commit()
+    result = insert('linkedin_activities', activity_data)
+    created = result.data[0] if result.data else activity_data
 
-    return jsonify({'activity': activity.to_dict()}), 201
+    return jsonify({'activity': _activity_to_dict(created)}), 201
 
 
 @linkedin_bp.route('/api/linkedin/activities/<int:activity_id>', methods=['PUT'])
@@ -87,10 +117,7 @@ def update_activity(activity_id):
     if not user:
         return jsonify({'error': 'User not found'}), 404
 
-    activity = LinkedInActivity.query.filter_by(
-        id=activity_id, workspace_id=user.workspace_id
-    ).first()
-
+    activity = select_one('linkedin_activities', filters=[eq('id', activity_id), eq('workspace_id', user['workspace_id'])])
     if not activity:
         return jsonify({'error': 'Activity not found'}), 404
 
@@ -103,13 +130,16 @@ def update_activity(activity_id):
         'activity_date', 'notes', 'source',
     ]
 
+    update_data = {}
     for field in allowed_fields:
         if field in data:
-            setattr(activity, field, data[field])
+            update_data[field] = data[field]
 
-    db.session.commit()
+    update('linkedin_activities', update_data, filters=[eq('id', activity_id)])
 
-    return jsonify({'activity': activity.to_dict()})
+    updated = select_one('linkedin_activities', filters=[eq('id', activity_id)])
+
+    return jsonify({'activity': _activity_to_dict(updated)})
 
 
 @linkedin_bp.route('/api/linkedin/activities/<int:activity_id>', methods=['DELETE'])
@@ -120,15 +150,11 @@ def delete_activity(activity_id):
     if not user:
         return jsonify({'error': 'User not found'}), 404
 
-    activity = LinkedInActivity.query.filter_by(
-        id=activity_id, workspace_id=user.workspace_id
-    ).first()
-
+    activity = select_one('linkedin_activities', filters=[eq('id', activity_id), eq('workspace_id', user['workspace_id'])])
     if not activity:
         return jsonify({'error': 'Activity not found'}), 404
 
-    db.session.delete(activity)
-    db.session.commit()
+    delete('linkedin_activities', filters=[eq('id', activity_id)])
 
     return jsonify({'success': True})
 
@@ -146,13 +172,13 @@ def batch_delete_activities():
     if not ids:
         return jsonify({'error': 'No IDs provided'}), 400
 
-    deleted = LinkedInActivity.query.filter(
-        LinkedInActivity.id.in_(ids),
-        LinkedInActivity.workspace_id == user.workspace_id
-    ).delete(synchronize_session=False)
-    db.session.commit()
+    # Delete activities matching IDs and workspace
+    for aid in ids:
+        act = select_one('linkedin_activities', filters=[eq('id', aid), eq('workspace_id', user['workspace_id'])])
+        if act:
+            delete('linkedin_activities', filters=[eq('id', aid)])
 
-    return jsonify({'success': True, 'deleted': deleted})
+    return jsonify({'success': True, 'deleted': len(ids)})
 
 
 @linkedin_bp.route('/api/linkedin/stats', methods=['GET'])
@@ -163,17 +189,16 @@ def get_linkedin_stats():
     if not user:
         return jsonify({'error': 'User not found'}), 404
 
-    activities = LinkedInActivity.query.filter_by(
-        workspace_id=user.workspace_id
-    ).all()
+    activities_result = supabase.table('linkedin_activities').select('activity_type').eq('workspace_id', user['workspace_id']).execute()
+    activities = activities_result.data
 
     total = len(activities)
-    accepted = sum(1 for a in activities if a.activity_type == 'connection_accepted')
-    dms = sum(1 for a in activities if a.activity_type == 'dm_sent')
-    replies = sum(1 for a in activities if a.activity_type == 'reply_received')
-    meetings = sum(1 for a in activities if a.activity_type == 'meeting_booked')
-    interested = sum(1 for a in activities if a.activity_type == 'interested')
-    connections_sent = sum(1 for a in activities if a.activity_type == 'connection_sent')
+    accepted = sum(1 for a in activities if a.get('activity_type') == 'connection_accepted')
+    dms = sum(1 for a in activities if a.get('activity_type') == 'dm_sent')
+    replies = sum(1 for a in activities if a.get('activity_type') == 'reply_received')
+    meetings = sum(1 for a in activities if a.get('activity_type') == 'meeting_booked')
+    interested = sum(1 for a in activities if a.get('activity_type') == 'interested')
+    connections_sent = sum(1 for a in activities if a.get('activity_type') == 'connection_sent')
 
     return jsonify({
         'total': total,

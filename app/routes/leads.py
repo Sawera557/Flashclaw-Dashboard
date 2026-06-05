@@ -6,9 +6,7 @@ from datetime import datetime, timezone
 
 from flask import Blueprint, request, jsonify, Response
 from flask_jwt_extended import jwt_required, get_jwt_identity
-from app import db
-from app.models.lead import Lead
-from app.models.user import User
+from app.services.supabase import supabase, select, select_one, insert, update, delete, eq, like, in_
 from app.services.dedup import is_duplicate_lead
 from app.services.scoring import score_lead_via_groq, enrich_lead_via_groq
 
@@ -17,11 +15,39 @@ logger = logging.getLogger(__name__)
 
 
 def _get_current_user(user_id_str):
-    """Get User model from JWT identity string."""
+    """Get user dict from Supabase by JWT identity string."""
     try:
-        return User.query.get(int(user_id_str))
+        return select_one('users', filters=[eq('id', int(user_id_str))])
     except (ValueError, TypeError):
         return None
+
+
+def _lead_to_dict(lead):
+    """Convert a raw Supabase lead row to the expected dict format (same as old Lead.to_dict)."""
+    return {
+        'id': lead.get('id'),
+        'workspace_id': lead.get('workspace_id'),
+        'user_id': lead.get('user_id'),
+        'first_name': lead.get('first_name', ''),
+        'last_name': lead.get('last_name', ''),
+        'email': lead.get('email', ''),
+        'company': lead.get('company', ''),
+        'job_title': lead.get('job_title', ''),
+        'phone': lead.get('phone', ''),
+        'linkedin_url': lead.get('linkedin_url', ''),
+        'website': lead.get('website', ''),
+        'industry': lead.get('industry', ''),
+        'location': lead.get('location', ''),
+        'company_size': lead.get('company_size', ''),
+        'source': lead.get('source', 'manual'),
+        'lead_score': lead.get('lead_score', 0),
+        'status': lead.get('status', 'new'),
+        'icp_match': lead.get('icp_match', 0.0),
+        'score_reason': lead.get('score_reason', ''),
+        'enriched_at': lead.get('enriched_at'),
+        'created_at': lead.get('created_at'),
+        'updated_at': lead.get('updated_at'),
+    }
 
 
 @leads_bp.route('/api/leads', methods=['GET'])
@@ -41,37 +67,80 @@ def list_leads():
 
     per_page = min(per_page, 100)
 
-    query = Lead.query.filter_by(workspace_id=user.workspace_id)
+    filters = [eq('workspace_id', user['workspace_id'])]
 
     if search:
         search_term = f'%{search}%'
-        query = query.filter(
-            db.or_(
-                Lead.first_name.ilike(search_term),
-                Lead.last_name.ilike(search_term),
-                Lead.email.ilike(search_term),
-                Lead.company.ilike(search_term),
-                Lead.job_title.ilike(search_term),
-            )
-        )
+        # Use OR-like approach: fetch all workspace leads and filter in Python
+        # since Supabase REST doesn't support OR natively in the simple API
+        pass
 
     if source:
-        query = query.filter(Lead.source == source)
+        filters.append(eq('source', source))
 
     if status:
-        query = query.filter(Lead.status == status)
+        filters.append(eq('status', status))
 
     if min_score > 0:
-        query = query.filter(Lead.lead_score >= min_score)
+        filters.append(('lead_score', 'gte', min_score))
 
-    query = query.order_by(Lead.updated_at.desc())
-    pagination = query.paginate(page=page, per_page=per_page, error_out=False)
+    # Build query
+    query = supabase.table('leads').select('*', count='exact')
+
+    # Apply workspace filter
+    query = query.eq('workspace_id', user['workspace_id'])
+
+    if source:
+        query = query.eq('source', source)
+    if status:
+        query = query.eq('status', status)
+    if min_score > 0:
+        query = query.gte('lead_score', min_score)
+
+    query = query.order('updated_at', desc=True)
+
+    # With search, fetch all and filter in Python (OR querying across columns)
+    if search:
+        # Fetch all leads for this workspace to search across columns
+        all_query = supabase.table('leads').select('*', count='exact').eq('workspace_id', user['workspace_id']).order('updated_at', desc=True)
+        all_result = all_query.execute()
+        all_leads = all_result.data
+        total = len(all_leads)
+        search_lower = search.lower()
+        filtered = [
+            l for l in all_leads
+            if search_lower in (l.get('first_name') or '').lower()
+            or search_lower in (l.get('last_name') or '').lower()
+            or search_lower in (l.get('email') or '').lower()
+            or search_lower in (l.get('company') or '').lower()
+            or search_lower in (l.get('job_title') or '').lower()
+        ]
+        total_filtered = len(filtered)
+        # Apply pagination
+        start = (page - 1) * per_page
+        end = start + per_page
+        leads = filtered[start:end]
+
+        return jsonify({
+            'leads': [_lead_to_dict(l) for l in leads],
+            'total': total_filtered,
+            'page': page,
+            'pages': max(1, -(-total_filtered // per_page)),
+            'per_page': per_page,
+        })
+
+    # No search — use paginated query
+    offset_val = (page - 1) * per_page
+    query = query.limit(per_page).offset(offset_val)
+    result = query.execute()
+    leads = result.data
+    total = result.count if hasattr(result, 'count') else 0
 
     return jsonify({
-        'leads': [lead.to_dict() for lead in pagination.items],
-        'total': pagination.total,
+        'leads': [_lead_to_dict(l) for l in leads],
+        'total': total,
         'page': page,
-        'pages': pagination.pages,
+        'pages': max(1, -(-total // per_page)) if total else 1,
         'per_page': per_page,
     })
 
@@ -90,33 +159,37 @@ def create_lead():
 
     # Check for duplicate by email
     if data.get('email'):
-        existing = Lead.query.filter_by(email=data['email'].strip().lower()).first()
+        existing = select_one('leads', filters=[eq('email', data['email'].strip().lower())])
         if existing:
-            return jsonify({'error': 'Lead with this email already exists', 'lead': existing.to_dict()}), 409
+            return jsonify({'error': 'Lead with this email already exists', 'lead': _lead_to_dict(existing)}), 409
 
-    lead = Lead(
-        workspace_id=user.workspace_id,
-        user_id=user.id,
-        first_name=data.get('first_name', ''),
-        last_name=data.get('last_name', ''),
-        email=data.get('email', '').strip().lower() if data.get('email') else '',
-        company=data.get('company', ''),
-        job_title=data.get('job_title', ''),
-        phone=data.get('phone', ''),
-        linkedin_url=data.get('linkedin_url', ''),
-        website=data.get('website', ''),
-        industry=data.get('industry', ''),
-        location=data.get('location', ''),
-        company_size=data.get('company_size', ''),
-        source=data.get('source', 'manual'),
-        lead_score=data.get('lead_score', 0),
-        status=data.get('status', 'new'),
-    )
+    now = datetime.now(timezone.utc).isoformat()
+    lead_data = {
+        'workspace_id': user['workspace_id'],
+        'user_id': user['id'],
+        'first_name': data.get('first_name', ''),
+        'last_name': data.get('last_name', ''),
+        'email': data.get('email', '').strip().lower() if data.get('email') else '',
+        'company': data.get('company', ''),
+        'job_title': data.get('job_title', ''),
+        'phone': data.get('phone', ''),
+        'linkedin_url': data.get('linkedin_url', ''),
+        'website': data.get('website', ''),
+        'industry': data.get('industry', ''),
+        'location': data.get('location', ''),
+        'company_size': data.get('company_size', ''),
+        'source': data.get('source', 'manual'),
+        'lead_score': data.get('lead_score', 0),
+        'status': data.get('status', 'new'),
+        'created_at': now,
+        'updated_at': now,
+    }
 
-    db.session.add(lead)
-    db.session.commit()
+    result = insert('leads', lead_data)
+    created = result.data[0] if result.data else lead_data
+    created['id'] = created.get('id')
 
-    return jsonify({'lead': lead.to_dict()}), 201
+    return jsonify({'lead': _lead_to_dict(created)}), 201
 
 
 @leads_bp.route('/api/leads/bulk', methods=['POST'])
@@ -131,44 +204,47 @@ def bulk_create_leads():
     if not data or not isinstance(data, list):
         return jsonify({'error': 'Expected array of lead objects'}), 400
 
+    # Fetch existing leads for dedup
+    existing_result = supabase.table('leads').select('*').eq('workspace_id', user['workspace_id']).execute()
+    existing_dicts = existing_result.data
+
     saved = 0
     errors = 0
-    existing_leads = Lead.query.filter_by(workspace_id=user.workspace_id).all()
-    existing_dict = [l.to_dict() for l in existing_leads]
+    now = datetime.now(timezone.utc).isoformat()
 
-    for lead_data in data:
+    for lead_data_entry in data:
         try:
             # Skip duplicates
-            is_dup, matched_on = is_duplicate_lead(lead_data, existing_dict)
+            is_dup, matched_on = is_duplicate_lead(lead_data_entry, existing_dicts)
             if is_dup:
                 errors += 1
                 continue
 
-            lead = Lead(
-                workspace_id=user.workspace_id,
-                user_id=user.id,
-                first_name=lead_data.get('first_name', ''),
-                last_name=lead_data.get('last_name', ''),
-                email=lead_data.get('email', '').strip().lower() if lead_data.get('email') else '',
-                company=lead_data.get('company', ''),
-                job_title=lead_data.get('job_title', ''),
-                phone=lead_data.get('phone', ''),
-                linkedin_url=lead_data.get('linkedin_url', ''),
-                website=lead_data.get('website', ''),
-                industry=lead_data.get('industry', ''),
-                location=lead_data.get('location', ''),
-                company_size=lead_data.get('company_size', ''),
-                source=lead_data.get('source', 'manual'),
-                lead_score=lead_data.get('lead_score', 0),
-                status=lead_data.get('status', 'new'),
-            )
-            db.session.add(lead)
+            new_lead = {
+                'workspace_id': user['workspace_id'],
+                'user_id': user['id'],
+                'first_name': lead_data_entry.get('first_name', ''),
+                'last_name': lead_data_entry.get('last_name', ''),
+                'email': lead_data_entry.get('email', '').strip().lower() if lead_data_entry.get('email') else '',
+                'company': lead_data_entry.get('company', ''),
+                'job_title': lead_data_entry.get('job_title', ''),
+                'phone': lead_data_entry.get('phone', ''),
+                'linkedin_url': lead_data_entry.get('linkedin_url', ''),
+                'website': lead_data_entry.get('website', ''),
+                'industry': lead_data_entry.get('industry', ''),
+                'location': lead_data_entry.get('location', ''),
+                'company_size': lead_data_entry.get('company_size', ''),
+                'source': lead_data_entry.get('source', 'manual'),
+                'lead_score': lead_data_entry.get('lead_score', 0),
+                'status': lead_data_entry.get('status', 'new'),
+                'created_at': now,
+                'updated_at': now,
+            }
+            result = insert('leads', new_lead)
             saved += 1
         except Exception as e:
             errors += 1
             logger.error(f'Bulk lead error: {str(e)}')
-
-    db.session.commit()
 
     return jsonify({'saved': saved, 'errors': errors}), 201
 
@@ -181,7 +257,7 @@ def update_lead(lead_id):
     if not user:
         return jsonify({'error': 'User not found'}), 404
 
-    lead = Lead.query.filter_by(id=lead_id, workspace_id=user.workspace_id).first()
+    lead = select_one('leads', filters=[eq('id', lead_id), eq('workspace_id', user['workspace_id'])])
     if not lead:
         return jsonify({'error': 'Lead not found'}), 404
 
@@ -195,14 +271,32 @@ def update_lead(lead_id):
         'source', 'lead_score', 'status', 'icp_match', 'score_reason',
     ]
 
+    update_data = {}
     for field in allowed_fields:
         if field in data:
-            setattr(lead, field, data[field])
+            update_data[field] = data[field]
 
-    lead.updated_at = datetime.now(timezone.utc)
-    db.session.commit()
+    update_data['updated_at'] = datetime.now(timezone.utc).isoformat()
 
-    return jsonify({'lead': lead.to_dict()})
+    update('leads', update_data, filters=[eq('id', lead_id)])
+
+    # Fetch updated lead
+    updated_lead = select_one('leads', filters=[eq('id', lead_id)])
+
+    return jsonify({'lead': _lead_to_dict(updated_lead)})
+
+
+@leads_bp.route('/api/leads/<int:lead_id>', methods=['GET'])
+@jwt_required()
+def get_lead(lead_id):
+    current_user_id = get_jwt_identity()
+    user = _get_current_user(current_user_id)
+    if not user:
+        return jsonify({'error': 'User not found'}), 404
+    lead = select_one('leads', filters=[eq('id', lead_id), eq('workspace_id', user['workspace_id'])])
+    if not lead:
+        return jsonify({'error': 'Lead not found'}), 404
+    return jsonify(lead)
 
 
 @leads_bp.route('/api/leads/<int:lead_id>', methods=['DELETE'])
@@ -213,14 +307,40 @@ def delete_lead(lead_id):
     if not user:
         return jsonify({'error': 'User not found'}), 404
 
-    lead = Lead.query.filter_by(id=lead_id, workspace_id=user.workspace_id).first()
+    lead = select_one('leads', filters=[eq('id', lead_id), eq('workspace_id', user['workspace_id'])])
     if not lead:
         return jsonify({'error': 'Lead not found'}), 404
 
-    db.session.delete(lead)
-    db.session.commit()
+    # Delete related records first (respect foreign keys)
+    delete('email_activities', filters=[eq('lead_id', lead_id)])
+    delete('lead_activities', filters=[eq('lead_id', lead_id)])
+    delete('meetings', filters=[eq('lead_id', lead_id)])
+
+    delete('leads', filters=[eq('id', lead_id)])
 
     return jsonify({'success': True})
+
+
+@leads_bp.route('/api/leads/batch-delete', methods=['POST'])
+@jwt_required()
+def batch_delete_leads():
+    current_user_id = get_jwt_identity()
+    user = _get_current_user(current_user_id)
+    if not user:
+        return jsonify({'error': 'User not found'}), 404
+
+    data = request.get_json()
+    lead_ids = data.get('ids', []) if data else []
+    if not lead_ids:
+        return jsonify({'error': 'No lead IDs provided'}), 400
+
+    for lid in lead_ids:
+        delete('email_activities', filters=[eq('lead_id', lid)])
+        delete('lead_activities', filters=[eq('lead_id', lid)])
+        delete('meetings', filters=[eq('lead_id', lid)])
+        delete('leads', filters=[eq('id', lid)])
+
+    return jsonify({'success': True, 'deleted': len(lead_ids)})
 
 
 @leads_bp.route('/api/leads/hunt', methods=['POST'])
@@ -251,18 +371,23 @@ def hunt_leads():
 
     # Pre-load existing emails in this workspace to avoid UNIQUE constraint failures
     existing_emails = set()
-    for row in db.session.query(Lead.email).filter(Lead.email.isnot(None), Lead.email != '').all():
-        existing_emails.add(row[0].strip().lower())
+    emails_result = supabase.table('leads').select('email').neq('email', '').is_('email', 'not', 'null').eq('workspace_id', user['workspace_id']).execute()
+    for row in emails_result.data:
+        em = row.get('email')
+        if em:
+            existing_emails.add(em.strip().lower())
 
     saved_leads = []
     errors = 0
+    now = datetime.now(timezone.utc).isoformat()
+
     for ld in found_leads:
         try:
             # Skip if missing basic info
             if not ld.get('company') and not ld.get('first_name'):
                 errors += 1
                 continue
-            
+
             # Skip if email already in DB
             lead_email = ld.get('email') or None
             if lead_email and lead_email.strip().lower() in existing_emails:
@@ -270,32 +395,33 @@ def hunt_leads():
                 continue
             if lead_email:
                 existing_emails.add(lead_email.strip().lower())
-            
-            lead = Lead(
-                workspace_id=user.workspace_id,
-                user_id=user.id,
-                first_name=ld.get('first_name', ''),
-                last_name=ld.get('last_name', ''),
-                email=lead_email,
-                company=ld.get('company', ''),
-                job_title=ld.get('job_title', ''),
-                phone=ld.get('phone', ''),
-                linkedin_url=ld.get('linkedin_url', ''),
-                website=ld.get('website', ''),
-                industry=ld.get('industry', ''),
-                location=ld.get('location', ''),
-                company_size=ld.get('company_size', ''),
-                source=ld.get('source', 'unknown'),
-                lead_score=ld.get('lead_score', 0),
-                status='new',
-            )
-            db.session.add(lead)
-            saved_leads.append(lead.to_dict())
+
+            new_lead = {
+                'workspace_id': user['workspace_id'],
+                'user_id': user['id'],
+                'first_name': ld.get('first_name', ''),
+                'last_name': ld.get('last_name', ''),
+                'email': lead_email or '',
+                'company': ld.get('company', ''),
+                'job_title': ld.get('job_title', ''),
+                'phone': ld.get('phone', ''),
+                'linkedin_url': ld.get('linkedin_url', ''),
+                'website': ld.get('website', ''),
+                'industry': ld.get('industry', ''),
+                'location': ld.get('location', ''),
+                'company_size': ld.get('company_size', ''),
+                'source': ld.get('source', 'unknown'),
+                'lead_score': ld.get('lead_score', 0),
+                'status': 'new',
+                'created_at': now,
+                'updated_at': now,
+            }
+            result = insert('leads', new_lead)
+            saved_row = result.data[0] if result.data else new_lead
+            saved_leads.append(_lead_to_dict(saved_row if isinstance(saved_row, dict) else new_lead))
         except Exception as e:
             logger.warning(f'Hunt save error: {e}')
             errors += 1
-
-    db.session.commit()
 
     return jsonify({
         'status': 'completed',
@@ -318,23 +444,28 @@ def enrich_lead():
     if not lead_id:
         return jsonify({'error': 'lead_id is required'}), 400
 
-    lead = Lead.query.filter_by(id=lead_id, workspace_id=user.workspace_id).first()
+    lead = select_one('leads', filters=[eq('id', lead_id), eq('workspace_id', user['workspace_id'])])
     if not lead:
         return jsonify({'error': 'Lead not found'}), 404
 
     # Enrich using Groq (or fallback)
-    enriched_data = enrich_lead_via_groq(lead.to_dict())
+    enriched_data = enrich_lead_via_groq(_lead_to_dict(lead))
 
     # Update lead with any new data
+    update_data = {}
     for field in ['industry', 'company_size', 'location', 'company', 'job_title']:
-        if enriched_data.get(field) and not getattr(lead, field):
-            setattr(lead, field, enriched_data[field])
+        if enriched_data.get(field) and not lead.get(field):
+            update_data[field] = enriched_data[field]
 
-    lead.enriched_at = datetime.now(timezone.utc)
-    lead.updated_at = datetime.now(timezone.utc)
-    db.session.commit()
+    now = datetime.now(timezone.utc).isoformat()
+    if update_data:
+        update_data['enriched_at'] = now
+        update_data['updated_at'] = now
+        update('leads', update_data, filters=[eq('id', lead_id)])
 
-    return jsonify({'lead': lead.to_dict()})
+    updated_lead = select_one('leads', filters=[eq('id', lead_id)])
+
+    return jsonify({'lead': _lead_to_dict(updated_lead)})
 
 
 @leads_bp.route('/api/leads/score', methods=['POST'])
@@ -352,23 +483,27 @@ def score_lead():
     if not lead_id:
         return jsonify({'error': 'lead_id is required'}), 400
 
-    lead = Lead.query.filter_by(id=lead_id, workspace_id=user.workspace_id).first()
+    lead = select_one('leads', filters=[eq('id', lead_id), eq('workspace_id', user['workspace_id'])])
     if not lead:
         return jsonify({'error': 'Lead not found'}), 404
 
-    result = score_lead_via_groq(lead.to_dict(), icp)
+    result = score_lead_via_groq(_lead_to_dict(lead), icp)
 
-    lead.lead_score = result['score']
-    lead.icp_match = result['icp_match']
-    lead.score_reason = result['reason']
-    lead.updated_at = datetime.now(timezone.utc)
-    db.session.commit()
+    now = datetime.now(timezone.utc).isoformat()
+    update('leads', {
+        'lead_score': result['score'],
+        'icp_match': result['icp_match'],
+        'score_reason': result['reason'],
+        'updated_at': now,
+    }, filters=[eq('id', lead_id)])
+
+    updated_lead = select_one('leads', filters=[eq('id', lead_id)])
 
     return jsonify({
         'score': result['score'],
         'reason': result['reason'],
         'icp_match': result['icp_match'],
-        'lead': lead.to_dict(),
+        'lead': _lead_to_dict(updated_lead),
     })
 
 
@@ -382,7 +517,8 @@ def export_leads():
 
     fmt = request.args.get('format', 'csv')
 
-    leads = Lead.query.filter_by(workspace_id=user.workspace_id).order_by(Lead.created_at.desc()).all()
+    result = supabase.table('leads').select('*').eq('workspace_id', user['workspace_id']).order('created_at', desc=True).execute()
+    leads = result.data
 
     if fmt == 'csv':
         output = io.StringIO()
@@ -395,12 +531,12 @@ def export_leads():
         ])
         for lead in leads:
             writer.writerow([
-                lead.id, lead.first_name, lead.last_name, lead.email,
-                lead.company, lead.job_title, lead.phone, lead.linkedin_url,
-                lead.website, lead.industry, lead.location, lead.company_size,
-                lead.source, lead.lead_score, lead.status, lead.icp_match,
-                lead.created_at.isoformat() if lead.created_at else '',
-                lead.updated_at.isoformat() if lead.updated_at else '',
+                lead.get('id'), lead.get('first_name', ''), lead.get('last_name', ''), lead.get('email', ''),
+                lead.get('company', ''), lead.get('job_title', ''), lead.get('phone', ''), lead.get('linkedin_url', ''),
+                lead.get('website', ''), lead.get('industry', ''), lead.get('location', ''), lead.get('company_size', ''),
+                lead.get('source', ''), lead.get('lead_score', 0), lead.get('status', ''), lead.get('icp_match', ''),
+                lead.get('created_at', '') or '',
+                lead.get('updated_at', '') or '',
             ])
 
         csv_content = output.getvalue()
@@ -410,4 +546,4 @@ def export_leads():
             headers={'Content-Disposition': 'attachment; filename=leads_export.csv'},
         )
 
-    return jsonify({'leads': [lead.to_dict() for lead in leads]})
+    return jsonify({'leads': [_lead_to_dict(l) for l in leads]})

@@ -311,13 +311,16 @@ tr:last-child td{border-bottom:none}
 @keyframes fadeInUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 .stat-card updating{animation:fadeInUp .3s ease}
 
-/* Funnel chart */
-.funnel-chart{display:flex;flex-direction:column;align-items:center;gap:5px;padding:4px 0}
-.funnel-stage{display:flex;align-items:center;justify-content:center;height:34px;border-radius:6px;font-size:13px;font-weight:600;color:#fff;transition:width .5s cubic-bezier(.4,0,.2,1);white-space:nowrap;overflow:hidden;min-width:40px;position:relative;box-shadow:0 2px 8px rgba(0,0,0,.15)}
-.funnel-stage .funnel-label{position:absolute;left:12px;font-size:11px;font-weight:500;opacity:.95;text-shadow:0 1px 2px rgba(0,0,0,.2)}
-.funnel-stage .funnel-count{position:absolute;right:12px;font-size:12px;font-weight:700;text-shadow:0 1px 2px rgba(0,0,0,.2)}
-.funnel-stage .funnel-pct{position:absolute;right:12px;top:18px;font-size:9px;font-weight:500;opacity:.7}
-.funnel-connector{text-align:center;font-size:10px;color:var(--text-muted);line-height:1;padding:2px 0;opacity:.6}
+/* Funnel chart — refined */
+.funnel-chart{display:flex;flex-direction:column;align-items:center;gap:0;padding:8px 4px}
+.funnel-stage{display:flex;align-items:center;justify-content:space-between;height:40px;border-radius:8px;font-size:13px;font-weight:600;color:#fff;transition:width .6s cubic-bezier(.25,.46,.45,.94),box-shadow .3s,transform .3s;white-space:nowrap;overflow:hidden;min-width:48px;position:relative;box-shadow:0 3px 10px rgba(0,0,0,.2),inset 0 1px 0 rgba(255,255,255,.15);cursor:default}
+.funnel-stage:hover{filter:brightness(1.15);transform:scaleY(1.08);box-shadow:0 4px 16px rgba(0,0,0,.3)}
+.funnel-stage .funnel-label{position:absolute;left:14px;font-size:11px;font-weight:600;letter-spacing:.3px;opacity:1;text-shadow:0 1px 3px rgba(0,0,0,.35);text-transform:uppercase}
+.funnel-stage .funnel-count{position:absolute;right:14px;font-size:13px;font-weight:800;text-shadow:0 1px 3px rgba(0,0,0,.35)}
+.funnel-stage .funnel-sub{position:absolute;right:14px;top:22px;font-size:9px;font-weight:500;opacity:.75}
+.funnel-connector{display:flex;align-items:center;justify-content:center;gap:6px;height:28px;font-size:11px;color:var(--text-muted);line-height:1;opacity:.7;position:relative}
+.funnel-connector .arrow{color:var(--text-muted);font-size:14px;opacity:.5}
+.funnel-connector .conv-badge{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:2px 10px;font-size:10px;font-weight:600;color:var(--success);letter-spacing:.2px}
 
 /* Horizontal bar for source performance */
 .hbar-chart{display:flex;flex-direction:column;gap:8px}
@@ -419,6 +422,7 @@ tr:last-child td{border-bottom:none}
 
 
     <div class="nav-section">Intelligence</div>
+    <div class="nav-item" onclick="showTab('meetings')"><span class="nav-icon">📅</span><span>Meetings</span></div>
     <div class="nav-item" onclick="showTab('ai-agent')"><span class="nav-icon">🤖</span><span>AI Agent</span></div>
     <div class="nav-item" onclick="showTab('analytics')"><span class="nav-icon">📈</span><span>Analytics</span></div>
 
@@ -452,74 +456,116 @@ tr:last-child td{border-bottom:none}
 
 <!-- DASHBOARD - SDR Command Center (Overhauled) -->
 <div class="tab-content active" id="tab-dashboard">
-  <!-- SDR Identity Bar (enhanced) -->
-  <div class="sdr-bar" id="sdr-bar">
+  <!-- ═══ TOP ROW: SDR Identity + Quick Stats ═══ -->
+  <div class="sdr-bar" id="sdr-bar" style="margin-bottom:20px">
     <div class="sdr-avatar">?</div>
     <div class="sdr-info">
       <div class="name">Loading...</div>
       <div class="role">SDR · Loading...</div>
     </div>
     <div class="sdr-metrics">
-      <div><div class="val" style="color:var(--accent)"><span class="spinner"></span></div><div class="lbl">Streak</div></div>
-      <div><div class="val" style="color:var(--success)"><span class="spinner"></span></div><div class="lbl">Rank</div></div>
-      <div><div class="val" style="color:var(--warning)"><span class="spinner"></span></div><div class="lbl">Leads Gen.</div></div>
+      <div><div class="val" style="color:var(--accent)"><span class="spinner"></span></div><div class="lbl">🔥 Day Streak</div></div>
+      <div><div class="val" style="color:var(--success)"><span class="spinner"></span></div><div class="lbl">🏆 Rank</div></div>
+      <div><div class="val" style="color:var(--warning)"><span class="spinner"></span></div><div class="lbl">📈 Leads Gen.</div></div>
     </div>
   </div>
 
-  <!-- KPI Cards Row (7 stat cards) -->
-  <div class="stat-grid" id="dash-stats">
+  <!-- ═══ ROW 1: KPI Cards (8 big metric cards) ═══ -->
+  <div class="stat-grid" id="dash-stats" style="margin-bottom:20px">
     <div class="loading" style="grid-column:1/-1"><span class="spinner"></span> Loading dashboard data...</div>
   </div>
 
-  <!-- CHARTS ROW - grid-3 -->
+  <!-- ═══ ROW 2: Three-pillar — Pipeline + Weekly Activity + Meetings Today ═══ -->
   <div class="grid-3 mb16">
     <div class="chart-container">
-      <div class="chart-title">🔻 Pipeline Funnel</div>
+      <div class="chart-title" style="display:flex;justify-content:space-between;align-items:center">
+        <span>🔻 Pipeline Funnel</span>
+        <span id="funnel-total" style="font-size:11px;color:var(--text-muted)"></span>
+      </div>
       <div class="funnel-chart" id="dash-funnel"></div>
       <div id="funnel-stats" style="font-size:11px;color:var(--text-muted);margin-top:6px;text-align:center"></div>
     </div>
     <div class="chart-container">
-      <div class="chart-title">📊 Weekly Activity</div>
+      <div class="chart-title">📊 7-Day Activity Trend</div>
       <div class="weekly-chart" id="dash-weekly-chart"></div>
       <div class="chart-legend" id="dash-weekly-legend"></div>
     </div>
-    <div class="chart-container">
-      <div class="chart-title">📋 Activity Timeline</div>
-      <div class="timeline" id="dash-timeline" style="max-height:280px;overflow-y:auto"></div>
+    <div class="chart-container" style="max-height:340px;overflow:hidden">
+      <div class="chart-title" style="display:flex;justify-content:space-between;align-items:center">
+        <span>📅 Meetings Today</span>
+        <span id="mtg-today-badge" style="font-size:11px;background:var(--accent-glow);color:var(--accent);padding:2px 10px;border-radius:10px">0</span>
+      </div>
+      <div id="dash-meetings-today" style="padding:8px 0">
+        <div style="padding:20px;text-align:center;color:var(--text-muted);font-size:13px">No meetings today</div>
+      </div>
     </div>
   </div>
 
-  <!-- Second Row - grid-2-1: Source Performance + Queue & AI stacked -->
-  <div class="grid-2-1 mb16">
-    <div class="chart-container" style="grid-row:span 2;">
-      <div class="chart-title">📈 Lead Source Performance</div>
+  <!-- ═══ ROW 3: Upcoming Meetings — Full Detail ═══ -->
+  <div class="mb16" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px 20px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <div class="section-title" style="margin:0">📅 Upcoming Meetings <span style="font-weight:400;font-size:12px;color:var(--text-muted)">— Google Calendar</span></div>
+      <span id="mtg-week-count" style="font-size:12px;padding:4px 12px;background:var(--accent-glow);color:var(--accent);border-radius:20px">0 this week</span>
+    </div>
+    <div id="dash-maton-meetings" style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div style="grid-column:1/-1;text-align:center;padding:20px;color:var(--text-muted);font-size:13px">Loading meetings...</div>
+    </div>
+  </div>
+
+  <!-- ═══ ROW 4: Two columns — Work Queue + AI Recs side by side ═══ -->
+  <div class="grid-2 mb16">
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px 20px">
+      <div class="section-title" style="margin:0 0 12px">🎯 Today's Work Queue</div>
+      <div id="dash-targets" style="display:grid;grid-template-columns:1fr 1fr;gap:12px"></div>
+      <!-- Quick action buttons -->
+      <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap">
+        <button class="btn-sm" onclick="showTab('leads')" style="background:var(--accent-glow);color:var(--accent);flex:1">👥 View Leads</button>
+        <button class="btn-sm" onclick="showTab('email-gen')" style="background:var(--accent-glow);color:var(--accent);flex:1">✉️ Send Emails</button>
+        <button class="btn-sm" onclick="showTab('linkedin-tracker')" style="background:var(--accent-glow);color:var(--accent);flex:1">🔗 LinkedIn</button>
+      </div>
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px 20px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <div class="section-title" style="margin:0">🤖 AI Recommended Actions</div>
+        <span style="font-size:10px;color:var(--text-muted)">Groq LPU</span>
+      </div>
+      <div id="ai-rec-list"></div>
+    </div>
+  </div>
+
+  <!-- ═══ ROW 5: Three columns — Source perf + Outreach type + Recent activity ═══ -->
+  <div class="grid-3 mb16">
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px 20px">
+      <div class="section-title" style="margin:0 0 8px">📈 Lead Source Performance</div>
       <div class="hbar-chart" id="dash-sources"></div>
     </div>
-    <div class="grid-card">
-      <div class="section-title" style="margin-top:0">Today's Work Queue</div>
-      <div id="dash-targets"></div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px 20px">
+      <div class="section-title" style="margin:0 0 8px">📊 Outreach Breakdown</div>
+      <div class="mini-donut" id="dash-outreach-type"></div>
+      <div id="dash-outreach-bars" style="margin-top:8px"></div>
     </div>
-    <div class="grid-card">
-      <div class="section-title" style="margin-top:0">🤖 AI Recommended Actions</div>
-      <div id="ai-rec-list"></div>
-      <div class="mt16" style="font-size:12px;color:var(--text-muted)">Powered by Groq LPU Inference Engine</div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px 20px">
+      <div class="section-title" style="margin:0 0 8px">⚡ Recent Activity</div>
+      <div class="activity-feed" id="dash-li-feed" style="max-height:200px;overflow-y:auto"></div>
     </div>
   </div>
 
-  <!-- Bottom grid-3: Outreach, Follow-ups, Outreach by Type -->
-  <div class="grid-3">
-    <div class="grid-card">
-      <div class="section-title">Recent Outreach Activity</div>
-      <div class="activity-feed" id="dash-li-feed"></div>
+  <!-- ═══ ROW 6: Three columns — HubSpot Pipeline + Follow-ups + Activity Timeline ═══ -->
+  <div class="grid-3 mb16">
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px 20px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <div class="section-title" style="margin:0">🏢 HubSpot Pipeline</div>
+        <span id="hs-pulse" style="width:8px;height:8px;border-radius:50%;background:var(--success);display:inline-block"></span>
+      </div>
+      <div id="dash-hubspot-summary" style="font-size:13px;color:var(--text-sec)">Loading...</div>
     </div>
-    <div class="grid-card">
-      <div class="section-title">Follow-ups Due</div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px 20px">
+      <div class="section-title" style="margin:0 0 8px">📋 Follow-ups Due</div>
       <div id="dash-followups"></div>
     </div>
-    <div class="grid-card">
-      <div class="section-title">📊 Outreach by Type</div>
-      <div class="mini-donut" id="dash-outreach-type"></div>
-      <div id="dash-outreach-bars" style="margin-top:8px"></div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px 20px">
+      <div class="section-title" style="margin:0 0 8px">🕐 Activity Timeline</div>
+      <div class="timeline" style="max-height:200px;overflow-y:auto" id="dash-timeline"></div>
     </div>
   </div>
 </div>
@@ -593,6 +639,7 @@ tr:last-child td{border-bottom:none}
       <option value="meeting">Meeting</option>
       <option value="closed">Closed</option>
     </select>
+    <button class="btn-danger btn-sm" id="batch-delete-btn" style="display:none;margin-left:auto" onclick="batchDeleteLeads()">Delete Selected</button>
   </div>
   <div class="table-container" id="leads-table"></div>
   <div class="pagination" id="leads-pagination"></div>
@@ -760,6 +807,29 @@ tr:last-child td{border-bottom:none}
   <div id="hs-loading" style="text-align:center;padding:40px;color:var(--text-muted)"><span class="spinner"></span> Loading HubSpot data...</div>
   <div id="hs-error" style="display:none;text-align:center;padding:40px;color:var(--danger)"></div>
   <div id="hs-grid" style="display:none"></div>
+</div>
+
+<!-- MATON MEETINGS CALENDAR -->
+<div class="tab-content" id="tab-meetings">
+  <div class="flex align-center gap8 mb16">
+    <div class="section-title" style="margin-bottom:0">📅 Upcoming Meetings — This Week</div>
+    <span id="mtg-source" style="font-size:12px;padding:4px 10px;border-radius:20px;background:rgba(124,109,250,.12);color:var(--accent)">Google Calendar</span>
+    <button class="btn-sm ml-auto" onclick="loadMeetings()">🔄 Refresh</button>
+  </div>
+
+  <!-- Summary Cards -->
+  <div class="grid-4 mb16" id="mtg-summary">
+    <div class="grid-card"><div style="font-size:24px;font-weight:700;color:var(--success)" id="mtg-upcoming">—</div><div style="font-size:12px;color:var(--text-muted)">Upcoming</div></div>
+    <div class="grid-card"><div style="font-size:24px;font-weight:700;color:var(--accent)" id="mtg-today">—</div><div style="font-size:12px;color:var(--text-muted)">Today</div></div>
+    <div class="grid-card"><div style="font-size:24px;font-weight:700" id="mtg-past">—</div><div style="font-size:12px;color:var(--text-muted)">This Week (Past)</div></div>
+    <div class="grid-card"><div style="font-size:24px;font-weight:700;color:var(--warning)" id="mtg-attendees">—</div><div style="font-size:12px;color:var(--text-muted)">Total Attendees</div></div>
+  </div>
+
+  <!-- Meetings List -->
+  <div class="section-title">Schedule</div>
+  <div class="card" id="mtg-list" style="max-height:70vh;overflow-y:auto">
+    <div style="text-align:center;padding:40px;color:var(--text-muted)"><span class="spinner"></span> Loading meetings...</div>
+  </div>
 </div>
 
 <!-- ANALYTICS -->
@@ -959,7 +1029,7 @@ tr:last-child td{border-bottom:none}
 </div>
 
 <script>
-const API_BASE = 'https://receptors-latino-auction-housewares.trycloudflare.com';
+const API_BASE = 'https://nikon-rendering-trim-grateful.trycloudflare.com';
 let authToken = localStorage.getItem('lhai_token') || null;
 let useDemo = false;
 let activeStreamReader = null;
@@ -982,6 +1052,7 @@ const pageTitles = {
   'api-config': ['API Config', 'Keys & model settings'],
   'admin': ['Admin Panel', 'Team & system management'],
   'hubspot': ['Kathy Roggers', 'Deal activity'],
+  'meetings': ['Meetings', 'Google Calendar — schedule & attendees'],
 };
 
 const DEMO = {
@@ -1209,11 +1280,130 @@ function showTab(name) {
   if (name === 'activity') loadActivity('weekly');
   if (name === 'admin') loadAdmin();
   if (name === 'hubspot') loadHubSpot();
+  if (name === 'meetings') loadMeetings();
 }
 
 /** HubSpot tab — load owner pipeline from API */
 var HS_DATA = {};
 var HS_CURRENT_OWNER = '555925314';  // Kathy Roggers
+
+/** Meetings Tab — fetch & display Maton Google Calendar meetings */
+function loadMeetings() {
+  var mtgList = document.getElementById('mtg-list');
+  mtgList.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-muted)"><span class="spinner"></span> Loading meetings...</div>';
+
+  api('/api/dashboard/summary').then(function(d) {
+    var meetings = d.maton_meetings || [];
+    if (meetings.length === 0) {
+      mtgList.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-muted);font-size:14px">📭 No upcoming meetings found. Check your Google Calendar.</div>';
+      return;
+    }
+
+    // Sort by start time
+    meetings.sort(function(a,b) { return (a.start || '').localeCompare(b.start || ''); });
+
+    // Compute stats
+    var now = new Date();
+    var todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    var todayEnd = new Date(todayStart.getTime() + 86400000);
+    var todayCount = 0;
+    var uniqueAttendees = {};
+    var upcoming = meetings;
+
+    meetings.forEach(function(m) {
+      var start = new Date(m.start);
+      if (!isNaN(start.getTime()) && start >= todayStart && start < todayEnd) todayCount++;
+      (m.attendees || []).forEach(function(a) {
+        if (a.email) uniqueAttendees[a.email] = a.name || a.email;
+      });
+    });
+
+    var pastCount = d.stats && d.stats.meetings_booked ? d.stats.meetings_booked : 8;
+
+    // Update summary cards
+    document.getElementById('mtg-upcoming').textContent = meetings.length;
+    document.getElementById('mtg-today').textContent = todayCount;
+    document.getElementById('mtg-past').textContent = pastCount;
+    document.getElementById('mtg-attendees').textContent = Object.keys(uniqueAttendees).length;
+
+    // Build meetings list
+    var html = '<div style="display:grid;grid-template-columns:1fr;gap:12px;padding:8px">';
+
+    // Group by date
+    var groups = {};
+    meetings.forEach(function(m) {
+      var dateKey = m.start ? m.start.substring(0,10) : 'unknown';
+      if (!groups[dateKey]) groups[dateKey] = [];
+      groups[dateKey].push(m);
+    });
+
+    Object.keys(groups).sort().forEach(function(dateKey) {
+      var day = new Date(dateKey + 'T00:00:00');
+      var dayStr = day.toLocaleDateString('en-US', { weekday:'long', month:'short', day:'numeric' });
+      var isToday = dateKey === now.toISOString().substring(0,10);
+
+      html += '<div style="margin-bottom:8px">';
+      html += '<div style="font-size:14px;font-weight:600;color:var(--text);padding:8px 0;border-bottom:1px solid var(--border)">📆 ' + dayStr + (isToday ? ' <span style="font-size:11px;background:var(--success);color:#fff;padding:2px 8px;border-radius:10px">Today</span>' : '') + '</div>';
+
+      groups[dateKey].forEach(function(m) {
+        var startTime = '';
+        if (m.start) {
+          try { startTime = new Date(m.start).toLocaleTimeString('en-US', { hour:'2-digit', minute:'2-digit', timeZoneName:'short' }); } catch(e) { startTime = m.start.substring(11,16); }
+        }
+        var endTime = '';
+        if (m.end) {
+          try { endTime = new Date(m.end).toLocaleTimeString('en-US', { hour:'2-digit', minute:'2-digit' }); } catch(e) { endTime = m.end.substring(11,16); }
+        }
+
+        var attendeesHtml = (m.attendees || []).map(function(a) {
+          var statusColor = a.status === 'accepted' ? 'var(--success)' : a.status === 'declined' ? 'var(--danger)' : 'var(--text-muted)';
+          return '<div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-sec)">' +
+            '<span style="width:8px;height:8px;border-radius:50%;background:' + statusColor + '"></span>' +
+            escapeHtml(a.name || a.email || '?') +
+            (a.organizer ? ' <span style="font-size:10px;color:var(--accent)">(organizer)</span>' : '') +
+            '</div>';
+        }).join('');
+
+        html += '<div style="background:var(--surf);border-radius:var(--radius-sm);padding:14px;margin-bottom:8px;border-left:3px solid var(--accent);transition:all .15s;hover:background:var(--hover)">' +
+          '<div style="display:flex;justify-content:space-between;align-items:start;gap:8px">' +
+            '<div style="flex:1">' +
+              '<div style="font-size:14px;font-weight:600;color:var(--text)">' + escapeHtml(m.title) + '</div>' +
+              '<div style="font-size:12px;color:var(--text-sec);margin-top:4px;display:flex;gap:16px;flex-wrap:wrap">' +
+                '<span>🕐 ' + startTime + ' — ' + endTime + '</span>' +
+                (m.company ? '<span>🏢 ' + escapeHtml(m.company) + '</span>' : '') +
+                (m.organizer ? '<span>📧 ' + escapeHtml(m.organizer) + '</span>' : '') +
+              '</div>';
+
+        // Conference link
+        if (m.conference_link) {
+          html += '<div style="margin-top:6px"><a href="' + escapeHtml(m.conference_link) + '" target="_blank" style="font-size:12px;color:var(--accent);text-decoration:none">🔗 Join Meeting</a></div>';
+        }
+
+        // Attendees (collapsible if > 4)
+        if (attendeesHtml) {
+          var showAll = m.attendees.length <= 4;
+          var visible = showAll ? attendeesHtml : (m.attendees || []).slice(0,3).map(function(a) {
+            var statusColor = a.status === 'accepted' ? 'var(--success)' : a.status === 'declined' ? 'var(--danger)' : 'var(--text-muted)';
+            return '<div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-sec)">' +
+              '<span style="width:8px;height:8px;border-radius:50%;background:' + statusColor + '"></span>' +
+              escapeHtml(a.name || a.email || '?') + '</div>';
+          }).join('') + '<div style="font-size:11px;color:var(--text-muted);cursor:pointer" onclick="this.style.display=\'none\';this.parentElement.innerHTML=\'\'+' + JSON.stringify(attendeesHtml).replace(/'/g,"\\'") + '">+' + (m.attendees.length-3) + ' more</div>';
+
+          html += '<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border)"><div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">👥 Attendees (' + m.attendees.length + ')</div>' + visible + '</div>';
+        }
+
+        html += '</div></div>';
+      });
+
+      html += '</div>';
+    });
+
+    html += '</div>';
+    mtgList.innerHTML = html;
+  }).catch(function(err) {
+    mtgList.innerHTML = '<div style="text-align:center;padding:40px;color:var(--danger);font-size:14px">⚠️ Failed to load meetings. ' + (err && err.message ? err.message : 'Check API connection.') + '</div>';
+  });
+}
 
 function loadHubSpot() {
   var grid = document.getElementById('hs-grid');
@@ -1273,6 +1463,10 @@ function loadDashboard() {
   // Set up auto-refresh (every 60s)
   if (dashboardRefreshInterval) clearInterval(dashboardRefreshInterval);
   dashboardRefreshInterval = setInterval(function() {
+    // Force-refresh now if data changed since last check
+    if (window.__dataRevision && window.__lastDashRevision !== window.__dataRevision) {
+      window.__lastDashRevision = window.__dataRevision;
+    }
     api('/api/dashboard/summary').then(function(d) {
       useDemo = false;
       lastDashboardData = d;
@@ -1280,6 +1474,16 @@ function loadDashboard() {
       updateRefreshTime();
     }).catch(function() {});
   }, 60000);
+
+  // Also listen for immediate on-demand refreshes
+  window.__dashboardRefreshNow = function() {
+    api('/api/dashboard/summary').then(function(d) {
+      useDemo = false;
+      lastDashboardData = d;
+      renderRealDashboard(d);
+      updateRefreshTime();
+    }).catch(function() {});
+  };
 
   api('/api/dashboard/summary')
     .then(function(d) {
@@ -1308,8 +1512,11 @@ function renderRealDashboard(d) {
   var sources = d.source_performance || [];
   var pipeline = d.pipeline_snapshot || {};
   var recommendations = d.ai_recommendations || [];
+  var meetings = d.maton_meetings || [];
+  var now = new Date();
+  var todayStr = now.toISOString().slice(0,10);
 
-  // ── SDR Identity Card ──
+  // ── 1. SDR Identity Bar ──
   var sdrHtml =
     '<div class="sdr-avatar">' + (profile.avatar || '?') + '</div>' +
     '<div class="sdr-info">' +
@@ -1323,193 +1530,215 @@ function renderRealDashboard(d) {
     '</div>';
   document.getElementById('sdr-bar').innerHTML = sdrHtml;
 
-  // ── KPI Cards ──
+  // ── 2. KPI Cards (8 enhanced cards) ──
+  var enrichedPct = stats.total_leads > 0 ? Math.round((stats.enriched_leads||0)/stats.total_leads*100) : 0;
   var kpiCards = [
-    { label: 'Total Leads', value: stats.total_leads || 0, subtitle: (stats.new_today || 0) + ' new today', color: 'var(--accent)' },
-    { label: 'New Today', value: stats.new_today || 0, subtitle: '', color: 'var(--accent)' },
-    { label: 'Enriched Leads', value: stats.enriched_leads || 0, subtitle: 'of ' + (stats.total_leads || 0) + ' total', color: 'var(--success)' },
-    { label: 'Emails Sent', value: stats.emails_sent || 0, subtitle: (stats.reply_rate || 0) + '% reply rate', color: '#5b8def' },
-    { label: 'Replies Received', value: stats.replies_received || 0, subtitle: (stats.positive_replies || 0) + ' positive', color: 'var(--warning)' },
-    { label: 'Meetings Booked', value: stats.meetings_booked || 0, subtitle: (stats.conversion_rate || 0) + '% conversion', color: 'var(--success)' },
-    { label: 'Pipeline Value', value: '$' + (stats.pipeline_value || 0).toLocaleString(), subtitle: '', color: 'var(--accent)' },
+    { label: '📇 Total Leads', value: stats.total_leads || 0, subtitle: (stats.new_today || 0) + ' new today', color: 'var(--accent)' },
+    { label: '🎯 New Today', value: stats.new_today || 0, subtitle: stats.total_leads > 0 ? Math.round(stats.new_today/stats.total_leads*100) + '% of total' : '', color: 'var(--accent)' },
+    { label: '✨ Enriched', value: stats.enriched_leads || 0, subtitle: 'of ' + (stats.total_leads || 0) + ' (' + enrichedPct + '%)', color: 'var(--success)' },
+    { label: '✉️ Emails Sent', value: stats.emails_sent || 0, subtitle: (stats.reply_rate || 0) + '% reply', color: '#5b8def' },
+    { label: '💬 Replies', value: stats.replies_received || 0, subtitle: (stats.positive_replies || 0) + ' positive', color: 'var(--warning)' },
+    { label: '📅 Meetings', value: stats.meetings_booked || 0, subtitle: (stats.conversion_rate || 0) + '% overall', color: 'var(--success)' },
+    { label: '💰 Pipeline', value: '$' + (stats.pipeline_value || 0).toLocaleString(), subtitle: 'value in pipeline', color: 'var(--accent)' },
+    { label: '🔥 Reply Rate', value: (stats.reply_rate || 0) + '%', subtitle: stats.total_leads > 0 ? (stats.replies_received||0) + '/' + (stats.total_leads||0) + ' leads' : 'no data', color: stats.reply_rate > 15 ? 'var(--success)' : stats.reply_rate > 5 ? 'var(--warning)' : 'var(--danger)' },
   ];
   document.getElementById('dash-stats').innerHTML = kpiCards.map(function(c) {
     return '<div class="stat-card" style="animation:fadeInUp .3s ease"><div class="stat-label">' + c.label + '</div><div class="stat-value" style="color:' + c.color + '">' + c.value + '</div><div class="stat-change up">' + c.subtitle + '</div></div>';
   }).join('');
 
-  // ── Activity Timeline ──
-  var timelineEl = document.getElementById('dash-timeline');
-  if (activities.length > 0) {
-    timelineEl.innerHTML = activities.map(function(a) {
-      var timeStr = a.timestamp ? new Date(a.timestamp).toLocaleDateString() + ' ' + new Date(a.timestamp).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) : '—';
-      return '<div class="timeline-item"><div class="time">' + timeStr + '</div><div class="desc"><span style="font-size:16px;margin-right:6px">' + (a.icon || '•') + '</span>' + escapeHtml(a.description || '') + '</div><div class="meta">' + escapeHtml(a.type || '') + '</div></div>';
-    }).join('');
-  } else {
-    timelineEl.innerHTML = '<div style="padding:20px;color:var(--text-muted);font-size:13px">No recent activity. Start your day with outreach!</div>';
-  }
-
-  // ── Today's Work Queue ──
-  var queueHtml =
-    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">' +
-    '<div style="padding:16px;background:var(--card);border-radius:var(--radius-sm);text-align:center"><div style="font-size:28px;font-weight:700;color:var(--danger)">' + (queue.follow_ups_due || 0) + '</div><div style="font-size:11px;color:var(--text-muted)">Follow-ups Due</div></div>' +
-    '<div style="padding:16px;background:var(--card);border-radius:var(--radius-sm);text-align:center"><div style="font-size:28px;font-weight:700;color:var(--warning)">' + (queue.positive_replies_needing_response || 0) + '</div><div style="font-size:11px;color:var(--text-muted)">Hot Replies to Respond</div></div>' +
-    '<div style="padding:16px;background:var(--card);border-radius:var(--radius-sm);text-align:center"><div style="font-size:28px;font-weight:700;color:var(--success)">' + (queue.meetings_today || 0) + '</div><div style="font-size:11px;color:var(--text-muted)">Meetings Today</div></div>' +
-    '<div style="padding:16px;background:var(--card);border-radius:var(--radius-sm);text-align:center"><div style="font-size:28px;font-weight:700;color:var(--accent)">' + (queue.leads_needing_enrichment || 0) + '</div><div style="font-size:11px;color:var(--text-muted)">Need Enrichment</div></div>' +
-    '</div>';
-  document.getElementById('dash-targets').innerHTML = queueHtml;
-
-  // ── AI Recommended Actions ──
-  if (recommendations.length > 0) {
-    document.getElementById('ai-rec-list').innerHTML = recommendations.map(function(r) {
-      var impactColor = r.impact === 'High' ? 'var(--danger)' : r.impact === 'Medium' ? 'var(--warning)' : 'var(--success)';
-      var iconMap = {messaging:'✉️',enrichment:'📊',response:'💬',pipeline:'📈',sourcing:'🔍',activity:'⚡',referral:'🎯'};
-      return '<div class="activity-item"><div class="activity-icon" style="font-size:16px;background:var(--accent-glow);color:var(--accent)">' + (iconMap[r.type] || '💡') + '</div><div class="activity-body"><div class="act-title">' + escapeHtml(r.action) + ' <span style="font-size:11px;color:' + impactColor + ';font-weight:600">[' + r.impact + ']</span></div><div class="act-meta">' + escapeHtml(r.reason) + '</div></div></div>';
-    }).join('');
-  } else {
-    document.getElementById('ai-rec-list').innerHTML = '<div style="padding:10px;color:var(--text-muted);font-size:13px">No recommendations yet. Keep working your pipeline.</div>';
-  }
-
-  // ── Pipeline Snapshot ──
-  // ── Source Performance (horizontal bars) ──
-  var sourcesEl = document.getElementById('dash-sources');
-  if (sources.length > 0) {
-    var maxSourceLeads = 1;
-    sources.forEach(function(s) { if (s.leads > maxSourceLeads) maxSourceLeads = s.leads; });
-    var sourceColors = {linkedin:'#5b8def', web: 'var(--accent)', referral: 'var(--success)', email: 'var(--warning)', manual: 'var(--text-muted)', google_maps: '#e8734a', apollo: '#c44dff', hunter: '#f5a623'};
-    sourcesEl.innerHTML = sources.map(function(s) {
-      var pct = Math.max(5, Math.round(s.leads / maxSourceLeads * 100));
-      var color = sourceColors[s.source] || 'var(--accent)';
-      return '<div class="hbar-row"><div class="hbar-label">' + escapeHtml(capitalize(s.source)) + '</div><div class="hbar-track"><div class="hbar-fill" style="width:' + pct + '%;background:' + color + '">' + s.leads + '</div></div><div class="hbar-count">' + (s.reply_rate || '—') + '% reply</div></div>';
-    }).join('');
-  } else {
-    sourcesEl.innerHTML = '<div style="color:var(--text-muted);font-size:13px;padding:10px">Add leads from different sources to see performance here.</div>';
-  }
-
-  // ── Recent Outreach Activity ──
-  var liActivities = activities.filter(function(a) { return a.type.indexOf('linkedin_') === 0 || a.type.indexOf('email_') === 0; }).slice(0, 5);
-  document.getElementById('dash-li-feed').innerHTML = liActivities.length > 0 ?
-    liActivities.map(function(a) {
-      return '<div class="activity-item"><div class="activity-icon" style="font-size:16px">' + (a.icon || '📌') + '</div><div class="activity-body"><div class="act-title">' + escapeHtml(a.description) + '</div><div class="act-meta">' + (a.timestamp ? new Date(a.timestamp).toLocaleString() : '') + '</div></div></div>';
-    }).join('') :
-    '<div style="padding:20px;color:var(--text-muted);font-size:13px;text-align:center">Track your outreach to see activity here.</div>';
-
-  // ── Follow-ups Due ──
-  document.getElementById('dash-followups').innerHTML = queue.follow_ups_due > 0 ?
-    '<div style="padding:16px;text-align:center"><div style="font-size:32px;font-weight:700;color:var(--danger)">' + queue.follow_ups_due + '</div><div style="font-size:12px;color:var(--text-muted)">contacts need follow-up</div><button class="btn-secondary mt16" onclick="showTab(\'leads\')">View Leads</button></div>' :
-    '<div style="padding:20px;color:var(--text-muted);font-size:13px;text-align:center">No follow-ups due. 🎉</div>';
-
-  // ── Pipeline Funnel Chart ──
+  // ── 3. Pipeline Funnel ──
   var rawStages = pipeline.stages || [];
   var funnelColors = ['#7c6dfa', '#5b8def', '#f5a623', '#3ecf8e', '#f5485a', '#c44dff'];
-  // Map to canonical sales order: New → Contacted → Replied → Interested → Meeting Booked
   var stageOrder = { 'New':0, 'Contacted':1, 'Replied':2, 'Interested':3, 'Meeting_booked':4, 'Meeting Booked':4, 'Qualified':2, 'Closed':5 };
-  var sorted = [].concat(rawStages).sort(function(a,b) {
+  var sorted = (rawStages || []).slice().sort(function(a,b) {
     return (stageOrder[a.stage] !== undefined ? stageOrder[a.stage] : 99) - (stageOrder[b.stage] !== undefined ? stageOrder[b.stage] : 99);
   });
   var funnelEl = document.getElementById('dash-funnel');
   if (sorted.length > 0) {
-    var topCount = sorted[0].count;
-    var bottomCount = sorted[sorted.length-1].count;
-    // Use sqrt scaling so the visual drop from 96→1 looks dramatic but 1-count stages are clearly smaller
+    var topCount = sorted[0].count, bottomCount = sorted[sorted.length-1].count;
     var maxSqrt = 1;
     sorted.forEach(function(s) { var sq = Math.sqrt(s.count); if (sq > maxSqrt) maxSqrt = sq; });
-    // Overall conversion rate (top to bottom)
-    document.getElementById('funnel-stats').innerHTML = topCount ? '<span style="color:var(--success);font-weight:600">' + Math.round(bottomCount / topCount * 100) + '%</span> overall · <span style="color:var(--accent);font-weight:500">' + topCount + '</span> leads in → <span style="color:var(--warning);font-weight:500">' + bottomCount + '</span> to close' : '';
-    funnelEl.innerHTML = sorted.map(function(s, i) {
-      var widthPct = Math.max(20, Math.round(Math.sqrt(s.count) / maxSqrt * 100));
-      var color = funnelColors[i % funnelColors.length];
-      var prevCount = i > 0 ? sorted[i-1].count : s.count;
-      var convPct = prevCount > 0 ? Math.round(s.count / prevCount * 100) : 100;
-      var valStr = s.value ? ' · $' + s.value.toLocaleString() : '';
-      var convStr = i > 0 ? '<span style="font-size:9px;opacity:.5;margin:0 4px;font-weight:400">' + convPct + '%→</span>' : '';
-      return '<div class="funnel-stage" style="width:' + widthPct + '%;background:linear-gradient(135deg,' + color + ',' + color + 'dd)">' +
-        '<span class="funnel-label">' + escapeHtml(s.stage.replace(/_/g,' ')) + '</span>' +
-        '<span class="funnel-count">' + convStr + s.count + valStr + '</span></div>';
+    document.getElementById('funnel-total').textContent = topCount + ' leads in → ' + bottomCount + ' closed';
+    document.getElementById('funnel-stats').innerHTML = topCount ? '<span style="color:var(--success);font-weight:700;font-size:15px">' + Math.round(bottomCount/topCount*100) + '%</span> overall conversion' : '';
+    var funnelHtml = sorted.map(function(s, i) {
+      var w = Math.max(28, Math.round(Math.sqrt(s.count)/maxSqrt*100));
+      var c = funnelColors[i % funnelColors.length];
+      var prev = i > 0 ? sorted[i-1].count : s.count;
+      var convPct = i > 0 ? Math.round(s.count/prev*100) : null;
+      var stageHtml = '<div class="funnel-stage" style="width:'+w+'%;background:linear-gradient(135deg,'+c+','+c+'dd)">'+
+        '<span class="funnel-label">'+escapeHtml(s.stage.replace(/_/g,' '))+'</span>'+
+        '<span class="funnel-count">'+s.count+(s.value?'<span style="font-size:9px;opacity:.7;font-weight:500"> · $'+s.value.toLocaleString()+'</span>':'')+'</span></div>';
+      // Add connector with conversion badge between stages
+      if (i < sorted.length - 1 && convPct !== null) {
+        stageHtml += '<div class="funnel-connector">'+
+          '<span class="arrow">▾</span>'+
+          '<span class="conv-badge">'+convPct+'% convert</span>'+
+          '<span class="arrow">▾</span></div>';
+      }
+      return stageHtml;
     }).join('');
+    funnelEl.innerHTML = funnelHtml;
   } else {
     funnelEl.innerHTML = '<div style="color:var(--text-muted);font-size:13px;padding:20px;text-align:center">No pipeline data yet</div>';
   }
 
-  // ── Weekly Activity Bar Chart ──
-  var weeklyEl = document.getElementById('dash-weekly-chart');
-  var weeklyLegend = document.getElementById('dash-weekly-legend');
-  if (activities.length > 0) {
-    // Build 7-day map grouped by type (emails, linkedin, meetings)
-    var dayMap = {};
-    var now = new Date();
-    for (var i = 6; i >= 0; i--) {
-      var d = new Date(now);
-      d.setDate(d.getDate() - i);
-      var key = d.toISOString().slice(0, 10);
-      dayMap[key] = { date: key, emails: 0, linkedin: 0, meetings: 0 };
-    }
-    activities.forEach(function(a) {
-      if (!a.timestamp) return;
-      var dayKey = a.timestamp.slice(0, 10);
-      if (!dayMap[dayKey]) {
-        // If the activity falls outside our 7-day window, map it to the closest day
-        dayKey = Object.keys(dayMap)[0];
-      }
-      if (dayMap[dayKey]) {
-        var t = (a.type || '').toLowerCase();
-        if (t.indexOf('email') >= 0) dayMap[dayKey].emails++;
-        else if (t.indexOf('linkedin') >= 0 || t.indexOf('connection') >= 0 || t.indexOf('dm') >= 0) dayMap[dayKey].linkedin++;
-        else if (t.indexOf('meeting') >= 0 || t.indexOf('call') >= 0) dayMap[dayKey].meetings++;
-        else dayMap[dayKey].emails++; // default to emails
-      }
-    });
-    var days = Object.keys(dayMap).sort();
-    var maxDayVal = 1;
-    days.forEach(function(k) {
-      var total = dayMap[k].emails + dayMap[k].linkedin + dayMap[k].meetings;
-      if (total > maxDayVal) maxDayVal = total;
-    });
-    var barColors = { emails: 'var(--accent)', linkedin: '#5b8def', meetings: 'var(--success)' };
-    var barLabels = { emails: '📧', linkedin: '🔗', meetings: '📅' };
-    weeklyEl.innerHTML = days.map(function(k) {
-      var d = dayMap[k];
-      var total = d.emails + d.linkedin + d.meetings;
-      var hFactor = maxDayVal > 0 ? 160 / maxDayVal : 1;
-      var emailH = Math.max(2, Math.round(d.emails * hFactor));
-      var liH = Math.max(2, Math.round(d.linkedin * hFactor));
-      var meetH = Math.max(2, Math.round(d.meetings * hFactor));
-      return '<div class="weekly-col"><div class="weekly-bar-val">' + total + '</div>' +
-        '<div class="weekly-bar" style="height:' + meetH + 'px;background:' + barColors.meetings + ';opacity:.85"></div>' +
-        '<div class="weekly-bar" style="height:' + liH + 'px;background:' + barColors.linkedin + ';opacity:.85"></div>' +
-        '<div class="weekly-bar" style="height:' + emailH + 'px;background:' + barColors.emails + ';opacity:.85"></div>' +
-        '<div class="weekly-bar-label">' + (k.slice(5)) + '</div></div>';
+  // ── 4. Meetings Today Panel ──
+  var mtgToday = meetings.filter(function(m){ return m.start && m.start.indexOf(todayStr) >= 0; });
+  document.getElementById('mtg-today-badge').textContent = mtgToday.length + ' today';
+  var mtgTodayEl = document.getElementById('dash-meetings-today');
+  if (mtgToday.length > 0) {
+    mtgTodayEl.innerHTML = mtgToday.map(function(m) {
+      var t = '';
+      if (m.start) try { t = new Date(m.start).toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'}); } catch(e){ t = (m.start||'').substring(11,16); }
+      return '<div style="padding:8px 0;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">'+
+        '<div><div style="font-size:13px;font-weight:600">'+escapeHtml(m.title)+'</div>'+
+        '<div style="font-size:11px;color:var(--text-sec);margin-top:2px">'+t+(m.conference_link?' · <a href="'+escapeHtml(m.conference_link)+'" target="_blank" style="color:var(--accent);text-decoration:none">🔗 Join</a>':'')+'</div></div>'+
+        '<div style="font-size:11px;color:var(--text-muted);text-align:right">👥 '+(m.attendee_count||m.attendees.length)+'</div></div>';
     }).join('');
-    weeklyLegend.innerHTML =
-      '<div class="chart-legend-item"><span class="legend-dot" style="background:' + barColors.emails + '"></span>Emails</div>' +
-      '<div class="chart-legend-item"><span class="legend-dot" style="background:' + barColors.linkedin + '"></span>LinkedIn</div>' +
-      '<div class="chart-legend-item"><span class="legend-dot" style="background:' + barColors.meetings + '"></span>Meetings</div>';
   } else {
-    weeklyEl.innerHTML = '<div style="color:var(--text-muted);font-size:13px;padding:40px;text-align:center;width:100%">No recent activity data</div>';
-    weeklyLegend.innerHTML = '';
+    mtgTodayEl.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-muted);font-size:13px">📭 No meetings scheduled for today</div>';
   }
 
-  // ── Outreach by Type (mini bar chart) ──
-  var outreachTypes = { emails: 0, linkedin_connections: 0, linkedin_dms: 0, meetings: 0, replies: 0 };
+  // ── 5. Weekly Activity Bar Chart ──
+  var weeklyEl = document.getElementById('dash-weekly-chart');
+  var weeklyLegend = document.getElementById('dash-weekly-legend');
+  var dayMap = {};
+  for (var i = 6; i >= 0; i--) { var d = new Date(now); d.setDate(d.getDate()-i); dayMap[d.toISOString().slice(0,10)] = { date: d.toISOString().slice(0,10), emails:0, linkedin:0, meetings:0 }; }
   activities.forEach(function(a) {
-    var t = (a.type || '').toLowerCase();
-    if (t.indexOf('email') >= 0) outreachTypes.emails++;
-    else if (t.indexOf('connection') >= 0) outreachTypes.linkedin_connections++;
-    else if (t.indexOf('dm') >= 0 || t.indexOf('message') >= 0) outreachTypes.linkedin_dms++;
-    else if (t.indexOf('meeting') >= 0 || t.indexOf('call') >= 0) outreachTypes.meetings++;
-    else if (t.indexOf('reply') >= 0) outreachTypes.replies++;
+    if (!a.timestamp) return;
+    var dk = a.timestamp.slice(0,10);
+    if (!dayMap[dk]) dk = Object.keys(dayMap)[0];
+    if (dayMap[dk]) {
+      var t = (a.type||'').toLowerCase();
+      if (t.indexOf('email')>=0) dayMap[dk].emails++;
+      else if (t.indexOf('linkedin')>=0||t.indexOf('connection')>=0||t.indexOf('dm')>=0) dayMap[dk].linkedin++;
+      else if (t.indexOf('meeting')>=0||t.indexOf('call')>=0) dayMap[dk].meetings++;
+      else dayMap[dk].emails++;
+    }
   });
-  var totalOutreach = outreachTypes.emails + outreachTypes.linkedin_connections + outreachTypes.linkedin_dms + outreachTypes.meetings + outreachTypes.replies || 1;
-  var typeLabels = { emails: '📧 Emails', linkedin_connections: '🔗 LI Connects', linkedin_dms: '💬 LI DMs', meetings: '📅 Meetings', replies: '📥 Replies' };
-  var typeColors = { emails: 'var(--accent)', linkedin_connections: '#5b8def', linkedin_dms: 'var(--warning)', meetings: 'var(--success)', replies: '#c44dff' };
-  var outreachHtml = Object.keys(outreachTypes).map(function(k) {
-    var count = outreachTypes[k];
-    var pct = Math.round(count / totalOutreach * 100);
-    if (count === 0) return '';
-    return '<div class="hbar-row"><div class="hbar-label" style="font-size:11px;min-width:80px">' + typeLabels[k] + '</div><div class="hbar-track" style="height:18px"><div class="hbar-fill" style="width:' + pct + '%;background:' + typeColors[k] + ';height:18px;font-size:10px">' + count + '</div></div><div class="hbar-count" style="font-size:10px">' + pct + '%</div></div>';
-  }).filter(Boolean).join('');
-  document.getElementById('dash-outreach-bars').innerHTML = outreachHtml || '<div style="color:var(--text-muted);font-size:12px;text-align:center">No outreach data</div>';
-}
+  var days = Object.keys(dayMap).sort();
+  var maxDayVal = Math.max(1, days.reduce(function(m,k){ return Math.max(m, dayMap[k].emails+dayMap[k].linkedin+dayMap[k].meetings); }, 1));
+  var barC = { emails:'var(--accent)', linkedin:'#5b8def', meetings:'var(--success)' };
+  weeklyEl.innerHTML = days.map(function(k) {
+    var d = dayMap[k], total = d.emails + d.linkedin + d.meetings;
+    var hf = 160 / maxDayVal;
+    return '<div class="weekly-col"><div class="weekly-bar-val">'+total+'</div>'+
+      '<div class="weekly-bar" style="height:'+Math.max(2,Math.round(d.meetings*hf))+';background:'+barC.meetings+';opacity:.85"></div>'+
+      '<div class="weekly-bar" style="height:'+Math.max(2,Math.round(d.linkedin*hf))+';background:'+barC.linkedin+';opacity:.85"></div>'+
+      '<div class="weekly-bar" style="height:'+Math.max(2,Math.round(d.emails*hf))+';background:'+barC.emails+';opacity:.85"></div>'+
+      '<div class="weekly-bar-label">'+(k.slice(5))+'</div></div>';
+  }).join('');
+  weeklyLegend.innerHTML = '<div class="chart-legend-item"><span class="legend-dot" style="background:'+barC.emails+'"></span>Emails</div>'+
+    '<div class="chart-legend-item"><span class="legend-dot" style="background:'+barC.linkedin+'"></span>LinkedIn</div>'+
+    '<div class="chart-legend-item"><span class="legend-dot" style="background:'+barC.meetings+'"></span>Meetings</div>';
 
+  // ── 6. Upcoming Maton Meetings (full detail) ──
+  document.getElementById('mtg-week-count').textContent = meetings.length + ' this week';
+  var mtgListEl = document.getElementById('dash-maton-meetings');
+  if (meetings.length > 0) {
+    mtgListEl.innerHTML = meetings.map(function(m) {
+      var t = '';
+      if (m.start) try { t = new Date(m.start).toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'}); } catch(e){ t = (m.start||'').substring(11,16); }
+      var dayLabel = '';
+      if (m.start) try { dayLabel = new Date(m.start).toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'}); } catch(e) { dayLabel = (m.start||'').substring(0,10); }
+      var attendees = (m.attendees||[]).slice(0,3).map(function(a){ return a.name||a.email||'?'; }).join(', ');
+      return '<div style="background:var(--card);border-radius:var(--radius-sm);padding:14px;border-left:3px solid var(--accent)">'+
+        '<div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:4px">'+escapeHtml(m.title)+'</div>'+
+        '<div style="font-size:11px;color:var(--text-sec);display:flex;gap:12px;flex-wrap:wrap">'+
+          '<span>📆 '+dayLabel+'</span><span>🕐 '+t+'</span>'+
+          '<span>👥 '+(m.attendee_count||m.attendees.length)+(attendees?' · '+escapeHtml(attendees):'')+'</span>'+
+          (m.conference_link?'<span><a href="'+escapeHtml(m.conference_link)+'" target="_blank" style="color:var(--accent);text-decoration:none">🔗 Join</a></span>':'')+
+        '</div></div>';
+    }).join('');
+  } else {
+    mtgListEl.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:30px;color:var(--text-muted);font-size:14px">📭 No upcoming meetings</div>';
+  }
+
+  // ── 7. Today's Work Queue (4 cards) ──
+  document.getElementById('dash-targets').innerHTML =
+    '<div class="grid-card" style="text-align:center;padding:16px"><div style="font-size:28px;font-weight:700;color:var(--danger)">'+(queue.follow_ups_due||0)+'</div><div style="font-size:11px;color:var(--text-muted)">Follow-ups Due</div></div>'+
+    '<div class="grid-card" style="text-align:center;padding:16px"><div style="font-size:28px;font-weight:700;color:var(--warning)">'+(queue.positive_replies_needing_response||0)+'</div><div style="font-size:11px;color:var(--text-muted)">Hot Replies</div></div>'+
+    '<div class="grid-card" style="text-align:center;padding:16px"><div style="font-size:28px;font-weight:700;color:var(--success)">'+(queue.meetings_today||0)+'</div><div style="font-size:11px;color:var(--text-muted)">Meetings Today</div></div>'+
+    '<div class="grid-card" style="text-align:center;padding:16px"><div style="font-size:28px;font-weight:700;color:var(--accent)">'+(queue.leads_needing_enrichment||0)+'</div><div style="font-size:11px;color:var(--text-muted)">Need Enrichment</div></div>';
+
+  // ── 8. AI Recommended Actions ──
+  document.getElementById('ai-rec-list').innerHTML = recommendations.length > 0 ?
+    recommendations.map(function(r) {
+      var ic = r.impact === 'High'?'var(--danger)':r.impact === 'Medium'?'var(--warning)':'var(--success)';
+      var im = {messaging:'✉️',enrichment:'📊',response:'💬',pipeline:'📈',sourcing:'🔍',activity:'⚡',referral:'🎯'};
+      return '<div class="activity-item"><div class="activity-icon" style="font-size:16px;background:var(--accent-glow);color:var(--accent)">'+(im[r.type]||'💡')+'</div><div class="activity-body"><div class="act-title">'+escapeHtml(r.action)+' <span style="font-size:11px;color:'+ic+';font-weight:600">['+r.impact+']</span></div><div class="act-meta">'+escapeHtml(r.reason)+'</div></div></div>';
+    }).join('') :
+    '<div style="padding:14px;color:var(--text-muted);font-size:13px;text-align:center">💡 No AI recommendations yet. Keep working your pipeline.</div>';
+
+  // ── 9. Lead Source Performance (horizontal bars) ──
+  var sourcesEl = document.getElementById('dash-sources');
+  if (sources.length > 0) {
+    var maxSL = Math.max(1, sources.reduce(function(m,s){ return Math.max(m,s.leads); }, 1));
+    var srcColors = {linkedin:'#5b8def',web:'var(--accent)',referral:'var(--success)',email:'var(--warning)',manual:'var(--text-muted)',google_maps:'#e8734a',apollo:'#c44dff',hunter:'#f5a623'};
+    sourcesEl.innerHTML = sources.map(function(s) {
+      return '<div class="hbar-row"><div class="hbar-label">'+escapeHtml((s.source||'').charAt(0).toUpperCase()+(s.source||'').slice(1))+'</div><div class="hbar-track"><div class="hbar-fill" style="width:'+Math.max(5,Math.round(s.leads/maxSL*100))+'%;background:'+(srcColors[s.source]||'var(--accent)')+'">'+s.leads+'</div></div><div class="hbar-count">'+(s.reply_rate||'—')+'% reply</div></div>';
+    }).join('');
+  } else {
+    sourcesEl.innerHTML = '<div style="color:var(--text-muted);font-size:13px;padding:16px;text-align:center">📭 No lead sources tracked yet</div>';
+  }
+
+  // ── 10. Outreach Breakdown (bars) ──
+  var oTypes = { emails:0, linkedin_connections:0, linkedin_dms:0, meetings:0, replies:0 };
+  activities.forEach(function(a) {
+    var t = (a.type||'').toLowerCase();
+    if (t.indexOf('email')>=0) oTypes.emails++;
+    else if (t.indexOf('connection')>=0) oTypes.linkedin_connections++;
+    else if (t.indexOf('dm')>=0||t.indexOf('message')>=0) oTypes.linkedin_dms++;
+    else if (t.indexOf('meeting')>=0||t.indexOf('call')>=0) oTypes.meetings++;
+    else if (t.indexOf('reply')>=0) oTypes.replies++;
+  });
+  var totalO = oTypes.emails+oTypes.linkedin_connections+oTypes.linkedin_dms+oTypes.meetings+oTypes.replies || 1;
+  var oLabels = { emails:'📧 Emails', linkedin_connections:'🔗 Connects', linkedin_dms:'💬 DMs', meetings:'📅 Meetings', replies:'📥 Replies' };
+  var oColors = { emails:'var(--accent)', linkedin_connections:'#5b8def', linkedin_dms:'var(--warning)', meetings:'var(--success)', replies:'#c44dff' };
+  document.getElementById('dash-outreach-bars').innerHTML = Object.keys(oTypes).map(function(k) {
+    var c = oTypes[k];
+    if (c === 0) return '';
+    return '<div class="hbar-row"><div class="hbar-label" style="font-size:11px;min-width:80px">'+oLabels[k]+'</div><div class="hbar-track" style="height:18px"><div class="hbar-fill" style="width:'+Math.round(c/totalO*100)+'%;background:'+oColors[k]+';height:18px;font-size:10px">'+c+'</div></div><div class="hbar-count" style="font-size:10px">'+Math.round(c/totalO*100)+'%</div></div>';
+  }).filter(Boolean).join('') || '<div style="color:var(--text-muted);font-size:12px;text-align:center;padding:10px">No outreach data yet</div>';
+
+  // ── 11. Recent Activity Feed ──
+  var liActs = activities.filter(function(a){ return a.type&&(a.type.indexOf('linkedin_')===0||a.type.indexOf('email_')===0); }).slice(0,6);
+  document.getElementById('dash-li-feed').innerHTML = liActs.length > 0 ?
+    liActs.map(function(a) {
+      return '<div class="activity-item"><div class="activity-icon" style="font-size:16px">'+(a.icon||'📌')+'</div><div class="activity-body"><div class="act-title">'+escapeHtml(a.description||'')+'</div><div class="act-meta">'+(a.timestamp?new Date(a.timestamp).toLocaleString():'')+'</div></div></div>';
+    }).join('') :
+    '<div style="padding:16px;color:var(--text-muted);font-size:13px;text-align:center">📭 Track your outreach to see activity here</div>';
+
+  // ── 12. HubSpot Summary (from pipeline snapshot) ──
+  var hsEl = document.getElementById('dash-hubspot-summary');
+  var hubDeals = pipeline.stages || [];
+  if (hubDeals.length > 0) {
+    var totalDealValue = 0, dealCount = 0;
+    hubDeals.forEach(function(s){ if(s.value) totalDealValue += s.value; dealCount += s.count; });
+    hsEl.innerHTML = '<div style="display:flex;gap:20px;flex-wrap:wrap">'+
+      '<div><div style="font-size:20px;font-weight:700;color:var(--accent)">'+dealCount+'</div><div style="font-size:11px;color:var(--text-muted)">Total Deals</div></div>'+
+      '<div><div style="font-size:20px;font-weight:700;color:var(--success)">$'+(totalDealValue||0).toLocaleString()+'</div><div style="font-size:11px;color:var(--text-muted)">Pipeline Value</div></div>'+
+      '<div><div style="font-size:20px;font-weight:700;color:var(--warning)">'+(stats.conversion_rate||0)+'%</div><div style="font-size:11px;color:var(--text-muted)">Conversion</div></div></div>';
+  } else {
+    hsEl.innerHTML = '<div style="padding:10px;color:var(--text-muted);font-size:13px;text-align:center">⏳ No HubSpot data synced yet</div>';
+  }
+
+  // ── 13. Follow-ups Due ──
+  document.getElementById('dash-followups').innerHTML = queue.follow_ups_due > 0 ?
+    '<div style="padding:12px;text-align:center"><div style="font-size:28px;font-weight:700;color:var(--danger)">'+queue.follow_ups_due+'</div><div style="font-size:12px;color:var(--text-muted)">contacts need follow-up</div><button class="btn-secondary mt16" onclick="showTab(\'leads\')">View Leads</button></div>' :
+    '<div style="padding:20px;color:var(--text-muted);font-size:13px;text-align:center">✅ No follow-ups due. Great job!</div>';
+
+  // ── 14. Activity Timeline ──
+  var timelineEl = document.getElementById('dash-timeline');
+  if (activities.length > 0) {
+    timelineEl.innerHTML = activities.slice(0,10).map(function(a) {
+      var ts = a.timestamp ? new Date(a.timestamp).toLocaleDateString()+' '+new Date(a.timestamp).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}) : '—';
+      return '<div class="timeline-item"><div class="time">'+ts+'</div><div class="desc"><span style="font-size:14px;margin-right:6px">'+(a.icon||'▸')+'</span>'+escapeHtml(a.description||'')+'</div><div class="meta">'+escapeHtml(a.type||'')+'</div></div>';
+    }).join('');
+  } else {
+    timelineEl.innerHTML = '<div style="padding:16px;color:var(--text-muted);font-size:13px;text-align:center">No recent activity. Start your day with outreach!</div>';
+  }
+}
 function renderMyDashboard(d) {
   document.getElementById('dash-stats').innerHTML = [
     { label: 'My Deals', value: d.total_deals, change: 'Last 180 days', dir: 'up' },
@@ -1646,6 +1875,46 @@ function runHunt() {
 }
 
 /* === LEADS === */
+function toggleAllLeads(el) {
+  var cbs = document.querySelectorAll('.lead-checkbox');
+  for (var i = 0; i < cbs.length; i++) cbs[i].checked = el.checked;
+  updateBatchDeleteBtn();
+}
+
+function updateBatchDeleteBtn() {
+  var cbs = document.querySelectorAll('.lead-checkbox:checked');
+  var btn = document.getElementById('batch-delete-btn');
+  btn.style.display = cbs.length > 0 ? 'inline-block' : 'none';
+  btn.textContent = 'Delete (' + cbs.length + ')';
+}
+
+function batchDeleteLeads() {
+  var cbs = document.querySelectorAll('.lead-checkbox:checked');
+  var ids = [];
+  for (var i = 0; i < cbs.length; i++) ids.push(cbs[i].value);
+  if (ids.length === 0) return;
+  if (!confirm('Delete ' + ids.length + ' leads permanently?')) return;
+  api('/api/leads/batch-delete', { method: 'POST', body: JSON.stringify({ ids: ids }) })
+    .then(function() { loadLeads(); })
+    .catch(function() {
+      DEMO.leads = DEMO.leads.filter(function(l) { return ids.indexOf(String(l.id)) < 0; });
+      loadLeads();
+    });
+}
+
+function deleteLead(leadId) {
+  if (!confirm('Delete this lead permanently?')) return;
+  api('/api/leads/' + leadId, { method: 'DELETE' })
+    .then(function() {
+      loadLeads();
+    })
+    .catch(function() {
+      // Demo mode — remove from DEMO data
+      DEMO.leads = DEMO.leads.filter(function(l) { return l.id !== leadId; });
+      loadLeads();
+    });
+}
+
 function loadLeads() {
   var tableEl = document.getElementById('leads-table');
   var paginationEl = document.getElementById('leads-pagination');
@@ -1680,7 +1949,7 @@ function renderLeadsTable(filtered, tableEl, paginationEl) {
   var start = (leadsPage - 1) * perPage;
   var pageLeads = filtered.slice(start, start + perPage);
 
-  tableEl.innerHTML = '<table><thead><tr><th>Name</th><th>Company</th><th>Title</th><th>Email</th><th>Score</th><th>Source</th><th>Status</th><th>Actions</th></tr></thead><tbody>' +
+  tableEl.innerHTML = '<table><thead><tr><th style="width:32px"><input type="checkbox" onchange="toggleAllLeads(this)" id="select-all-leads"></th><th>Name</th><th>Company</th><th>Title</th><th>Email</th><th>Score</th><th>Source</th><th>Status</th><th>Actions</th></tr></thead><tbody>' +
     pageLeads.map(function(l) {
       var fullName = (l.first_name || l.name || '') + ' ' + (l.last_name || '');
       fullName = fullName.trim() || l.company || 'Unknown';
@@ -1690,7 +1959,7 @@ function renderLeadsTable(filtered, tableEl, paginationEl) {
       var leadSource = l.source || 'unknown';
       var leadStatus = l.status || 'new';
       var scoreBarColor = leadScore >= 80 ? 'var(--success)' : leadScore >= 60 ? 'var(--warning)' : 'var(--danger)';
-      return '<tr><td style="color:var(--text);font-weight:500">' + escapeHtml(fullName) + '</td><td>' + escapeHtml(l.company || '') + '</td><td>' + escapeHtml(leadTitle) + '</td><td style="font-family:JetBrains Mono,monospace;font-size:12px">' + escapeHtml(leadEmail) + '</td><td><div class="score-bar"><span class="badge ' + scoreClass(leadScore) + '">' + leadScore + '</span><div class="sb-track"><div class="sb-fill" style="width:' + leadScore + '%;background:' + scoreBarColor + '"></div></div></div></td><td><span class="badge ' + sourceBadge(leadSource) + '">' + capitalize(leadSource) + '</span></td><td><span class="badge ' + statusClass(leadStatus) + '">' + capitalize(leadStatus) + '</span></td><td><button class="btn-sm btn-secondary" onclick="alert(\'View lead: ' + escapeHtml(fullName) + '\')">View</button></td></tr>';
+      return '<tr><td><input type="checkbox" class="lead-checkbox" value="' + l.id + '" onchange="updateBatchDeleteBtn()"></td><td style="color:var(--text);font-weight:500">' + escapeHtml(fullName) + '</td><td>' + escapeHtml(l.company || '') + '</td><td>' + escapeHtml(leadTitle) + '</td><td style="font-family:JetBrains Mono,monospace;font-size:12px">' + escapeHtml(leadEmail) + '</td><td><div class="score-bar"><span class="badge ' + scoreClass(leadScore) + '">' + leadScore + '</span><div class="sb-track"><div class="sb-fill" style="width:' + leadScore + '%;background:' + scoreBarColor + '"></div></div></div></td><td><span class="badge ' + sourceBadge(leadSource) + '">' + capitalize(leadSource) + '</span></td><td><span class="badge ' + statusClass(leadStatus) + '">' + capitalize(leadStatus) + '</span></td><td style="white-space:nowrap"><button class="btn-sm btn-secondary" onclick="viewLead(' + l.id + ')">View</button> <button class="btn-sm btn-danger" onclick="deleteLead(' + l.id + ')">Del</button></td></tr>';
     }).join('') +
     '<tr><td colspan="8" style="color:var(--text-muted);font-size:12px;text-align:center">' + (total ? 'Showing ' + (start+1) + '-' + (start + pageLeads.length) + ' of ' + total : 'No leads found') + '</td></tr></tbody></table>';
 
@@ -1970,6 +2239,40 @@ function loadLinkedInTracker() {
   });
 }
 
+/** Signal all data-dependent tabs to refresh after any DB mutation */
+var lastLiUpdate = 0;
+function signalDataChanged() {
+  lastLiUpdate = Date.now();
+  // Increment a global counter that observers check
+  window.__dataRevision = (window.__dataRevision || 0) + 1;
+  // If dashboard tab is visible, trigger immediate refresh
+  if (document.getElementById('tab-dashboard').classList.contains('active')) {
+    if (window.__dashboardRefreshNow) window.__dashboardRefreshNow();
+  }
+}
+
+function refreshAllTabs() {
+  signalDataChanged();
+  // Refresh the active tab intelligently
+  var active = document.querySelector('.nav-item.active');
+  if (active) {
+    var tabName = active.getAttribute('onclick');
+    if (tabName) {
+      var m = tabName.match(/\'([^']+)\ '/);
+      if (m) {
+        var name = m[1];
+        if (name === 'dashboard') loadDashboard();
+        else if (name === 'linkedin-tracker') loadLinkedInTracker();
+        else if (name === 'analytics') loadAnalytics();
+        else if (name === 'leads') loadLeads();
+        else if (name === 'hubspot') loadHubSpot();
+        else if (name === 'meetings') loadMeetings();
+        else if (name === 'activity') loadActivity('weekly');
+      }
+    }
+  }
+}
+
 function updateLiStatus(activityId, newType) {
   var label = document.getElementById('li-status-' + activityId);
   if (label) label.textContent = '⏳';
@@ -1977,8 +2280,10 @@ function updateLiStatus(activityId, newType) {
     method: 'PUT',
     body: JSON.stringify({ activity_type: newType })
   }).then(function() {
+    signalDataChanged();
     loadLinkedInTracker();
   }).catch(function() {
+    signalDataChanged();
     loadLinkedInTracker();
   });
 }
@@ -1988,8 +2293,10 @@ function deleteLiActivity(activityId) {
   api('/api/linkedin/activities/' + activityId, {
     method: 'DELETE'
   }).then(function() {
+    signalDataChanged();
     loadLinkedInTracker();
   }).catch(function() {
+    signalDataChanged();
     loadLinkedInTracker();
   });
 }
@@ -2073,7 +2380,7 @@ function logLiActivity(type) {
     api('/api/linkedin/activities', { method: 'POST', body: JSON.stringify({
       lead_name: name, company: company, linkedin_url: linkedinUrl,
       activity_type: mapActivityType(type), notes: notes, source: 'manual'
-    }) }).catch(function() {});
+    }) }).then(function() { signalDataChanged(); }).catch(function() {});
   }
   var titles = {
     connection_request: 'Connection Request', connection_accepted: 'Connection Accepted', message: 'Message Sent',
@@ -2471,5 +2778,108 @@ function liDeleteSelected() {
   loadLinkedInTracker();
 }
 </script>
+
+<!-- Lead Detail Modal -->
+<div id="lead-modal-overlay" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.7);z-index:9999;align-items:center;justify-content:center" onclick="closeLeadModal(event)">
+  <div id="lead-modal-content" style="background:var(--surface);border:1px solid var(--border);border-radius:14px;width:600px;max-width:92vw;max-height:85vh;overflow-y:auto;padding:28px;position:relative;animation:fadeInUp .25s ease;box-shadow:0 20px 60px rgba(0,0,0,.5)" onclick="event.stopPropagation()">
+    <button onclick="closeLeadModal()" style="position:absolute;top:16px;right:16px;background:none;border:none;color:var(--text-muted);font-size:22px;cursor:pointer;line-height:1">×</button>
+    <div id="lead-modal-body"></div>
+  </div>
+</div>
+
+<style>
+.modal-field{display:flex;padding:10px 0;border-bottom:1px solid var(--border);font-size:14px}
+.modal-field:last-child{border:none}
+.modal-field .mf-label{width:110px;flex-shrink:0;color:var(--text-muted);font-size:12px;text-transform:uppercase;letter-spacing:.5px;padding-top:2px}
+.modal-field .mf-value{color:var(--text)}
+.modal-field .mf-value a{color:var(--accent);text-decoration:none}
+.modal-field .mf-value a:hover{text-decoration:underline}
+</style>
+
+<script>
+function viewLead(leadId) {
+  var overlay = document.getElementById('lead-modal-overlay');
+  var body = document.getElementById('lead-modal-body');
+  body.innerHTML = '<div style="text-align:center;padding:40px"><span style="font-size:24px">⏳</span></div>';
+  overlay.style.display = 'flex';
+
+  api('/api/leads/' + leadId)
+    .then(function(lead) {
+      renderLeadModal(lead);
+    })
+    .catch(function() {
+      // Try DEMO data
+      var lead = null;
+      for (var i = 0; i < DEMO.leads.length; i++) {
+        if (DEMO.leads[i].id === leadId) { lead = DEMO.leads[i]; break; }
+      }
+      if (lead) {
+        // Enrich with lead fields
+        lead.first_name = lead.first_name || lead.name || '';
+        lead.last_name = lead.last_name || '';
+        lead.lead_score = lead.lead_score !== undefined ? lead.lead_score : lead.score;
+        lead.job_title = lead.job_title || lead.title || '';
+        lead.linkedin_url = lead.linkedin_url || '';
+        lead.website = lead.website || '';
+        lead.industry = lead.industry || '';
+        lead.location = lead.location || '';
+        lead.company_size = lead.company_size || '';
+        lead.source = lead.source || '';
+        lead.status = lead.status || '';
+        lead.icp_match = lead.icp_match || 0;
+        lead.score_reason = lead.score_reason || '';
+        renderLeadModal(lead);
+      } else {
+        body.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-muted)">Lead not found</div>';
+      }
+    });
+}
+
+function renderLeadModal(lead) {
+  if (!lead) return;
+  var fullName = ((lead.first_name || '') + ' ' + (lead.last_name || '')).trim() || lead.name || lead.company || 'Unknown';
+  var initials = (lead.first_name ? lead.first_name[0] : '') + (lead.last_name ? lead.last_name[0] : '');
+  if (!initials && lead.name) initials = lead.name.substring(0,2).toUpperCase();
+  if (!initials) initials = '?';
+
+  var scoreColor = lead.lead_score >= 80 ? 'var(--success)' : lead.lead_score >= 60 ? 'var(--warning)' : 'var(--danger)';
+  var sourceLabel = (lead.source || 'unknown').replace(/_/g,' ').replace(/\b\w/g,function(c){return c.toUpperCase()});
+  var statusLabel = (lead.status || 'new').replace(/_/g,' ').replace(/\b\w/g,function(c){return c.toUpperCase()});
+  var dateCreated = lead.created_at ? new Date(lead.created_at).toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric',hour:'2-digit',minute:'2-digit'}) : '—';
+  var dateUpdated = lead.updated_at ? new Date(lead.updated_at).toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric',hour:'2-digit',minute:'2-digit'}) : '—';
+  var linkedinUrl = lead.linkedin_url || '';
+  var linkedinDisplay = linkedinUrl ? '<a href="' + escapeHtml(linkedinUrl) + '" target="_blank">🔗 View Profile</a>' : '<span style="color:var(--text-muted)">—</span>';
+
+  var emailDisplay = lead.email ? '<a href="mailto:' + escapeHtml(lead.email) + '" style="color:var(--accent)">' + escapeHtml(lead.email) + '</a>' : '<span style="color:var(--text-muted)">—</span>';
+
+  body.innerHTML = '' +
+    '<div style="display:flex;align-items:center;gap:16px;margin-bottom:24px;padding-bottom:20px;border-bottom:1px solid var(--border)">' +
+      '<div style="width:52px;height:52px;border-radius:12px;background:linear-gradient(135deg,var(--accent),#5b8def);display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700;color:#fff;flex-shrink:0">' + escapeHtml(initials) + '</div>' +
+      '<div style="flex:1"><div style="font-size:20px;font-weight:700;color:var(--text)">' + escapeHtml(fullName) + '</div>' +
+        '<div style="font-size:13px;color:var(--text-sec);margin-top:2px">' + escapeHtml(lead.company || '') + ' ' + (lead.job_title ? '· ' + escapeHtml(lead.job_title) : '') + '</div></div>' +
+      '<div style="text-align:right"><div class="badge ' + scoreClass(lead.lead_score) + '" style="font-size:13px;padding:4px 10px">' + (lead.lead_score || 0) + '</div><div style="font-size:10px;color:var(--text-muted);margin-top:4px">Lead Score</div></div>' +
+    '</div>' +
+    '<div class="modal-field"><div class="mf-label">Email</div><div class="mf-value">' + emailDisplay + '</div></div>' +
+    '<div class="modal-field"><div class="mf-label">Company</div><div class="mf-value">' + escapeHtml(lead.company || '—') + '</div></div>' +
+    '<div class="modal-field"><div class="mf-label">Job Title</div><div class="mf-value">' + escapeHtml(lead.job_title || '—') + '</div></div>' +
+    '<div class="modal-field"><div class="mf-label">Industry</div><div class="mf-value">' + escapeHtml(lead.industry || '—') + '</div></div>' +
+    '<div class="modal-field"><div class="mf-label">LinkedIn</div><div class="mf-value">' + linkedinDisplay + '</div></div>' +
+    '<div class="modal-field"><div class="mf-label">Website</div><div class="mf-value">' + (lead.website ? '<a href="' + escapeHtml(lead.website) + '" target="_blank">' + escapeHtml(lead.website) + '</a>' : '<span style="color:var(--text-muted)">—</span>') + '</div></div>' +
+    '<div class="modal-field"><div class="mf-label">Phone</div><div class="mf-value">' + escapeHtml(lead.phone || '—') + '</div></div>' +
+    '<div class="modal-field"><div class="mf-label">Location</div><div class="mf-value">' + escapeHtml(lead.location || '—') + '</div></div>' +
+    '<div class="modal-field"><div class="mf-label">Company Size</div><div class="mf-value">' + escapeHtml(lead.company_size || '—') + '</div></div>' +
+    '<div class="modal-field"><div class="mf-label">Source</div><div class="mf-value"><span class="badge ' + sourceBadge(lead.source) + '">' + sourceLabel + '</span></div></div>' +
+    '<div class="modal-field"><div class="mf-label">Status</div><div class="mf-value"><span class="badge ' + statusClass(lead.status) + '">' + statusLabel + '</span></div></div>' +
+    '<div class="modal-field"><div class="mf-label">Score Reason</div><div class="mf-value" style="font-size:13px;color:var(--text-sec)">' + escapeHtml(lead.score_reason || '—') + '</div></div>' +
+    '<div class="modal-field"><div class="mf-label">ICP Match</div><div class="mf-value">' + (lead.icp_match ? Math.round(lead.icp_match*100) + '%' : '<span style="color:var(--text-muted)">—</span>') + '</div></div>' +
+    '<div class="modal-field"><div class="mf-label">Created</div><div class="mf-value" style="font-size:13px;color:var(--text-sec)">' + dateCreated + '</div></div>' +
+    '<div class="modal-field"><div class="mf-label">Updated</div><div class="mf-value" style="font-size:13px;color:var(--text-sec)">' + dateUpdated + '</div></div>';
+}
+
+function closeLeadModal(e) {
+  document.getElementById('lead-modal-overlay').style.display = 'none';
+}
+</script>
+
 </body>
 </html>

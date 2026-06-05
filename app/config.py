@@ -1,16 +1,23 @@
 import os
 from dotenv import load_dotenv
 
-# Use explicit path to ensure .env is always found
 _env_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '.env')
 load_dotenv(_env_path)
+
+# Read MATON_API_KEY directly from .env to override inherited stale shell value
+import re as _re
+with open(_env_path) as _f:
+    for _line in _f:
+        _m = _re.match(r'^MATON_API_KEY=(.+)$', _line.strip())
+        if _m:
+            os.environ['MATON_API_KEY'] = _m.group(1)
+            break
 
 
 class Config:
     """Base configuration."""
     SECRET_KEY = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
     JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY', 'jwt-dev-secret-change-in-production')
-    SQLALCHEMY_TRACK_MODIFICATIONS = False
     GROQ_API_KEY = os.environ.get('GROQ_API_KEY', '')
     JWT_ACCESS_TOKEN_EXPIRES = 86400  # 24 hours
 
@@ -18,25 +25,16 @@ class Config:
 class DevConfig(Config):
     """Development configuration."""
     DEBUG = True
-    SQLALCHEMY_DATABASE_URI = os.environ.get(
-        'DATABASE_URL',
-        'sqlite:///leadhunter.db'
-    )
 
 
 class TestConfig(Config):
     """Test configuration."""
     TESTING = True
-    SQLALCHEMY_DATABASE_URI = 'sqlite:///test_leadhunter.db'
 
 
 class ProdConfig(Config):
     """Production configuration."""
     DEBUG = False
-    SQLALCHEMY_DATABASE_URI = os.environ.get(
-        'DATABASE_URL',
-        'sqlite:///leadhunter.db'
-    )
 
 
 config_by_name = {

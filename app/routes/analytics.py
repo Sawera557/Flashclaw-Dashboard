@@ -1,15 +1,13 @@
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
-from app import db
-from app.models.lead import Lead, LinkedInActivity, GeneratedEmail
-from app.models.user import User
+from app.services.supabase import supabase, select, select_one, eq, in_
 
 analytics_bp = Blueprint('analytics', __name__)
 
 
 def _get_current_user(user_id_str):
     try:
-        return User.query.get(int(user_id_str))
+        return select_one('users', filters=[eq('id', int(user_id_str))])
     except (ValueError, TypeError):
         return None
 
@@ -22,22 +20,33 @@ def pipeline_analytics():
     if not user:
         return jsonify({'error': 'User not found'}), 404
 
-    leads = Lead.query.filter_by(workspace_id=user.workspace_id).all()
-    emails = GeneratedEmail.query.join(
-        Lead, GeneratedEmail.lead_id == Lead.id
-    ).filter(
-        Lead.workspace_id == user.workspace_id
-    ).all()
+    # Leads count
+    leads_result = supabase.table('leads').select('id', count='exact').eq('workspace_id', user['workspace_id']).execute()
+    leads_found = int(leads_result.count) if hasattr(leads_result, 'count') else len(leads_result.data)
 
-    leads_found = len(leads)
-    emails_sent = sum(1 for e in emails if e.sent)
-    emails_generated = len(emails)
+    # Generated emails — workspace-aware
+    leads_in_ws = supabase.table('leads').select('id').eq('workspace_id', user['workspace_id']).execute()
+    ws_lead_ids = [l['id'] for l in leads_in_ws.data]
 
-    # Activities-based metrics
-    activities = LinkedInActivity.query.filter_by(workspace_id=user.workspace_id).all()
-    replies = sum(1 for a in activities if a.activity_type == 'reply_received')
-    meetings = sum(1 for a in activities if a.activity_type == 'meeting_booked')
-    interested = sum(1 for a in activities if a.activity_type == 'interested')
+    emails = []
+    emails_sent = 0
+    emails_generated = 0
+    try:
+        if ws_lead_ids:
+            gen_emails_result = supabase.table('generated_emails').select('sent').in_('lead_id', ws_lead_ids).execute()
+            emails = gen_emails_result.data
+            emails_sent = sum(1 for e in emails if e.get('sent'))
+            emails_generated = len(emails)
+    except Exception:
+        # generated_emails table may not exist yet
+        pass
+
+    # LinkedIn activities
+    activities_result = supabase.table('linkedin_activities').select('activity_type').eq('workspace_id', user['workspace_id']).execute()
+    activities = activities_result.data
+    replies = sum(1 for a in activities if a.get('activity_type') == 'reply_received')
+    meetings = sum(1 for a in activities if a.get('activity_type') == 'meeting_booked')
+    interested = sum(1 for a in activities if a.get('activity_type') == 'interested')
 
     reply_rate = round(replies / emails_sent * 100, 1) if emails_sent > 0 else 0
     conversion_rate = round(meetings / leads_found * 100, 1) if leads_found > 0 else 0
@@ -62,12 +71,14 @@ def analytics_by_source():
     if not user:
         return jsonify({'error': 'User not found'}), 404
 
-    leads = Lead.query.filter_by(workspace_id=user.workspace_id).all()
+    # Fetch all leads for workspace
+    leads_result = supabase.table('leads').select('source,lead_score').eq('workspace_id', user['workspace_id']).execute()
+    leads = leads_result.data
 
     # Group by source
     source_data = {}
     for lead in leads:
-        source = lead.source or 'unknown'
+        source = lead.get('source') or 'unknown'
         if source not in source_data:
             source_data[source] = {
                 'source': source,
@@ -76,23 +87,23 @@ def analytics_by_source():
                 'reply_count': 0,
             }
         source_data[source]['leads'] += 1
-        source_data[source]['total_score'] += lead.lead_score
+        source_data[source]['total_score'] += float(lead.get('lead_score') or 0)
 
-    # Get activities per source — we can approximate by joining
-    activities = LinkedInActivity.query.filter_by(workspace_id=user.workspace_id).all()
+    # LinkedIn activities per source
+    activities_result = supabase.table('linkedin_activities').select('source,activity_type').eq('workspace_id', user['workspace_id']).execute()
     activity_source_data = {}
-    for a in activities:
-        src = a.source or 'manual'
+    for a in activities_result.data:
+        src = a.get('source') or 'manual'
         if src not in activity_source_data:
             activity_source_data[src] = {'replies': 0}
-        if a.activity_type == 'reply_received' or a.activity_type == 'interested':
+        if a.get('activity_type') in ('reply_received', 'interested'):
             activity_source_data[src]['replies'] += 1
 
     result = []
     for source, data in source_data.items():
         avg_score = round(data['total_score'] / data['leads'], 1) if data['leads'] > 0 else 0
         reply_count = activity_source_data.get(source, {}).get('replies', 0)
-        reply_rate = round(reply_count / leads_total(data, source) * 100, 1) if data['leads'] > 0 else 0
+        reply_rate = round(reply_count / data['leads'] * 100, 1) if data['leads'] > 0 else 0
 
         result.append({
             'source': source,
@@ -104,8 +115,3 @@ def analytics_by_source():
     result.sort(key=lambda x: x['leads'], reverse=True)
 
     return jsonify(result)
-
-
-def leads_total(data_dict, source):
-    """Helper to get total leads for reply rate calculation."""
-    return data_dict.get('leads', 1)

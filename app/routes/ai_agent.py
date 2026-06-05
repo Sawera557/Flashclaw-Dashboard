@@ -4,9 +4,7 @@ import logging
 from flask import Blueprint, request, jsonify, Response, stream_with_context
 from flask_jwt_extended import jwt_required, get_jwt_identity
 
-from app import db
-from app.models.user import User
-from app.models.lead import Lead, GeneratedEmail
+from app.services.supabase import supabase, select, select_one, insert, update, delete, eq
 from app.services.scoring import get_groq_client, score_lead_via_groq
 from app.services.hubspot_service import build_context_summary, search_owner_by_name, get_deals_for_owner, HubSpotError
 
@@ -20,7 +18,7 @@ ai_bp = Blueprint('ai', __name__)
 def ai_chat():
     """Streaming AI chat endpoint using Groq SSE."""
     current_user_id = get_jwt_identity()
-    user = User.query.get(int(current_user_id))
+    user = select_one('users', filters=[eq('id', int(current_user_id))])
     if not user:
         return jsonify({'error': 'User not found'}), 404
 
@@ -47,23 +45,23 @@ def ai_chat():
     import os
     import urllib.request, urllib.parse
     from datetime import datetime, timedelta, timezone
-    
+
     gmail_query = None
     user_msg = messages[-1]['content'] if messages else ''
     user_msg_lower = user_msg.lower()
-    
+
     # Detect Gmail-related requests
     is_gmail_request = any(p in user_msg_lower for p in ['my last', 'my emails', 'my gmail', 'my emails from gmail', 'gmail emails', 'recent emails', 'show my inbox', 'last 5 emails', 'my email'])
     is_linkedin_request = any(p in user_msg_lower for p in ['linkedin', 'li activity', 'activity tracking', 'linkedin notification'])
-    
+
     if is_gmail_request or is_linkedin_request:
         limit_match = re.search(r'last (\d+)', user_msg_lower)
         limit = int(limit_match.group(1)) if limit_match else 10
-        
+
         # Detect date range: "last X days" or "7 days"
         days_match = re.search(r'(\d+)\s*days?', user_msg_lower)
         days = int(days_match.group(1)) if days_match else None
-        
+
         # Build Gmail search query
         search_terms = []
         if is_linkedin_request:
@@ -71,9 +69,9 @@ def ai_chat():
         if days:
             after_date = (datetime.now(timezone.utc) - timedelta(days=days)).strftime('%Y/%m/%d')
             search_terms.append(f'after:{after_date}')
-        
+
         gmail_query_str = ' '.join(search_terms) if search_terms else None
-        
+
         maton_key = os.environ.get('MATON_API_KEY', '')
         if maton_key:
             try:
@@ -84,12 +82,12 @@ def ai_chat():
                     req_url = f'https://api.maton.ai/google-mail/gmail/v1/users/me/messages?q={encoded_query}&maxResults=50'
                 else:
                     req_url = f'https://api.maton.ai/google-mail/gmail/v1/users/me/messages?maxResults={limit}'
-                
+
                 req = urllib.request.Request(req_url)
                 req.add_header('Authorization', f'Bearer {maton_key}')
                 with urllib.request.urlopen(req) as resp:
                     msg_list = json.load(resp).get('messages', [])
-                
+
                 emails = []
                 for msg in msg_list[:limit]:
                     detail_req = urllib.request.Request(f'https://api.maton.ai/google-mail/gmail/v1/users/me/messages/{msg["id"]}?format=metadata&metadataHeaders=From&metadataHeaders=Subject&metadataHeaders=Date&metadataHeaders=To&metadataHeaders=References&metadataHeaders=In-Reply-To')
@@ -98,10 +96,10 @@ def ai_chat():
                         detail = json.load(resp)
                     payload = detail.get('payload', {})
                     headers = {h['name']: h['value'] for h in payload.get('headers', [])}
-                    
+
                     # Check if this is a reply (has In-Reply-To or References header)
                     has_reply = bool(headers.get('In-Reply-To', '') or headers.get('References', ''))
-                    
+
                     emails.append({
                         'from': headers.get('From', '?'),
                         'subject': headers.get('Subject', '?'),
@@ -111,27 +109,18 @@ def ai_chat():
                         'has_reply': has_reply,
                         'message_id': msg['id'],
                     })
-                    
-                    # If it has replies, also try to fetch the thread to show the full conversation
-                    if has_reply and 'References' in headers:
-                        thread_id = headers.get('References', '').split()[0] if headers.get('References', '') else ''
-                        if not thread_id:
-                            thread_id = headers.get('In-Reply-To', '').split()[0] if headers.get('In-Reply-To', '') else ''
-                
+
                 # Inject emails as context
                 if is_linkedin_request:
                     email_context = f'\n\n--- YOUR LINKEDIN EMAILS FROM GMAIL (last {days or "7"} days) ---\n'
                     email_context += f'Total LinkedIn-related emails found: {len(emails)}\n\n'
                 else:
                     email_context = '\n\n--- YOUR RECENT EMAILS FROM GMAIL ---\n'
-                
+
                 for i, e in enumerate(emails, 1):
                     reply_flag = ' [REPLY THREAD]' if e['has_reply'] else ''
                     email_context += f'{i}. From: {e["from"]}{reply_flag}\n   Subject: {e["subject"]}\n   Date: {e["date"]}\n   Preview: {e["snippet"]}\n\n'
-                
-                if is_linkedin_request:
-                    email_context += 'IMPORTANT: The user asked for an activity tracking table. Please extract and format the above LinkedIn email data into a clean table with columns: Name | Date | Time | LinkedIn Link | Status | Key Details. If a LinkedIn profile URL is embedded in the email, extract it for the LinkedIn Link column.'
-                
+
                 system_prompt['content'] += email_context
             except Exception as e:
                 system_prompt['content'] += f'\n\nNote: Attempted to fetch Gmail but got error: {str(e)}'
@@ -181,7 +170,7 @@ def ai_chat():
 def generate_email():
     """Generate a personalized email for a lead."""
     current_user_id = get_jwt_identity()
-    user = User.query.get(int(current_user_id))
+    user = select_one('users', filters=[eq('id', int(current_user_id))])
     if not user:
         return jsonify({'error': 'User not found'}), 404
 
@@ -198,7 +187,7 @@ def generate_email():
     client = get_groq_client()
     if not client:
         # Fallback template-based generation
-        return _generate_template_email(lead_data, email_type, user.id, lead_id)
+        return _generate_template_email(lead_data, email_type, user['id'], lead_id)
 
     try:
         completion = client.chat.completions.create(
@@ -212,29 +201,33 @@ def generate_email():
         result = json.loads(raw)
     except Exception as e:
         logger.warning(f'Groq email generation failed: {e}, using template fallback')
-        return _generate_template_email(lead_data, email_type, user.id, lead_id)
+        return _generate_template_email(lead_data, email_type, user['id'], lead_id)
 
     subject = result.get('subject', '')[:500]
     body = result.get('body', '')
-    
+
     # Replace placeholder sender with actual user name
-    user_name = user.name if user else ''
+    user_name = user.get('name', '')
     if user_name:
         body = body.replace('[Your Name]', user_name).replace('[your name]', user_name).replace('[YOUR NAME]', user_name)
         body = body.replace('Your Name', user_name)
 
     # Save to database if lead_id provided
     if lead_id:
-        gen_email = GeneratedEmail(
-            lead_id=lead_id,
-            user_id=user.id,
-            email_type=email_type,
-            subject=subject,
-            body=body,
-            model="llama-3.1-8b-instant",
-        )
-        db.session.add(gen_email)
-        db.session.commit()
+        try:
+            now = datetime.now(timezone.utc).isoformat()
+            gen_email_data = {
+                'lead_id': lead_id,
+                'user_id': user['id'],
+                'email_type': email_type,
+                'subject': subject,
+                'body': body,
+                'model': 'llama-3.1-8b-instant',
+                'created_at': now,
+            }
+            insert('generated_emails', gen_email_data)
+        except Exception:
+            pass
 
     return jsonify({
         'subject': subject,
@@ -330,16 +323,20 @@ def _generate_template_email(lead_data, email_type, user_id, lead_id):
     template = templates.get(email_type, templates['cold'])
 
     if lead_id:
-        gen_email = GeneratedEmail(
-            lead_id=lead_id,
-            user_id=user_id,
-            email_type=email_type,
-            subject=template['subject'][:500],
-            body=template['body'],
-            model='template-fallback',
-        )
-        db.session.add(gen_email)
-        db.session.commit()
+        try:
+            now = datetime.now(timezone.utc).isoformat()
+            gen_email_data = {
+                'lead_id': lead_id,
+                'user_id': user_id,
+                'email_type': email_type,
+                'subject': template['subject'][:500],
+                'body': template['body'],
+                'model': 'template-fallback',
+                'created_at': now,
+            }
+            insert('generated_emails', gen_email_data)
+        except Exception:
+            pass
 
     return jsonify(template)
 
@@ -349,7 +346,7 @@ def _generate_template_email(lead_data, email_type, user_id, lead_id):
 def ai_score_lead():
     """Score a lead using AI based on ICP criteria."""
     current_user_id = get_jwt_identity()
-    user = User.query.get(int(current_user_id))
+    user = select_one('users', filters=[eq('id', int(current_user_id))])
     if not user:
         return jsonify({'error': 'User not found'}), 404
 
@@ -365,12 +362,15 @@ def ai_score_lead():
     # Update lead in DB if lead_id provided
     lead_id = data.get('lead_id')
     if lead_id:
-        lead = Lead.query.filter_by(id=lead_id, workspace_id=user.workspace_id).first()
+        lead = select_one('leads', filters=[eq('id', lead_id), eq('workspace_id', user['workspace_id'])])
         if lead:
-            lead.lead_score = result['score']
-            lead.icp_match = result['icp_match']
-            lead.score_reason = result['reason']
-            db.session.commit()
+            now = datetime.now(timezone.utc).isoformat()
+            update('leads', {
+                'lead_score': result['score'],
+                'icp_match': result['icp_match'],
+                'score_reason': result['reason'],
+                'updated_at': now,
+            }, filters=[eq('id', lead_id)])
 
     return jsonify(result)
 
@@ -381,7 +381,7 @@ def parse_linkedin_notes():
     """Parse raw LinkedIn activity notes into structured activities using AI.
     Saves parsed people to the LinkedInActivity database."""
     current_user_id = get_jwt_identity()
-    user = User.query.get(int(current_user_id))
+    user = select_one('users', filters=[eq('id', int(current_user_id))])
     if not user:
         return jsonify({'error': 'User not found'}), 404
 
@@ -392,12 +392,12 @@ def parse_linkedin_notes():
         return jsonify({'error': 'Text to parse is required'}), 400
 
     client = get_groq_client()
-    
+
     # Pre-extract LinkedIn URLs from raw text
     import re
     urls_found = re.findall(r'(https?://(?:www\.)?linkedin\.com/[^\s)\]]+)', raw_text)
     urls_hint = '\n'.join(urls_found) if urls_found else '(none found by regex)'
-    
+
     prompt = f"""Parse these LinkedIn connection data entries into structured activities.
 
 RAW DATA:
@@ -435,7 +435,6 @@ Return ONLY valid JSON with a "people" key containing an array of objects:
         people = _parse_table_fallback(raw_text)
 
     # Post-process: inject regex-extracted URLs for any person missing one
-    # Also map 'title' to 'notes' for storage
     if people and urls_found:
         url_idx = 0
         for p in people:
@@ -447,29 +446,29 @@ Return ONLY valid JSON with a "people" key containing an array of objects:
             p['notes'] = p['title']
 
     # Save each parsed person to the DB
-    from app.models.lead import LinkedInActivity
     saved_count = 0
+    now = datetime.now(timezone.utc).isoformat()
     for p in people:
         activity_type = p.get('activity_type', 'connection_sent')
         name = p.get('name', '')[:200]
         company = p.get('company', '')[:255]
         url = p.get('linkedin_url', '')[:500]
-        
-        activity = LinkedInActivity(
-            workspace_id=user.workspace_id,
-            user_id=user.id,
-            lead_name=name,
-            company=company,
-            linkedin_url=url,
-            activity_type=activity_type,
-            activity_date='',
-            notes=p.get('title', ''),
-            source='ai_dump',
-        )
-        db.session.add(activity)
+
+        activity_data = {
+            'workspace_id': user['workspace_id'],
+            'user_id': user['id'],
+            'lead_name': name,
+            'company': company,
+            'linkedin_url': url,
+            'activity_type': activity_type,
+            'activity_date': '',
+            'notes': p.get('title', ''),
+            'source': 'ai_dump',
+            'created_at': now,
+        }
+        insert('linkedin_activities', activity_data)
         saved_count += 1
 
-    db.session.commit()
     logger.info(f'Parsed and saved {saved_count} LinkedIn activities from dump')
 
     for p in people:
@@ -497,12 +496,10 @@ def _parse_table_fallback(raw_text):
                 title = parts[1] if len(parts) > 1 else ''
                 url = ''
                 company = ''
-            # URL is any http/https field or linkedin pattern
                 for p in parts:
                     if p.startswith('http') or 'linkedin.com' in p.lower():
                         url = p
                         break
-                # Company: first non-name, non-title, non-url, non-status field
                 for p in parts[1:]:
                     if (p.startswith('http') or p == name or p == title
                         or p.lower() in status_words
@@ -510,7 +507,6 @@ def _parse_table_fallback(raw_text):
                         continue
                     company = p
                     break
-                # Determine activity type from last column (status)
                 activity_type = 'connection_sent'
                 status_str = parts[-1].lower() if parts else ''
                 status_map = {
@@ -536,3 +532,7 @@ def _parse_table_fallback(raw_text):
                     'source': 'ai_dump',
                 })
     return people
+
+
+import re  # noqa: F811 — needed by _parse_table_fallback
+from datetime import datetime, timezone  # noqa: F811
