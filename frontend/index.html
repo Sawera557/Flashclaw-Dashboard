@@ -127,7 +127,11 @@ tr:last-child td{border-bottom:none}
 .timeline-item .desc{font-size:14px;margin-top:2px;color:var(--text)}
 .timeline-item .meta{font-size:12px;color:var(--text-sec);margin-top:2px}
 
-/* Activity */
+.timeline-container { max-height: 400px; overflow-y: auto; padding-right: 8px; }
+.timeline-container::-webkit-scrollbar { width: 6px; }
+.timeline-container::-webkit-scrollbar-track { background: transparent; }
+.timeline-container::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+.timeline-container::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
 .activity-feed{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px}
 .activity-item{display:flex;gap:12px;padding:12px 0;border-bottom:1px solid var(--border)}
 .activity-item:last-child{border-bottom:none}
@@ -186,6 +190,31 @@ tr:last-child td{border-bottom:none}
 .pl-lead{background:var(--accent)}
 .pl-connected{background:#5b8def}
 .pl-meeting{background:var(--warning)}
+
+/* Upcoming Meetings — scrollable right panel */
+.scrollable-meetings{
+  overflow-y:auto;
+  padding-right:6px;
+}
+.scrollable-meetings::-webkit-scrollbar{width:5px}
+.scrollable-meetings::-webkit-scrollbar-track{background:transparent}
+.scrollable-meetings::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+.scrollable-meetings::-webkit-scrollbar-thumb:hover{background:var(--text-muted)}
+.meeting-card{
+  background:var(--card);
+  border-radius:var(--radius-sm);
+  padding:11px 12px;
+  border-left:3px solid var(--accent);
+  margin-bottom:7px;
+  transition:border-color .2s,background .15s;
+}
+.meeting-card:hover{background:var(--hover)}
+.meeting-card:last-child{margin-bottom:0}
+.meeting-card .mc-title{font-size:13px;font-weight:600;color:var(--text);margin-bottom:2px;line-height:1.3}
+.meeting-card .mc-meta{font-size:11px;color:var(--text-sec);display:flex;gap:10px;flex-wrap:wrap}
+.meeting-card .mc-meta span{white-space:nowrap}
+.meeting-card .mc-link{color:var(--accent);text-decoration:none}
+.meeting-card .mc-link:hover{text-decoration:underline}
 .pl-proposal{background:var(--danger)}
 .pl-won{background:var(--success)}
 
@@ -337,6 +366,38 @@ tr:last-child td{border-bottom:none}
 .weekly-bar-label{font-size:9px;color:var(--text-muted);margin-top:4px;white-space:nowrap;text-align:center}
 .weekly-bar-val{font-size:9px;font-weight:600;color:var(--text);margin-bottom:1px}
 
+/* Timeframe filter pills */
+.timeframe-bar{display:flex;gap:6px;margin-bottom:20px;flex-wrap:wrap}
+.timeframe-pill{padding:8px 18px;background:var(--surface);border:1px solid var(--border);border-radius:24px;color:var(--text-sec);font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;font-family:'Sora',sans-serif;letter-spacing:.3px}
+.timeframe-pill:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-glow)}
+.timeframe-pill.active{background:var(--accent);border-color:var(--accent);color:#fff;box-shadow:0 4px 16px rgba(124,109,250,.3)}
+
+/* Enhanced metric cards */
+.metric-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:14px;margin-bottom:24px}
+.metric-card{background:linear-gradient(135deg,var(--surface),var(--card));border:1px solid var(--border);border-radius:var(--radius);padding:18px;position:relative;overflow:hidden;transition:all .2s;box-shadow:0 2px 10px rgba(0,0,0,.2)}
+.metric-card:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,.3);border-color:var(--accent)}
+.metric-card .metric-icon{font-size:22px;margin-bottom:8px}
+.metric-card .metric-value{font-size:26px;font-weight:800;font-family:'JetBrains Mono',monospace;line-height:1.2}
+.metric-card .metric-label{font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-top:4px}
+.metric-card .metric-sub{font-size:11px;color:var(--text-sec);margin-top:2px}
+.metric-card .metric-glow{position:absolute;top:-20px;right:-20px;width:80px;height:80px;border-radius:50%;opacity:.08;pointer-events:none}
+
+/* Enhanced dashboard grid */
+.dash-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(360px,1fr));gap:18px;margin-bottom:24px}
+.dash-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px;box-shadow:0 2px 12px rgba(0,0,0,.2)}
+.dash-card .dash-card-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+.dash-card .dash-card-title{font-size:14px;font-weight:700;color:var(--text);display:flex;align-items:center;gap:8px}
+.dash-card .dash-card-badge{font-size:10px;padding:3px 10px;border-radius:12px;font-weight:600;letter-spacing:.3px}
+
+/* Activity trend chart enhanced */
+.trend-chart{display:flex;align-items:flex-end;gap:3px;height:200px;padding:8px 0 0;position:relative}
+.trend-col{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;position:relative;min-width:0}
+.trend-bar-group{display:flex;flex-direction:column;align-items:center;width:100%;gap:1px}
+.trend-bar{width:100%;max-width:28px;border-radius:2px 2px 0 0;min-height:2px;transition:height .4s cubic-bezier(.25,.46,.45,.94);position:relative}
+.trend-bar:hover{filter:brightness(1.3);cursor:pointer}
+.trend-bar:hover::after{content:attr(data-val);position:absolute;top:-20px;left:50%;transform:translateX(-50%);background:var(--card);color:var(--text);font-size:10px;padding:2px 6px;border-radius:4px;white-space:nowrap;font-family:'JetBrains Mono',monospace;z-index:10}
+.trend-label{font-size:9px;color:var(--text-muted);margin-top:6px;white-space:nowrap;text-align:center;transform:rotate(-25deg);transform-origin:top center;letter-spacing:.2px}
+
 /* Legend */
 .chart-legend{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:8px}
 .chart-legend-item{display:flex;align-items:center;gap:4px;font-size:10px;color:var(--text-muted)}
@@ -454,8 +515,28 @@ tr:last-child td{border-bottom:none}
 
 <div class="content-area">
 
-<!-- DASHBOARD - SDR Command Center (Overhauled) -->
+<!-- DASHBOARD — Redesigned with timeframe filters + enhanced UX -->
 <div class="tab-content active" id="tab-dashboard">
+
+  <!-- ═══ TIMEFRAME FILTER ═══ -->
+  <div class="timeframe-bar" id="timeframe-bar">
+    <button class="timeframe-pill active" data-days="7" onclick="switchTimeframe(7)">1 Week</button>
+    <button class="timeframe-pill" data-days="30" onclick="switchTimeframe(30)">1 Month</button>
+    <button class="timeframe-pill" data-days="90" onclick="switchTimeframe(90)">3 Months</button>
+    <button class="timeframe-pill" data-days="180" onclick="switchTimeframe(180)">6 Months</button>
+    <button class="timeframe-pill" data-days="all" onclick="switchTimeframe('all')">All Time</button>
+  </div>
+
+  <!-- ═══ METRIC CARDS (updates with timeframe) ═══ -->
+  <div class="metric-grid" id="dash-metrics">
+    <div class="metric-card"><div class="metric-icon">📧</div><div class="metric-value" style="color:var(--accent)">—</div><div class="metric-label">Emails Sent</div><div class="metric-sub" id="metric-sub-emails">past period</div><div class="metric-glow" style="background:var(--accent)"></div></div>
+    <div class="metric-card"><div class="metric-icon">📅</div><div class="metric-value" style="color:var(--success)">—</div><div class="metric-label">Meetings Booked</div><div class="metric-sub" id="metric-sub-meetings">past period</div><div class="metric-glow" style="background:var(--success)"></div></div>
+    <div class="metric-card"><div class="metric-icon">🔗</div><div class="metric-value" style="color:#5b8def">—</div><div class="metric-label">Connections Sent</div><div class="metric-sub" id="metric-sub-connections">LinkedIn</div><div class="metric-glow" style="background:#5b8def"></div></div>
+    <div class="metric-card"><div class="metric-icon">💬</div><div class="metric-value" style="color:var(--warning)">—</div><div class="metric-label">Replies</div><div class="metric-sub" id="metric-sub-replies">total received</div><div class="metric-glow" style="background:var(--warning)"></div></div>
+    <div class="metric-card"><div class="metric-icon">🎯</div><div class="metric-value" style="color:#c44dff">—</div><div class="metric-label">New Leads</div><div class="metric-sub" id="metric-sub-leads">created</div><div class="metric-glow" style="background:#c44dff"></div></div>
+    <div class="metric-card"><div class="metric-icon">✨</div><div class="metric-value" style="color:#f5a623">—</div><div class="metric-label">Enrichment Rate</div><div class="metric-sub" id="metric-sub-enrichment">% enriched</div><div class="metric-glow" style="background:#f5a623"></div></div>
+  </div>
+
   <!-- ═══ TOP ROW: SDR Identity + Quick Stats ═══ -->
   <div class="sdr-bar" id="sdr-bar" style="margin-bottom:20px">
     <div class="sdr-avatar">?</div>
@@ -486,31 +567,22 @@ tr:last-child td{border-bottom:none}
       <div id="funnel-stats" style="font-size:11px;color:var(--text-muted);margin-top:6px;text-align:center"></div>
     </div>
     <div class="chart-container">
-      <div class="chart-title">📊 7-Day Activity Trend</div>
-      <div class="weekly-chart" id="dash-weekly-chart"></div>
-      <div class="chart-legend" id="dash-weekly-legend"></div>
-    </div>
-    <div class="chart-container" style="max-height:340px;overflow:hidden">
       <div class="chart-title" style="display:flex;justify-content:space-between;align-items:center">
-        <span>📅 Meetings Today</span>
-        <span id="mtg-today-badge" style="font-size:11px;background:var(--accent-glow);color:var(--accent);padding:2px 10px;border-radius:10px">0</span>
+        <span>📊 Activity Trend</span>
+        <span style="font-size:11px;color:var(--text-muted);font-weight:400" id="trend-period-label">7 days</span>
       </div>
-      <div id="dash-meetings-today" style="padding:8px 0">
-        <div style="padding:20px;text-align:center;color:var(--text-muted);font-size:13px">No meetings today</div>
+      <div class="trend-chart" id="dash-trend-chart"></div>
+      <div class="chart-legend" id="dash-trend-legend"></div>
+    </div>
+    <div class="chart-container" style="display:flex;flex-direction:column;overflow:hidden">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-shrink:0">
+        <span>📅 Upcoming Meetings <span style="font-weight:400;font-size:11px;color:var(--text-muted)">— Google Calendar</span></span>
+        <span id="mtg-week-count" style="font-size:10px;padding:2px 8px;background:var(--accent-glow);color:var(--accent);border-radius:20px">0</span>
+      </div>
+      <div id="dash-maton-meetings" class="scrollable-meetings" style="flex:1;min-height:0;margin-top:8px">
+        <div style="padding:20px;text-align:center;color:var(--text-muted);font-size:13px">Loading meetings...</div>
       </div>
     </div>
-  </div>
-
-  <!-- ═══ ROW 3: Upcoming Meetings — Full Detail ═══ -->
-  <div class="mb16" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px 20px">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-      <div class="section-title" style="margin:0">📅 Upcoming Meetings <span style="font-weight:400;font-size:12px;color:var(--text-muted)">— Google Calendar</span></div>
-      <span id="mtg-week-count" style="font-size:12px;padding:4px 12px;background:var(--accent-glow);color:var(--accent);border-radius:20px">0 this week</span>
-    </div>
-    <div id="dash-maton-meetings" style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-      <div style="grid-column:1/-1;text-align:center;padding:20px;color:var(--text-muted);font-size:13px">Loading meetings...</div>
-    </div>
-  </div>
 
   <!-- ═══ ROW 4: Two columns — Work Queue + AI Recs side by side ═══ -->
   <div class="grid-2 mb16">
@@ -1029,7 +1101,7 @@ tr:last-child td{border-bottom:none}
 </div>
 
 <script>
-const API_BASE = 'https://nikon-rendering-trim-grateful.trycloudflare.com';
+const API_BASE = 'https://stroke-safer-rental-davis.trycloudflare.com';
 let authToken = localStorage.getItem('lhai_token') || null;
 let useDemo = false;
 let activeStreamReader = null;
@@ -1456,6 +1528,135 @@ function hsRender() {
 function hsModal(ownerId) { /* not needed for owner-specific view */ }
 
 /* === DASHBOARD — Full SDR Command Center === */
+var currentTimeframe = 7;
+
+function switchTimeframe(days) {
+  currentTimeframe = days;
+  // Update pill styles
+  document.querySelectorAll('.timeframe-pill').forEach(function(p) {
+    p.classList.remove('active');
+    if (String(p.dataset.days) === String(days)) p.classList.add('active');
+  });
+  // Reload timeframe data
+  loadTimeframeData(days);
+  // Update period label
+  var label = days === 'all' ? 'All Time' : days + ' days';
+  var el = document.getElementById('trend-period-label');
+  if (el) el.textContent = label;
+}
+
+function loadTimeframeData(days) {
+  var daysParam = days === 'all' ? 'all' : days;
+  api('/api/activity/timeframe?days=' + daysParam).then(function(d) {
+    if (!d || !d.totals) return;
+    renderTimeframeMetrics(d);
+    renderTimeframeTrend(d);
+  }).catch(function(err) {
+    console.warn('Timeframe API fallback:', err);
+    // Use existing dashboard data as fallback
+    if (lastDashboardData) {
+      renderTimeframeFromDashboard(lastDashboardData, days);
+    }
+  });
+}
+
+function renderTimeframeMetrics(d) {
+  var t = d.totals || {};
+  var r = d.rates || {};
+  var labels = {
+    emails: 'Emails Sent', connections: 'Meetings Booked',
+    replies: 'Replies', leads: 'New Leads', enrichment: 'Enrichment Rate'
+  };
+
+  setMetric('emails', t.emails_sent || 0, Math.round(t.emails_sent || 0) + ' sent');
+  setMetric('meetings', t.meetings_booked || 0, Math.round(t.meetings_booked || 0) + ' booked');
+  setMetric('connections', t.connections_sent || 0, Math.round(t.connections_sent || 0) + ' sent');
+  setMetric('replies', t.replies || 0, Math.round(t.replies || 0) + ' received');
+  setMetric('leads', t.new_leads || 0, String(t.total_leads || 0) + ' total');
+  setMetric('enrichment', (r.enrichment_rate || 0) + '%', Math.round(t.enriched_leads || 0) + ' enriched');
+
+  function setMetric(id, value, sub) {
+    var card = document.querySelector('#dash-metrics .metric-card:nth-child(' + ({emails:1,meetings:2,connections:3,replies:4,leads:5,enrichment:6}[id]) + ')');
+    if (!card) return;
+    var valEl = card.querySelector('.metric-value');
+    var subEl = card.querySelector('.metric-sub');
+    if (valEl) valEl.textContent = value;
+    if (subEl) subEl.textContent = sub;
+  }
+}
+
+function renderTimeframeTrend(d) {
+  var chartEl = document.getElementById('dash-trend-chart');
+  var legendEl = document.getElementById('dash-trend-legend');
+  if (!chartEl) return;
+
+  var breakdown = d.daily_breakdown || [];
+  if (breakdown.length === 0) {
+    chartEl.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-muted);font-size:13px">No activity data for this period</div>';
+    return;
+  }
+
+  // Limit to max 30 data points for readability
+  var step = Math.max(1, Math.ceil(breakdown.length / 30));
+  var sampled = [];
+  for (var i = 0; i < breakdown.length; i += step) {
+    sampled.push(breakdown[i]);
+  }
+
+  var maxVal = Math.max(1, sampled.reduce(function(m, d) {
+    return Math.max(m, (d.emails_sent||0) + (d.connections_sent||0) + (d.meetings||0));
+  }, 1));
+
+  var barC = { emails:'var(--accent)', connections:'#5b8def', meetings:'var(--success)' };
+
+  chartEl.innerHTML = sampled.map(function(d) {
+    var total = (d.emails_sent||0) + (d.connections_sent||0) + (d.meetings||0);
+    var h = 200 / maxVal;
+    var dateLabel = (d.date||'').slice(5); // MM-DD
+    return '<div class="trend-col">' +
+      '<div class="trend-bar-group">' +
+      '<div class="trend-bar" data-val="' + (d.meetings||0) + ' meetings" style="height:' + Math.max(2, Math.round((d.meetings||0)*h)) + 'px;background:' + barC.meetings + ';opacity:.85"></div>' +
+      '<div class="trend-bar" data-val="' + (d.connections_sent||0) + ' connections" style="height:' + Math.max(2, Math.round((d.connections_sent||0)*h)) + 'px;background:' + barC.connections + ';opacity:.85"></div>' +
+      '<div class="trend-bar" data-val="' + (d.emails_sent||0) + ' emails" style="height:' + Math.max(2, Math.round((d.emails_sent||0)*h)) + 'px;background:' + barC.emails + ';opacity:.85"></div>' +
+      '</div>' +
+      '<div class="trend-label">' + dateLabel + '</div></div>';
+  }).join('');
+
+  if (legendEl) {
+    legendEl.innerHTML = '<div class="chart-legend-item"><span class="legend-dot" style="background:var(--accent)"></span>Emails</div>' +
+      '<div class="chart-legend-item"><span class="legend-dot" style="background:#5b8def"></span>Connections</div>' +
+      '<div class="chart-legend-item"><span class="legend-dot" style="background:var(--success)"></span>Meetings</div>';
+  }
+}
+
+function renderTimeframeFromDashboard(d, days) {
+  // Fallback: use recent_activities for trend chart
+  var activities = d.recent_activities || [];
+  var t = d.stats || {};
+  var r = d.rates || {};
+
+  setMetricVal(1, t.emails_sent || 0, 'sent');
+  setMetricVal(2, t.meetings_booked || 0, 'booked');
+  setMetricVal(3, t.connections_sent || 0, 'sent');
+  setMetricVal(4, t.replies_received || 0, 'received');
+  setMetricVal(5, t.new_today || 0, 'created');
+  setMetricVal(6, (r.enrichment_rate || 0) + '%', 'enriched');
+
+  function setMetricVal(idx, val, sub) {
+    var card = document.querySelector('#dash-metrics .metric-card:nth-child(' + idx + ')');
+    if (!card) return;
+    var valEl = card.querySelector('.metric-value');
+    var subEl = card.querySelector('.metric-sub');
+    if (valEl) valEl.textContent = val;
+    if (subEl) subEl.textContent = sub;
+  }
+
+  // Fallback trend chart
+  var chartEl = document.getElementById('dash-trend-chart');
+  if (chartEl && activities.length > 0) renderTimeframeTrend({daily_breakdown: activities.slice(0, 7).map(function(a) {
+    return {date: (a.timestamp||'').slice(0,10), emails_sent: 0, connections_sent: 0, meetings: 0};
+  })});
+}
 function loadDashboard() {
   var refreshBtn = document.getElementById('refresh-btn');
   if (refreshBtn) refreshBtn.textContent = '⏳';
@@ -1582,28 +1783,11 @@ function renderRealDashboard(d) {
     funnelEl.innerHTML = '<div style="color:var(--text-muted);font-size:13px;padding:20px;text-align:center">No pipeline data yet</div>';
   }
 
-  // ── 4. Meetings Today Panel ──
-  var mtgToday = meetings.filter(function(m){ return m.start && m.start.indexOf(todayStr) >= 0; });
-  document.getElementById('mtg-today-badge').textContent = mtgToday.length + ' today';
-  var mtgTodayEl = document.getElementById('dash-meetings-today');
-  if (mtgToday.length > 0) {
-    mtgTodayEl.innerHTML = mtgToday.map(function(m) {
-      var t = '';
-      if (m.start) try { t = new Date(m.start).toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'}); } catch(e){ t = (m.start||'').substring(11,16); }
-      return '<div style="padding:8px 0;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">'+
-        '<div><div style="font-size:13px;font-weight:600">'+escapeHtml(m.title)+'</div>'+
-        '<div style="font-size:11px;color:var(--text-sec);margin-top:2px">'+t+(m.conference_link?' · <a href="'+escapeHtml(m.conference_link)+'" target="_blank" style="color:var(--accent);text-decoration:none">🔗 Join</a>':'')+'</div></div>'+
-        '<div style="font-size:11px;color:var(--text-muted);text-align:right">👥 '+(m.attendee_count||m.attendees.length)+'</div></div>';
-    }).join('');
-  } else {
-    mtgTodayEl.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-muted);font-size:13px">📭 No meetings scheduled for today</div>';
-  }
-
-  // ── 5. Weekly Activity Bar Chart ──
-  var weeklyEl = document.getElementById('dash-weekly-chart');
-  var weeklyLegend = document.getElementById('dash-weekly-legend');
+  // ── 4. Activity Trend Chart ──
+  var trendEl = document.getElementById('dash-trend-chart');
+  var trendLegend = document.getElementById('dash-trend-legend');
   var dayMap = {};
-  for (var i = 6; i >= 0; i--) { var d = new Date(now); d.setDate(d.getDate()-i); dayMap[d.toISOString().slice(0,10)] = { date: d.toISOString().slice(0,10), emails:0, linkedin:0, meetings:0 }; }
+  for (var i = 6; i >= 0; i--) { var dObj = new Date(now); dObj.setDate(dObj.getDate()-i); dayMap[dObj.toISOString().slice(0,10)] = { date: dObj.toISOString().slice(0,10), emails:0, linkedin:0, meetings:0 }; }
   activities.forEach(function(a) {
     if (!a.timestamp) return;
     var dk = a.timestamp.slice(0,10);
@@ -1616,24 +1800,33 @@ function renderRealDashboard(d) {
       else dayMap[dk].emails++;
     }
   });
-  var days = Object.keys(dayMap).sort();
-  var maxDayVal = Math.max(1, days.reduce(function(m,k){ return Math.max(m, dayMap[k].emails+dayMap[k].linkedin+dayMap[k].meetings); }, 1));
+  var daysArr = Object.keys(dayMap).sort();
+  var maxDayVal = Math.max(1, daysArr.reduce(function(m,k){ return Math.max(m, dayMap[k].emails+dayMap[k].linkedin+dayMap[k].meetings); }, 1));
   var barC = { emails:'var(--accent)', linkedin:'#5b8def', meetings:'var(--success)' };
-  weeklyEl.innerHTML = days.map(function(k) {
-    var d = dayMap[k], total = d.emails + d.linkedin + d.meetings;
-    var hf = 160 / maxDayVal;
-    return '<div class="weekly-col"><div class="weekly-bar-val">'+total+'</div>'+
-      '<div class="weekly-bar" style="height:'+Math.max(2,Math.round(d.meetings*hf))+';background:'+barC.meetings+';opacity:.85"></div>'+
-      '<div class="weekly-bar" style="height:'+Math.max(2,Math.round(d.linkedin*hf))+';background:'+barC.linkedin+';opacity:.85"></div>'+
-      '<div class="weekly-bar" style="height:'+Math.max(2,Math.round(d.emails*hf))+';background:'+barC.emails+';opacity:.85"></div>'+
-      '<div class="weekly-bar-label">'+(k.slice(5))+'</div></div>';
-  }).join('');
-  weeklyLegend.innerHTML = '<div class="chart-legend-item"><span class="legend-dot" style="background:'+barC.emails+'"></span>Emails</div>'+
-    '<div class="chart-legend-item"><span class="legend-dot" style="background:'+barC.linkedin+'"></span>LinkedIn</div>'+
-    '<div class="chart-legend-item"><span class="legend-dot" style="background:'+barC.meetings+'"></span>Meetings</div>';
+  
+  if (trendEl) {
+    trendEl.innerHTML = daysArr.map(function(k) {
+      var dObj = dayMap[k], total = dObj.emails + dObj.linkedin + dObj.meetings;
+      var hf = 160 / maxDayVal;
+      return '<div class="trend-col"><div class="trend-bar-val">'+total+'</div>'+
+        '<div class="trend-bar" style="height:'+Math.max(2,Math.round(dObj.meetings*hf))+'px;background:'+barC.meetings+';opacity:.85"></div>'+
+        '<div class="trend-bar" style="height:'+Math.max(2,Math.round(dObj.linkedin*hf))+'px;background:'+barC.linkedin+';opacity:.85"></div>'+
+        '<div class="trend-bar" style="height:'+Math.max(2,Math.round(dObj.emails*hf))+'px;background:'+barC.emails+';opacity:.85"></div>'+
+        '<div class="trend-label">'+(k.slice(5))+'</div></div>';
+    }).join('');
+  }
+  
+  if (trendLegend) {
+    trendLegend.innerHTML = '<div class="chart-legend-item"><span class="legend-dot" style="background:'+barC.emails+'"></span>Emails</div>'+
+      '<div class="chart-legend-item"><span class="legend-dot" style="background:'+barC.linkedin+'"></span>LinkedIn</div>'+
+      '<div class="chart-legend-item"><span class="legend-dot" style="background:'+barC.meetings+'"></span>Meetings</div>';
+  }
+
+  // Load timeframe data (triggers metrics update)
+  loadTimeframeData(currentTimeframe);
 
   // ── 6. Upcoming Maton Meetings (full detail) ──
-  document.getElementById('mtg-week-count').textContent = meetings.length + ' this week';
+  document.getElementById('mtg-week-count').textContent = meetings.length;
   var mtgListEl = document.getElementById('dash-maton-meetings');
   if (meetings.length > 0) {
     mtgListEl.innerHTML = meetings.map(function(m) {
@@ -1641,20 +1834,22 @@ function renderRealDashboard(d) {
       if (m.start) try { t = new Date(m.start).toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'}); } catch(e){ t = (m.start||'').substring(11,16); }
       var dayLabel = '';
       if (m.start) try { dayLabel = new Date(m.start).toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'}); } catch(e) { dayLabel = (m.start||'').substring(0,10); }
-      var attendees = (m.attendees||[]).slice(0,3).map(function(a){ return a.name||a.email||'?'; }).join(', ');
-      return '<div style="background:var(--card);border-radius:var(--radius-sm);padding:14px;border-left:3px solid var(--accent)">'+
-        '<div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:4px">'+escapeHtml(m.title)+'</div>'+
-        '<div style="font-size:11px;color:var(--text-sec);display:flex;gap:12px;flex-wrap:wrap">'+
-          '<span>📆 '+dayLabel+'</span><span>🕐 '+t+'</span>'+
+      var attendees = (m.attendees||[]).slice(0,2).map(function(a){ return a.name||a.email||'?'; }).join(', ');
+      var now = new Date();
+      var isToday = m.start && m.start.slice(0,10) === now.toISOString().slice(0,10);
+      var borderColor = isToday ? 'var(--success)' : 'var(--accent)';
+      return '<div class="meeting-card" style="border-left-color:'+borderColor+'">'+
+        '<div class="mc-title">'+escapeHtml(m.title)+'</div>'+
+        '<div class="mc-meta">'+
+          '<span>📅 '+dayLabel+'</span>'+
+          '<span>🕐 '+t+'</span>'+
           '<span>👥 '+(m.attendee_count||m.attendees.length)+(attendees?' · '+escapeHtml(attendees):'')+'</span>'+
-          (m.conference_link?'<span><a href="'+escapeHtml(m.conference_link)+'" target="_blank" style="color:var(--accent);text-decoration:none">🔗 Join</a></span>':'')+
+          (m.conference_link?'<span><a href="'+escapeHtml(m.conference_link)+'" target="_blank" class="mc-link">🔗 Join</a></span>':'')+
         '</div></div>';
     }).join('');
   } else {
-    mtgListEl.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:30px;color:var(--text-muted);font-size:14px">📭 No upcoming meetings</div>';
-  }
-
-  // ── 7. Today's Work Queue (4 cards) ──
+    mtgListEl.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted);font-size:13px">📭 No upcoming meetings</div>';
+  }// ── 7. Today's Work Queue (4 cards) ──
   document.getElementById('dash-targets').innerHTML =
     '<div class="grid-card" style="text-align:center;padding:16px"><div style="font-size:28px;font-weight:700;color:var(--danger)">'+(queue.follow_ups_due||0)+'</div><div style="font-size:11px;color:var(--text-muted)">Follow-ups Due</div></div>'+
     '<div class="grid-card" style="text-align:center;padding:16px"><div style="font-size:28px;font-weight:700;color:var(--warning)">'+(queue.positive_replies_needing_response||0)+'</div><div style="font-size:11px;color:var(--text-muted)">Hot Replies</div></div>'+
@@ -1815,7 +2010,8 @@ function renderNoDataDashboard() {
   document.getElementById('dash-stats').innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text-muted)">Unable to load dashboard data. <a href="#" onclick="loadDashboard();return false" style="color:var(--accent)">Try again</a></div>';
   document.getElementById('dash-timeline').innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-muted)">No activity data</div>';
   document.getElementById('dash-funnel').innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-muted)">No pipeline data</div>';
-  document.getElementById('dash-weekly-chart').innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-muted)">No activity data</div>';
+  var chartEl = document.getElementById('dash-trend-chart');
+  if (chartEl) chartEl.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-muted);font-size:13px">No activity data</div>';
   document.getElementById('dash-li-feed').innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-muted)">No LinkedIn activity</div>';
   document.getElementById('dash-followups').innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-muted)">No follow-ups</div>';
   document.getElementById('dash-sources').innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-muted)">No source data</div>';
