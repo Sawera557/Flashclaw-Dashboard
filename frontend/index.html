@@ -44,7 +44,7 @@ body{font-family:'Sora',-apple-system,sans-serif;background:var(--bg);color:var(
 .login-card input:focus{border-color:var(--accent)}
 .login-card .btn-primary{width:100%;padding:12px;font-size:15px;margin-top:8px}
 .login-error{display:none;padding:12px 16px;background:rgba(245,72,90,.1);border:1px solid rgba(245,72,90,.3);border-radius:var(--radius-sm);color:var(--danger);font-size:13px;margin-bottom:12px}
-.demo-creds{margin-top:20px;padding:12px;background:var(--card);border-radius:var(--radius-sm);font-size:12px;color:var(--text-muted);text-align:center;font-family:'JetBrains Mono',monospace}
+
 
 .btn-primary{background:var(--accent);border:none;color:#fff;padding:10px 22px;border-radius:var(--radius-sm);font-family:'Sora',sans-serif;font-weight:600;font-size:14px;cursor:pointer;transition:background .2s,transform .1s}
 .btn-primary:hover{background:var(--accent-hover)}
@@ -107,6 +107,10 @@ tr:last-child td{border-bottom:none}
 .badge-new{background:rgba(124,109,250,.15);color:var(--accent)}
 .badge-contacted{background:rgba(62,207,142,.15);color:var(--success)}
 .badge-qualified{background:rgba(245,166,35,.15);color:var(--warning)}
+.badge-follow-up{background:rgba(255,107,53,.15);color:#ff6b35}
+.badge-replied{background:rgba(0,184,212,.15);color:#00b8d4}
+.badge-not-to-contact{background:rgba(245,72,90,.25);color:var(--danger);text-decoration:line-through}
+.badge-interested{background:rgba(62,207,142,.15);color:var(--success)}
 .badge-linkedin{background:rgba(10,102,194,.15);color:#5b8def}
 .badge-referral{background:rgba(62,207,142,.15);color:var(--success)}
 .badge-web{background:rgba(124,109,250,.15);color:var(--accent)}
@@ -417,7 +421,7 @@ tr:last-child td{border-bottom:none}
 .loading{display:flex;align-items:center;justify-content:center;padding:40px;color:var(--text-muted);font-size:14px;gap:8px}
 .spinner{width:20px;height:20px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .6s linear infinite;display:inline-block}
 @keyframes spin{to{transform:rotate(360deg)}}
-.demo-banner{display:none;background:rgba(245,166,35,.12);border-bottom:1px solid rgba(245,166,35,.3);color:var(--warning);text-align:center;padding:8px 16px;font-size:13px;font-weight:500}
+
 .section-title{font-size:16px;font-weight:600;margin-bottom:14px;margin-top:24px}
 .section-title:first-of-type{margin-top:0}
 .mb16{margin-bottom:16px}
@@ -460,12 +464,10 @@ tr:last-child td{border-bottom:none}
       <button type="submit" class="btn-primary" id="login-btn">Sign In</button>
     </form>
     <div id="login-error" class="login-error"></div>
-    <div class="demo-creds">Demo: demo@leadhunter.ai / demo123</div>
   </div>
 </div>
 
 <div id="app-view">
-<div id="demo-banner" class="demo-banner">⚠️ Backend unreachable — showing demo data</div>
 
 <aside class="sidebar">
   <div class="sidebar-brand">
@@ -624,6 +626,22 @@ tr:last-child td{border-bottom:none}
       <div class="timeline" style="max-height:200px;overflow-y:auto;padding-right:6px" id="dash-timeline"></div>
     </div>
   </div>
+
+  <!-- ═══ ROW 6: Source Performance + Activity Feed + Follow-ups ═══ -->
+  <div class="grid-3 mb16">
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px 20px">
+      <div class="section-title" style="margin:0 0 8px">📈 Lead Source Performance</div>
+      <div id="dash-sources" style="margin-top:8px"></div>
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px 20px">
+      <div class="section-title" style="margin:0 0 8px">🔗 LinkedIn & Email Feed</div>
+      <div id="dash-li-feed"></div>
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px 20px">
+      <div class="section-title" style="margin:0 0 8px">⏰ Follow-ups Due</div>
+      <div id="dash-followups"></div>
+    </div>
+  </div>
 </div>
 
 <!-- LEAD HUNTER -->
@@ -689,11 +707,15 @@ tr:last-child td{border-bottom:none}
     </select>
     <select id="leads-status" onchange="loadLeads()">
       <option value="">All Status</option>
-      <option value="new">New</option>
-      <option value="contacted">Contacted</option>
-      <option value="qualified">Qualified</option>
-      <option value="meeting">Meeting</option>
-      <option value="closed">Closed</option>
+      <option value="new">🆕 New</option>
+      <option value="contacted">📞 Contacted</option>
+      <option value="replied">💬 Replied</option>
+      <option value="interested">🎯 Interested</option>
+      <option value="qualified">⭐ Qualified</option>
+      <option value="follow_up">🔁 Follow Up</option>
+      <option value="meeting">📅 Meeting</option>
+      <option value="closed">✅ Closed</option>
+      <option value="not_to_contact">🚫 Not to Contact</option>
     </select>
     <button class="btn-danger btn-sm" id="batch-delete-btn" style="display:none;margin-left:auto" onclick="batchDeleteLeads()">Delete Selected</button>
   </div>
@@ -865,25 +887,24 @@ tr:last-child td{border-bottom:none}
   <div id="hs-grid" style="display:none"></div>
 </div>
 
-<!-- MATON MEETINGS CALENDAR -->
+<!-- MATON MEETINGS -->
 <div class="tab-content" id="tab-meetings">
   <div class="flex align-center gap8 mb16">
-    <div class="section-title" style="margin-bottom:0">📅 Upcoming Meetings — This Week</div>
-    <span id="mtg-source" style="font-size:12px;padding:4px 10px;border-radius:20px;background:rgba(124,109,250,.12);color:var(--accent)">Google Calendar</span>
+    <div class="section-title" style="margin-bottom:0">📅 Meetings</div>
+    <span style="font-size:11px;padding:3px 10px;border-radius:20px;background:rgba(124,109,250,.12);color:var(--accent)">Google Calendar</span>
     <button class="btn-sm ml-auto" onclick="loadMeetings()">🔄 Refresh</button>
   </div>
 
-  <!-- Summary Cards -->
+  <!-- Summary row -->
   <div class="grid-4 mb16" id="mtg-summary">
-    <div class="grid-card"><div style="font-size:24px;font-weight:700;color:var(--success)" id="mtg-upcoming">—</div><div style="font-size:12px;color:var(--text-muted)">Upcoming</div></div>
-    <div class="grid-card"><div style="font-size:24px;font-weight:700;color:var(--accent)" id="mtg-today">—</div><div style="font-size:12px;color:var(--text-muted)">Today</div></div>
-    <div class="grid-card"><div style="font-size:24px;font-weight:700" id="mtg-past">—</div><div style="font-size:12px;color:var(--text-muted)">This Week (Past)</div></div>
-    <div class="grid-card"><div style="font-size:24px;font-weight:700;color:var(--warning)" id="mtg-attendees">—</div><div style="font-size:12px;color:var(--text-muted)">Total Attendees</div></div>
+    <div class="grid-card"><div style="font-size:24px;font-weight:700;color:var(--success)" id="mtg-upcoming">—</div><div style="font-size:11px;color:var(--text-muted)">Upcoming</div></div>
+    <div class="grid-card"><div style="font-size:24px;font-weight:700;color:var(--accent)" id="mtg-today">—</div><div style="font-size:11px;color:var(--text-muted)">Today</div></div>
+    <div class="grid-card"><div style="font-size:24px;font-weight:700" id="mtg-past">—</div><div style="font-size:11px;color:var(--text-muted)">This Week</div></div>
+    <div class="grid-card"><div style="font-size:24px;font-weight:700;color:var(--warning)" id="mtg-attendees">—</div><div style="font-size:11px;color:var(--text-muted)">People</div></div>
   </div>
 
-  <!-- Meetings List -->
-  <div class="section-title">Schedule</div>
-  <div class="card" id="mtg-list" style="max-height:70vh;overflow-y:auto">
+  <!-- Schedule list -->
+  <div id="mtg-list" class="scrollable-meetings" style="max-height:65vh;overflow-y:auto">
     <div style="text-align:center;padding:40px;color:var(--text-muted)"><span class="spinner"></span> Loading meetings...</div>
   </div>
 </div>
@@ -1036,7 +1057,6 @@ tr:last-child td{border-bottom:none}
         <span id="test-result" style="font-size:13px;"></span>
       </div>
     </div>
-    <div class="demo-creds" style="margin-top:20px">Demo credentials saved for quick access</div>
   </div>
 </div>
 
@@ -1087,7 +1107,9 @@ tr:last-child td{border-bottom:none}
 <script>
 const API_BASE = 'https://stroke-safer-rental-davis.trycloudflare.com';
 let authToken = localStorage.getItem('lhai_token') || null;
-let useDemo = false;
+let liStatsCache = {};
+let liFeedCache = [];
+let activityLogCache = [];
 let activeStreamReader = null;
 let currentEmailType = 'cold';
 let selectedSources = new Set();
@@ -1111,108 +1133,9 @@ const pageTitles = {
   'meetings': ['Meetings', 'Google Calendar — schedule & attendees'],
 };
 
-const DEMO = {
-  stats: { leads: 342, emails: 1287, emailReplies: 187, liConnections: 89, liDMs: 134, meetings: 31, interested: 48, pipelineValue: 247000 },
-  timeline: [
-    { time: '2 hours ago', desc: 'Follow-up sent to Sarah Chen (Acme Corp)', meta: 'Replied - Interested in demo' },
-    { time: '4 hours ago', desc: 'New LI connection: Michael Torres — VP Eng at DataFlow', meta: 'Auto-accepted' },
-    { time: '6 hours ago', desc: 'Booked discovery call with InnoTech', meta: 'Scheduled Jun 5 @ 2PM' },
-    { time: 'Yesterday', desc: 'AI Agent qualified 14 leads from LinkedIn outreach', meta: 'Avg score: 78 — 6 hot leads' },
-    { time: 'Yesterday', desc: 'Cold email batch sent — 45 SaaS leads', meta: 'Campaign: June Outreach Batch' },
-    { time: '2 days ago', desc: 'Emily Park (NexGen SaaS) accepted connection', meta: 'CEO · Score: 95' }
-  ],
-  targets: [
-    { name: 'Cold Emails', current: 34, target: 50, color: 'var(--accent)' },
-    { name: 'LI Connections', current: 12, target: 20, color: '#5b8def' },
-    { name: 'LI DMs', current: 8, target: 15, color: 'var(--warning)' },
-    { name: 'Follow-ups', current: 6, target: 10, color: 'var(--danger)' },
-    { name: 'Meetings', current: 2, target: 4, color: 'var(--success)' }
-  ],
-  pipelineSnapshot: [
-    { label: 'Connections Sent', val: 89, pct: 100 },
-    { label: 'Connections Accepted', val: 62, pct: 70 },
-    { label: 'DMs Sent', val: 48, pct: 54 },
-    { label: 'Replied', val: 22, pct: 25 },
-    { label: 'Interested', val: 14, pct: 16 },
-    { label: 'Meetings Booked', val: 8, pct: 9 }
-  ],
-  liActivity: [
-    { type: 'connection_request', title: 'Connection sent to Sarah Chen (Acme Corp)', meta: '2 hours ago' },
-    { type: 'connection_accepted', title: 'Michael Torres (DataFlow) accepted', meta: '4 hours ago' },
-    { type: 'message', title: 'Sent DM to Emily Park (NexGen SaaS)', meta: '6 hours ago' },
-    { type: 'profile_view', title: 'Viewed James Liu (CloudBase) profile', meta: 'Yesterday' },
-    { type: 'reply_received', title: 'Reply from Rachel Adams (Strata LLC)', meta: '2 days ago' }
-  ],
-  followups: [
-    { name: 'Sarah Chen', company: 'Acme Corp', due: 'Today' },
-    { name: 'Michael Torres', company: 'DataFlow', due: 'Tomorrow' },
-    { name: 'James Liu', company: 'CloudBase', due: 'Jun 4' },
-    { name: 'David Kim', company: 'Fusion Labs', due: 'Jun 5' }
-  ],
-  topSources: [
-    { name: 'LinkedIn', count: 156, pct: 46 },
-    { name: 'Web', count: 89, pct: 26 },
-    { name: 'Referral', count: 45, pct: 13 },
-    { name: 'Email', count: 34, pct: 10 },
-    { name: 'Manual', count: 18, pct: 5 }
-  ],
-  leads: [
-    { id: 1, name: 'Sarah Chen', company: 'Acme Corp', title: 'VP Marketing', email: 'sarah@acme.com', score: 92, source: 'linkedin', status: 'contacted' },
-    { id: 2, name: 'Michael Torres', company: 'DataFlow Inc', title: 'VP Engineering', email: 'mt@dataflow.io', score: 88, source: 'linkedin', status: 'new' },
-    { id: 3, name: 'Emily Park', company: 'NexGen SaaS', title: 'CEO', email: 'emily@nexgen.dev', score: 95, source: 'referral', status: 'qualified' },
-    { id: 4, name: 'James Liu', company: 'CloudBase', title: 'Head of Sales', email: 'james@cloudbase.com', score: 76, source: 'web', status: 'new' },
-    { id: 5, name: 'Rachel Adams', company: 'Strata LLC', title: 'Director Ops', email: 'rachel@strata.co', score: 64, source: 'email', status: 'contacted' },
-    { id: 6, name: 'David Kim', company: 'Fusion Labs', title: 'CTO', email: 'david@fusion.ai', score: 81, source: 'linkedin', status: 'new' },
-    { id: 7, name: 'Lisa Nguyen', company: 'Pivot Inc', title: 'CMO', email: 'lisa@pivot.co', score: 73, source: 'manual', status: 'qualified' },
-    { id: 8, name: 'Tom Bradley', company: 'Edge Systems', title: 'Sales Director', email: 'tom@edge.dev', score: 59, source: 'web', status: 'meeting' },
-    { id: 9, name: 'Anna Kowalski', company: 'BrightWave', title: 'VP Growth', email: 'anna@brightwave.io', score: 87, source: 'linkedin', status: 'new' },
-    { id: 10, name: 'Robert Kim', company: 'TechSphere', title: 'CRO', email: 'robert@techsphere.com', score: 91, source: 'apollo', status: 'qualified' }
-  ],
-  liStats: { connectionsSent: 89, connectionsAccepted: 62, dmsSent: 48, replies: 22, meetings: 8 },
-  liFeed: [
-    { type: 'connection_request', title: 'Sent to Sarah Chen (Acme Corp)', meta: '2h ago' },
-    { type: 'connection_accepted', title: 'Michael Torres (DataFlow)', meta: '4h ago' },
-    { type: 'message', title: 'DM to Emily Park (NexGen SaaS)', meta: '6h ago' },
-    { type: 'profile_view', title: 'James Liu (CloudBase)', meta: 'Yesterday' },
-    { type: 'reply_received', title: 'From Rachel Adams (Strata LLC)', meta: '2d ago' },
-    { type: 'connection_request', title: 'Sent to David Kim (Fusion Labs)', meta: '3d ago' }
-  ],
-  liPerformance: [
-    { label: 'Accept Rate', val: '70%', good: true },
-    { label: 'Reply Rate', val: '25%', good: true },
-    { label: 'DM → Meeting', val: '17%', good: true },
-    { label: 'Avg Reply Time', val: '18h', good: false }
-  ],
-  analytics: {
-    pipeline: [
-      { stage: 'Lead', count: 342 },
-      { stage: 'Connected', count: 189 },
-      { stage: 'Meeting', count: 67 },
-      { stage: 'Proposal', count: 31 },
-      { stage: 'Won', count: 14 }
-    ],
-    bySource: [
-      { source: 'LinkedIn', leads: 156, contacted: 89, conversion: '24%' },
-      { source: 'Web', leads: 89, contacted: 42, conversion: '18%' },
-      { source: 'Referral', leads: 45, contacted: 31, conversion: '36%' },
-      { source: 'Email', leads: 34, contacted: 18, conversion: '15%' },
-      { source: 'Manual', leads: 18, contacted: 10, conversion: '22%' }
-    ],
-    stats: { conversionRate: '9.1%', replyRate: '24%', avgScore: 76, meetingsPerWeek: 7.8, costPerLead: '$4.20' }
-  },
-  activities: [
-    { type: 'email_sent', title: 'Cold email sent to Sarah Chen', meta: '2 hours ago', icon: '📧' },
-    { type: 'linkedin', title: 'Connection request to Michael Torres', meta: '3 hours ago', icon: '🔗' },
-    { type: 'meeting', title: 'Discovery call with InnoTech', meta: 'Yesterday, 2PM', icon: '📅' },
-    { type: 'call', title: 'Call with James Liu (15 min)', meta: 'Yesterday', icon: '📞' },
-    { type: 'research', title: 'Researched CloudBase Inc', meta: '2 days ago', icon: '🔍' },
-    { type: 'email_sent', title: 'Follow-up to Emily Park', meta: '2 days ago', icon: '📧' }
-  ]
-};
-
 function capitalize(s) { return s ? s.replace(/_/g,' ').replace(/\b\w/g,function(c){return c.toUpperCase()}) : ''; }
 function scoreClass(s) { return s >= 80 ? 'badge-high' : s >= 60 ? 'badge-med' : 'badge-low'; }
-function statusClass(s) { var m = { 'new':'badge-new','contacted':'badge-contacted','qualified':'badge-qualified','meeting':'badge-med','closed':'badge-high' }; return m[s] || 'badge-new'; }
+function statusClass(s) { var m = { 'new':'badge-new','contacted':'badge-contacted','replied':'badge-replied','interested':'badge-interested','follow_up':'badge-follow-up','not_to_contact':'badge-not-to-contact','qualified':'badge-qualified','meeting':'badge-med','closed':'badge-high' }; return m[s] || 'badge-new'; }
 function sourceBadge(s) { var m = { 'linkedin':'badge-linkedin','referral':'badge-referral','web':'badge-web','email':'badge-email','manual':'badge-manual','google_maps':'badge-web','apollo':'badge-med','hunter':'badge-email','serper':'badge-web','firecrawl':'badge-web' }; return m[s] || 'badge-new'; }
 function escapeHtml(s) { var d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
 
@@ -1233,7 +1156,6 @@ function requireAuth() {
 
 function api(path, opts) {
   opts = opts || {};
-  if (useDemo) return Promise.reject(new Error('demo'));
   return fetch(API_BASE + path, { method: opts.method || 'GET', headers: opts.headers || getHeaders(), body: opts.body })
     .then(function(r) {
       if (r.status === 401) { authToken = null; localStorage.removeItem('lhai_token'); logout(); throw new Error('Unauthorized'); }
@@ -1259,13 +1181,6 @@ function login(email, password) {
       showApp();
     });
   }).catch(function(err) {
-    if (email === 'demo@leadhunter.ai' && password === 'demo123') {
-      authToken = 'demo-fallback-token';
-      localStorage.setItem('lhai_token', authToken);
-      useDemo = true;
-      showApp();
-      return;
-    }
     errEl.textContent = 'Login failed: ' + err.message;
     errEl.style.display = 'block';
     btn.disabled = false;
@@ -1275,7 +1190,6 @@ function login(email, password) {
 
 function logout() {
   authToken = null;
-  useDemo = false;
   localStorage.removeItem('lhai_token');
   document.getElementById('app-view').style.display = 'none';
   document.getElementById('login-view').style.display = 'flex';
@@ -1284,13 +1198,10 @@ function logout() {
 function showApp() {
   document.getElementById('login-view').style.display = 'none';
   document.getElementById('app-view').style.display = 'flex';
-  if (authToken === 'demo-fallback-token') useDemo = true;
-  if (useDemo) document.getElementById('demo-banner').style.display = 'block';
-  else document.getElementById('demo-banner').style.display = 'none';
   document.getElementById('api-url-display').textContent = API_BASE;
   var tok = authToken || '......';
   document.getElementById('token-display').textContent = tok.length > 20 ? tok.slice(0, 20) + '...' : tok;
-  document.getElementById('sidebar-user').textContent = useDemo ? 'Demo Mode' : 'Kathy Roggers';
+  document.getElementById('sidebar-user').textContent = 'Kathy Roggers';
   showTab('dashboard');
 }
 
@@ -1299,14 +1210,13 @@ function showApp() {
   var saved = localStorage.getItem('lhai_token');
   if (saved) {
     authToken = saved;
-    useDemo = (saved === 'demo-fallback-token');
-    if (!useDemo) {
-      api('/api/admin/system-health').catch(function() { useDemo = true; }).then(function() {
-        showApp();
-      });
-    } else {
+    fetch(API_BASE + '/api/admin/system-health', {
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + saved }
+    }).catch(function() {}).then(function() {
       showApp();
-    }
+    });
+  } else {
+}
   }
 })();
 
@@ -1343,7 +1253,6 @@ function showTab(name) {
 var HS_DATA = {};
 var HS_CURRENT_OWNER = '555925314';  // Kathy Roggers
 
-/** Meetings Tab — fetch & display Maton Google Calendar meetings */
 function loadMeetings() {
   var mtgList = document.getElementById('mtg-list');
   mtgList.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-muted)"><span class="spinner"></span> Loading meetings...</div>';
@@ -1351,20 +1260,17 @@ function loadMeetings() {
   api('/api/dashboard/summary').then(function(d) {
     var meetings = d.maton_meetings || [];
     if (meetings.length === 0) {
-      mtgList.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-muted);font-size:14px">📭 No upcoming meetings found. Check your Google Calendar.</div>';
+      mtgList.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-muted)">📭 No upcoming meetings found. Check your Google Calendar.</div>';
       return;
     }
 
-    // Sort by start time
     meetings.sort(function(a,b) { return (a.start || '').localeCompare(b.start || ''); });
 
-    // Compute stats
     var now = new Date();
     var todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     var todayEnd = new Date(todayStart.getTime() + 86400000);
     var todayCount = 0;
     var uniqueAttendees = {};
-    var upcoming = meetings;
 
     meetings.forEach(function(m) {
       var start = new Date(m.start);
@@ -1376,16 +1282,12 @@ function loadMeetings() {
 
     var pastCount = d.stats && d.stats.meetings_booked ? d.stats.meetings_booked : 8;
 
-    // Update summary cards
     document.getElementById('mtg-upcoming').textContent = meetings.length;
     document.getElementById('mtg-today').textContent = todayCount;
     document.getElementById('mtg-past').textContent = pastCount;
     document.getElementById('mtg-attendees').textContent = Object.keys(uniqueAttendees).length;
 
-    // Build meetings list
-    var html = '<div style="display:grid;grid-template-columns:1fr;gap:12px;padding:8px">';
-
-    // Group by date
+    // Group meetings by date
     var groups = {};
     meetings.forEach(function(m) {
       var dateKey = m.start ? m.start.substring(0,10) : 'unknown';
@@ -1393,71 +1295,56 @@ function loadMeetings() {
       groups[dateKey].push(m);
     });
 
+    var html = '';
     Object.keys(groups).sort().forEach(function(dateKey) {
       var day = new Date(dateKey + 'T00:00:00');
       var dayStr = day.toLocaleDateString('en-US', { weekday:'long', month:'short', day:'numeric' });
       var isToday = dateKey === now.toISOString().substring(0,10);
 
-      html += '<div style="margin-bottom:8px">';
-      html += '<div style="font-size:14px;font-weight:600;color:var(--text);padding:8px 0;border-bottom:1px solid var(--border)">📆 ' + dayStr + (isToday ? ' <span style="font-size:11px;background:var(--success);color:#fff;padding:2px 8px;border-radius:10px">Today</span>' : '') + '</div>';
+      html += '<div style="margin-bottom:16px">';
+      html += '<div style="font-size:12px;font-weight:600;color:var(--text);padding-bottom:6px;margin-bottom:8px;border-bottom:1px solid var(--border)">' + dayStr + (isToday ? ' <span style="font-size:9px;background:var(--success);color:#fff;padding:1px 6px;border-radius:8px;margin-left:4px">Today</span>' : '') + '</div>';
 
       groups[dateKey].forEach(function(m) {
         var startTime = '';
         if (m.start) {
-          try { startTime = new Date(m.start).toLocaleTimeString('en-US', { hour:'2-digit', minute:'2-digit', timeZoneName:'short' }); } catch(e) { startTime = m.start.substring(11,16); }
+          try { startTime = new Date(m.start).toLocaleTimeString('en-US', { hour:'2-digit', minute:'2-digit' }); } catch(e) { startTime = m.start.substring(11,16); }
         }
         var endTime = '';
         if (m.end) {
           try { endTime = new Date(m.end).toLocaleTimeString('en-US', { hour:'2-digit', minute:'2-digit' }); } catch(e) { endTime = m.end.substring(11,16); }
         }
 
-        var attendeesHtml = (m.attendees || []).map(function(a) {
-          var statusColor = a.status === 'accepted' ? 'var(--success)' : a.status === 'declined' ? 'var(--danger)' : 'var(--text-muted)';
-          return '<div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-sec)">' +
-            '<span style="width:8px;height:8px;border-radius:50%;background:' + statusColor + '"></span>' +
+        var attendeePills = (m.attendees || []).slice(0,4).map(function(a) {
+          var colors = { accepted:'var(--success)', declined:'var(--danger)', tentative:'var(--warning)', needsAction:'var(--text-muted)' };
+          var bg = { accepted:'rgba(62,207,142,0.12)', declined:'rgba(245,72,90,0.12)', tentative:'rgba(245,166,35,0.12)', needsAction:'rgba(90,95,120,0.12)' };
+          var dot = colors[a.status] || 'var(--text-muted)';
+          var bkg = bg[a.status] || 'rgba(90,95,120,0.12)';
+          return '<span style="display:inline-flex;align-items:center;gap:4px;font-size:10px;padding:2px 8px;border-radius:10px;background:' + bkg + ';color:var(--text-sec);white-space:nowrap">' +
+            '<span style="width:5px;height:5px;border-radius:50%;background:' + dot + '"></span>' +
             escapeHtml(a.name || a.email || '?') +
-            (a.organizer ? ' <span style="font-size:10px;color:var(--accent)">(organizer)</span>' : '') +
-            '</div>';
+            '</span>';
         }).join('');
 
-        html += '<div style="background:var(--surf);border-radius:var(--radius-sm);padding:14px;margin-bottom:8px;border-left:3px solid var(--accent);transition:all .15s;hover:background:var(--hover)">' +
-          '<div style="display:flex;justify-content:space-between;align-items:start;gap:8px">' +
-            '<div style="flex:1">' +
-              '<div style="font-size:14px;font-weight:600;color:var(--text)">' + escapeHtml(m.title) + '</div>' +
-              '<div style="font-size:12px;color:var(--text-sec);margin-top:4px;display:flex;gap:16px;flex-wrap:wrap">' +
-                '<span>🕐 ' + startTime + ' — ' + endTime + '</span>' +
-                (m.company ? '<span>🏢 ' + escapeHtml(m.company) + '</span>' : '') +
-                (m.organizer ? '<span>📧 ' + escapeHtml(m.organizer) + '</span>' : '') +
-              '</div>';
-
-        // Conference link
-        if (m.conference_link) {
-          html += '<div style="margin-top:6px"><a href="' + escapeHtml(m.conference_link) + '" target="_blank" style="font-size:12px;color:var(--accent);text-decoration:none">🔗 Join Meeting</a></div>';
+        if ((m.attendees || []).length > 4) {
+          attendeePills += '<span style="font-size:9px;color:var(--text-muted)">+' + (m.attendees.length - 4) + ' more</span>';
         }
 
-        // Attendees (collapsible if > 4)
-        if (attendeesHtml) {
-          var showAll = m.attendees.length <= 4;
-          var visible = showAll ? attendeesHtml : (m.attendees || []).slice(0,3).map(function(a) {
-            var statusColor = a.status === 'accepted' ? 'var(--success)' : a.status === 'declined' ? 'var(--danger)' : 'var(--text-muted)';
-            return '<div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-sec)">' +
-              '<span style="width:8px;height:8px;border-radius:50%;background:' + statusColor + '"></span>' +
-              escapeHtml(a.name || a.email || '?') + '</div>';
-          }).join('') + '<div style="font-size:11px;color:var(--text-muted);cursor:pointer" onclick="this.style.display=\'none\';this.parentElement.innerHTML=\'\'+' + JSON.stringify(attendeesHtml).replace(/'/g,"\\'") + '">+' + (m.attendees.length-3) + ' more</div>';
-
-          html += '<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border)"><div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">👥 Attendees (' + m.attendees.length + ')</div>' + visible + '</div>';
-        }
-
-        html += '</div></div>';
+        html += '<div class="meeting-card"' + (isToday ? ' style="border-left-color:var(--success)"' : '') + '>' +
+          '<div class="mc-title">' + escapeHtml(m.title) + '</div>' +
+          '<div class="mc-meta" style="margin-top:3px">' +
+            '<span>🕐 ' + startTime + (endTime ? ' - ' + endTime : '') + '</span>' +
+            (m.company ? '<span>🏢 ' + escapeHtml(m.company) + '</span>' : '') +
+          '</div>' +
+          (m.conference_link ? '<div style="margin-top:5px"><a href="' + escapeHtml(m.conference_link) + '" target="_blank" class="mc-link" style="font-size:10px;background:rgba(124,109,250,0.1);padding:2px 8px;border-radius:10px;display:inline-flex;align-items:center;gap:4px">🎥 Join</a></div>' : '') +
+          (attendeePills ? '<div style="margin-top:6px;display:flex;gap:4px;flex-wrap:wrap;align-items:center">' + attendeePills + '</div>' : '') +
+        '</div>';
       });
-
       html += '</div>';
     });
 
-    html += '</div>';
     mtgList.innerHTML = html;
   }).catch(function(err) {
-    mtgList.innerHTML = '<div style="text-align:center;padding:40px;color:var(--danger);font-size:14px">⚠️ Failed to load meetings. ' + (err && err.message ? err.message : 'Check API connection.') + '</div>';
+    mtgList.innerHTML = '<div style="text-align:center;padding:40px;color:var(--danger)">⚠️ Failed to load meetings. ' + (err && err.message ? err.message : 'Check API connection.') + '</div>';
   });
 }
 
@@ -1653,7 +1540,6 @@ function loadDashboard() {
       window.__lastDashRevision = window.__dataRevision;
     }
     api('/api/dashboard/summary').then(function(d) {
-      useDemo = false;
       lastDashboardData = d;
       renderRealDashboard(d);
       updateRefreshTime();
@@ -1663,7 +1549,6 @@ function loadDashboard() {
   // Also listen for immediate on-demand refreshes
   window.__dashboardRefreshNow = function() {
     api('/api/dashboard/summary').then(function(d) {
-      useDemo = false;
       lastDashboardData = d;
       renderRealDashboard(d);
       updateRefreshTime();
@@ -1672,7 +1557,6 @@ function loadDashboard() {
 
   api('/api/dashboard/summary')
     .then(function(d) {
-      useDemo = false;
       lastDashboardData = d;
       renderRealDashboard(d);
       updateRefreshTime();
@@ -1680,9 +1564,9 @@ function loadDashboard() {
     })
     .catch(function() {
       // Fallback: try loading legacy stats, then demo
-      var p1 = api('/api/leads').then(function(d) { if (d && !useDemo) { var l = Array.isArray(d) ? d : (d.leads || d.data || []); DEMO.stats.leads = l.length; } }).catch(function(){});
-      var p2 = api('/api/linkedin/stats').then(function(s) { if (s) Object.assign(DEMO.liStats, s); }).catch(function(){});
-      var p3 = api('/api/analytics/pipeline').then(function(){}).catch(function(){});
+      var p1 = Promise.resolve();
+      var p2 = Promise.resolve();
+      var p3 = Promise.resolve();
       Promise.all([p1, p2, p3]).then(function() { renderDashboardDemo(); }).catch(function() { renderDashboardDemo(); });
     });
 }
@@ -1882,11 +1766,11 @@ function renderRealDashboard(d) {
 
   // ── 11. Recent Activity Feed ──
   var liActs = activities.filter(function(a){ return a.type&&(a.type.indexOf('linkedin_')===0||a.type.indexOf('email_')===0); }).slice(0,6);
-  document.getElementById('dash-li-feed').innerHTML = liActs.length > 0 ?
+  _setInner('dash-li-feed', liActs.length > 0 ?
     liActs.map(function(a) {
       return '<div class="activity-item"><div class="activity-icon" style="font-size:16px">'+(a.icon||'📌')+'</div><div class="activity-body"><div class="act-title">'+escapeHtml(a.description||'')+'</div><div class="act-meta">'+(a.timestamp?new Date(a.timestamp).toLocaleString():'')+'</div></div></div>';
     }).join('') :
-    '<div style="padding:16px;color:var(--text-muted);font-size:13px;text-align:center">📭 Track your outreach to see activity here</div>';
+    '<div style="padding:16px;color:var(--text-muted);font-size:13px;text-align:center">📭 Track your outreach to see activity here</div>');
 
   // ── 12. HubSpot Summary (from pipeline snapshot) ──
   var hsEl = document.getElementById('dash-hubspot-summary');
@@ -1903,9 +1787,9 @@ function renderRealDashboard(d) {
   }
 
   // ── 13. Follow-ups Due ──
-  document.getElementById('dash-followups').innerHTML = queue.follow_ups_due > 0 ?
+  _setInner('dash-followups', queue.follow_ups_due > 0 ?
     '<div style="padding:12px;text-align:center"><div style="font-size:28px;font-weight:700;color:var(--danger)">'+queue.follow_ups_due+'</div><div style="font-size:12px;color:var(--text-muted)">contacts need follow-up</div><button class="btn-secondary mt16" onclick="showTab(\'leads\')">View Leads</button></div>' :
-    '<div style="padding:20px;color:var(--text-muted);font-size:13px;text-align:center">✅ No follow-ups due. Great job!</div>';
+    '<div style="padding:20px;color:var(--text-muted);font-size:13px;text-align:center">✅ No follow-ups due. Great job!</div>');
 
   // ── 14. Activity Timeline ──
   var timelineEl = document.getElementById('dash-timeline');
@@ -1943,21 +1827,32 @@ function renderMyDashboard(d) {
 
   // Source breakdown (by stage name for now)
   var totalDeals = d.total_deals || 1;
-  document.getElementById('dash-sources').innerHTML = (d.stages || []).map(function(s) {
+  _setInner('dash-sources', (d.stages || []).map(function(s) {
     return '<div class="progress-label mb16"><span class="prog-name">' + s.stage + ' <span style="color:var(--text-muted);font-size:11px">(' + s.count + ')</span></span><span class="prog-val" style="color:var(--accent)">' + s.pct + '%</span></div><div class="progress-track mb16"><div class="progress-fill" style="width:' + s.pct + '%;background:var(--accent)"></div></div>';
-  }).join('');
+  }).join(''));
 
   // LI feed and follow-ups — show empty or deal list
-  document.getElementById('dash-li-feed').innerHTML = (d.deals || []).slice(0, 5).map(function(dl) {
+  _setInner('dash-li-feed', (d.deals || []).slice(0, 5).map(function(dl) {
     return '<div class="activity-item"><div class="activity-icon" style="font-size:16px">💼</div><div class="activity-body"><div class="act-title">' + dl.name + '</div><div class="act-meta">$' + dl.amount + ' — ' + dl.stage + '</div></div></div>';
-  }).join('') || '<div style="padding:20px;color:var(--text-muted)">No recent deals</div>';
+  }).join('') || '<div style="padding:20px;color:var(--text-muted)">No recent deals</div>');
 
-  document.getElementById('dash-followups').innerHTML = '';
+  _setInner('dash-followups', '');
 }
 
 
 function renderDashboardDemo() {
-  renderNoDataDashboard();
+  _setInner('dash-stats', '<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text-muted)">No dashboard data available. Login and connect your backend to see metrics.</div>');
+  _setInner('dash-funnel', '<div style="padding:20px;text-align:center;color:var(--text-muted)">No pipeline data</div>');
+  _setInner('dash-trend-chart', '<div style="padding:20px;text-align:center;color:var(--text-muted);font-size:13px">No activity data</div>');
+  _setInner('dash-targets', '<div style="padding:20px;text-align:center;color:var(--text-muted)">No targets loaded</div>');
+  _setInner('ai-rec-list', '<div style="padding:20px;text-align:center;color:var(--text-muted)">No recommendations</div>');
+  _setInner('dash-timeline', '<div style="padding:20px;text-align:center;color:var(--text-muted)">No activity data</div>');
+  _setInner('dash-outreach-bars', '<div style="padding:20px;text-align:center;color:var(--text-muted)">No outreach data</div>');
+  _setInner('dash-hubspot-summary', '<div style="padding:20px;text-align:center;color:var(--text-muted)">No HubSpot data</div>');
+  _setInner('dash-sources', '<div style="padding:20px;text-align:center;color:var(--text-muted)">No source data</div>');
+  _setInner('dash-li-feed', '<div style="padding:20px;text-align:center;color:var(--text-muted)">No LinkedIn activity</div>');
+  _setInner('dash-followups', '<div style="padding:20px;text-align:center;color:var(--text-muted)">No follow-ups</div>');
+  updateRefreshTime();
 }
 
 function updateRefreshTime() {
@@ -1983,7 +1878,6 @@ function refreshDashboard() {
   }
   // Also fetch fresh data in background
   api('/api/dashboard/summary').then(function(d) {
-    useDemo = false;
     lastDashboardData = d;
     renderRealDashboard(d);
     updateRefreshTime();
@@ -1991,14 +1885,18 @@ function refreshDashboard() {
 }
 
 function renderNoDataDashboard() {
-  document.getElementById('dash-stats').innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text-muted)">Unable to load dashboard data. <a href="#" onclick="loadDashboard();return false" style="color:var(--accent)">Try again</a></div>';
-  document.getElementById('dash-timeline').innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-muted)">No activity data</div>';
-  document.getElementById('dash-funnel').innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-muted)">No pipeline data</div>';
-  var chartEl = document.getElementById('dash-trend-chart');
-  if (chartEl) chartEl.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-muted);font-size:13px">No activity data</div>';
-  document.getElementById('dash-li-feed').innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-muted)">No LinkedIn activity</div>';
-  document.getElementById('dash-followups').innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-muted)">No follow-ups</div>';
-  document.getElementById('dash-sources').innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-muted)">No source data</div>';
+  _setInner('dash-stats', '<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text-muted)">Unable to load dashboard data. <a href="#" onclick="loadDashboard();return false" style="color:var(--accent)">Try again</a></div>');
+  _setInner('dash-timeline', '<div style="padding:20px;text-align:center;color:var(--text-muted)">No activity data</div>');
+  _setInner('dash-funnel', '<div style="padding:20px;text-align:center;color:var(--text-muted)">No pipeline data</div>');
+  _setInner('dash-trend-chart', '<div style="padding:20px;text-align:center;color:var(--text-muted);font-size:13px">No activity data</div>');
+  _setInner('dash-li-feed', '<div style="padding:20px;text-align:center;color:var(--text-muted)">No LinkedIn activity</div>');
+  _setInner('dash-followups', '<div style="padding:20px;text-align:center;color:var(--text-muted)">No follow-ups</div>');
+  _setInner('dash-sources', '<div style="padding:20px;text-align:center;color:var(--text-muted)">No source data</div>');
+}
+
+function _setInner(id, html) {
+  var el = document.getElementById(id);
+  if (el) el.innerHTML = html;
 }
 
 function renderTargets(items, elId) {
@@ -2077,7 +1975,7 @@ function batchDeleteLeads() {
   api('/api/leads/batch-delete', { method: 'POST', body: JSON.stringify({ ids: ids }) })
     .then(function() { loadLeads(); })
     .catch(function() {
-      DEMO.leads = DEMO.leads.filter(function(l) { return ids.indexOf(String(l.id)) < 0; });
+      // (no longer demo)
       loadLeads();
     });
 }
@@ -2089,8 +1987,8 @@ function deleteLead(leadId) {
       loadLeads();
     })
     .catch(function() {
-      // Demo mode — remove from DEMO data
-      DEMO.leads = DEMO.leads.filter(function(l) { return l.id !== leadId; });
+      // (no longer demo)
+      // (no longer demo)
       loadLeads();
     });
 }
@@ -2108,7 +2006,7 @@ function loadLeads() {
       renderLeadsTable(allLeads, tableEl, paginationEl);
     })
     .catch(function() {
-      var allLeads = DEMO.leads;
+      var allLeads = [];
       var filtered = allLeads.filter(function(l) {
         var lName = (l.first_name || l.name || '') + ' ' + (l.last_name || '');
         var lTitle = l.job_title || l.title || '';
@@ -2139,7 +2037,7 @@ function renderLeadsTable(filtered, tableEl, paginationEl) {
       var leadSource = l.source || 'unknown';
       var leadStatus = l.status || 'new';
       var scoreBarColor = leadScore >= 80 ? 'var(--success)' : leadScore >= 60 ? 'var(--warning)' : 'var(--danger)';
-      return '<tr><td><input type="checkbox" class="lead-checkbox" value="' + l.id + '" onchange="updateBatchDeleteBtn()"></td><td style="color:var(--text);font-weight:500">' + escapeHtml(fullName) + '</td><td>' + escapeHtml(l.company || '') + '</td><td>' + escapeHtml(leadTitle) + '</td><td style="font-family:JetBrains Mono,monospace;font-size:12px">' + escapeHtml(leadEmail) + '</td><td><div class="score-bar"><span class="badge ' + scoreClass(leadScore) + '">' + leadScore + '</span><div class="sb-track"><div class="sb-fill" style="width:' + leadScore + '%;background:' + scoreBarColor + '"></div></div></div></td><td><span class="badge ' + sourceBadge(leadSource) + '">' + capitalize(leadSource) + '</span></td><td><span class="badge ' + statusClass(leadStatus) + '">' + capitalize(leadStatus) + '</span></td><td style="white-space:nowrap"><button class="btn-sm btn-secondary" onclick="viewLead(' + l.id + ')">View</button> <button class="btn-sm btn-danger" onclick="deleteLead(' + l.id + ')">Del</button></td></tr>';
+      return '<tr><td><input type="checkbox" class="lead-checkbox" value="' + l.id + '" onchange="updateBatchDeleteBtn()"></td><td style="color:var(--text);font-weight:500">' + escapeHtml(fullName) + '</td><td>' + escapeHtml(l.company || '') + '</td><td>' + escapeHtml(leadTitle) + '</td><td style="font-family:JetBrains Mono,monospace;font-size:12px">' + escapeHtml(leadEmail) + '</td><td><div class="score-bar"><span class="badge ' + scoreClass(leadScore) + '">' + leadScore + '</span><div class="sb-track"><div class="sb-fill" style="width:' + leadScore + '%;background:' + scoreBarColor + '"></div></div></div></td><td><span class="badge ' + sourceBadge(leadSource) + '">' + capitalize(leadSource) + '</span></td><td><span class="badge ' + statusClass(leadStatus) + '" id="status-' + l.id + '">' + capitalize(leadStatus) + '</span></td><td style="white-space:nowrap"><button class="btn-sm btn-secondary" onclick="setLeadStatus(' + l.id + ',\'contacted\')">📞</button><button class="btn-sm btn-secondary" onclick="setLeadStatus(' + l.id + ',\'interested\')">🎯</button><button class="btn-sm btn-secondary" onclick="setLeadStatus(' + l.id + ',\'not_to_contact\')">🚫</button> <button class="btn-sm btn-secondary" onclick="viewLead(' + l.id + ')">View</button> <button class="btn-sm btn-danger" onclick="deleteLead(' + l.id + ')">Del</button></td></tr>';
     }).join('') +
     '<tr><td colspan="8" style="color:var(--text-muted);font-size:12px;text-align:center">' + (total ? 'Showing ' + (start+1) + '-' + (start + pageLeads.length) + ' of ' + total : 'No leads found') + '</td></tr></tbody></table>';
 
@@ -2175,7 +2073,7 @@ function generateEmail() {
     }
   };
 
-  if (!payload.lead.first_name && !useDemo) { output.textContent = 'Please fill in the lead name'; return; }
+  if (!payload.lead.first_name) { output.textContent = 'Please fill in the lead name'; return; }
 
   api('/api/ai/generate-email', { method: 'POST', body: JSON.stringify(payload) })
     .then(function(r) {
@@ -2229,7 +2127,7 @@ function sendChatMessage(text) {
   msgsEl.scrollTop = msgsEl.scrollHeight;
   var bubble = aiDiv.querySelector('.bubble');
 
-  if (!useDemo && authToken && authToken !== 'demo-fallback-token') {
+  if (authToken) {
     firehose = {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + authToken },
@@ -2265,26 +2163,15 @@ function sendChatMessage(text) {
         }).catch(function() { bubble.innerHTML = formatChatResponse(fullText || 'Error reading stream'); });
       }
       tryRead();
-    }).catch(function() { demoChatResponse(msgsEl, bubble, msg); });
+    }).catch(function() {
+      _addChatMsg(msgsEl, '🤖', 'Sorry, unable to reach the AI assistant. Check your connection.');
+    });
   } else {
-    demoChatResponse(msgsEl, bubble, msg);
+    _addChatMsg(msgsEl, '🤖', 'Please connect your backend to use the AI assistant.');
   }
 }
 
-function demoChatResponse(msgsEl, bubble, msg) {
-  var responses = [
-    'Great question! Based on your pipeline, I found 14 high-intent leads in the SaaS space. Would you like me to draft personalized outreach for them?',
-    'I analyzed your LinkedIn activity. Your connection rate is up 12% this week. I recommend focusing on VP-level contacts at companies with 50-200 employees.',
-    'Here are 5 promising leads: 1) Acme Corp — Sarah Chen, VP Marketing (score: 92) 2) DataFlow — Michael Torres, VP Eng (88) 3) NexGen — Emily Park, CEO (95) 4) CloudBase — James Liu (76) 5) Fusion Labs — David Kim, CTO (81)',
-    'Your pipeline health looks good! 31 meetings booked so far. The bottleneck appears between "Connected" and "Meeting" — try adding a case study follow-up.',
-    'I found 3 trending topics in SaaS sales: AI-powered lead scoring, automated personalization, and multi-channel outreach sequences. Want me to draft content around any of these?',
-    'Based on your data, your highest-converting source is LinkedIn connections (42% of qualified leads). I recommend increasing daily connection requests by 20%.'
-  ];
-  setTimeout(function() {
-    bubble.innerHTML = formatChatResponse(responses[Math.floor(Math.random() * responses.length)]);
-    msgsEl.scrollTop = msgsEl.scrollHeight;
-  }, 800);
-}
+
 
 function sendQuickPrompt(text) {
   var ta = document.getElementById('chat-input');
@@ -2361,22 +2248,19 @@ function parseLinkedInDump() {
   if (!text) { panel.innerHTML = '<div class="text-center" style="padding:20px;color:var(--text-muted)">Paste LinkedIn profile data to parse</div>'; return; }
   panel.innerHTML = '<div class="text-center" style="padding:20px"><span class="spinner"></span> Parsing...</div>';
 
-  if (!useDemo) {
-    api('/api/ai/parse-linkedin', { method: 'POST', body: JSON.stringify({ text: text }) })
+  api('/api/ai/parse-linkedin', { method: 'POST', body: JSON.stringify({ text: text }) })
       .then(function(r) {
         var people = r.people || r.data || [];
         if (!Array.isArray(people) || people.length === 0) {
-          demoParseLinkedIn(text, panel);
+          panel.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-muted)">Unable to parse LinkedIn data. Check your connection.</div>';
           return;
         }
         displayParsedPeople(people, panel);
-        // Items already saved to DB by the API — reload tracker
         loadLinkedInTracker();
       })
-      .catch(function() { demoParseLinkedIn(text, panel); });
-  } else {
-    demoParseLinkedIn(text, panel);
-  }
+      .catch(function() {
+        panel.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-muted)">Unable to parse LinkedIn data. Check your connection.</div>';
+      });
 }
 
 function displayParsedPeople(people, container) {
@@ -2391,18 +2275,14 @@ function displayParsedPeople(people, container) {
     }).join('') + '</div>';
 }
 
-function demoParseLinkedIn(text, panel) {
-  setTimeout(function() {
-    panel.innerHTML = '<div class="dump-item"><div class="dump-label">Name</div>Sarah Chen</div><div class="dump-item"><div class="dump-label">Title</div>VP Marketing</div><div class="dump-item"><div class="dump-label">Company</div>Acme Corp</div><div class="dump-item"><div class="dump-label">Location</div>San Francisco Bay Area</div><div class="dump-item"><div class="dump-label">Summary</div>Experienced marketing leader with 12+ years in B2B SaaS. Specializes in demand generation and growth marketing.</div>';
-  }, 500);
-}
+
 
 /* === LINKEDIN TRACKER === */
 function loadLinkedInTracker() {
-  api('/api/linkedin/stats').then(function(s) { if (s) Object.assign(DEMO.liStats, s); }).catch(function() {}).then(function() {
+  api('/api/linkedin/stats').then(function(s) { if (s) var ls = s; }).catch(function() {}).then(function() {
     api('/api/linkedin/activities?per_page=100').then(function(a) {
       if (a && a.activities) {
-        DEMO.liFeed = a.activities.map(function(act) {
+        liFeedCache = a.activities.map(function(act) {
           return {
             _id: act.id,
             name: act.lead_name,
@@ -2482,7 +2362,7 @@ function deleteLiActivity(activityId) {
 }
 
 function renderLinkedInTracker() {
-  var ls = DEMO.liStats;
+  var ls = liStatsCache || {};
   document.getElementById('li-stats').innerHTML = [
     { label: 'Connections Sent', val: ls.connections_sent || ls.connectionsSent || 0, color: 'var(--accent)' },
     { label: 'Accepted', val: ls.accepted || ls.connectionsAccepted || 0, color: 'var(--success)' },
@@ -2494,7 +2374,7 @@ function renderLinkedInTracker() {
   }).join('');
 
   var filter = document.getElementById('li-feed-filter').value;
-  var feed = DEMO.liFeed.filter(function(a) {
+  var feed = liFeedCache.filter(function(a) {
     var typeMap = {
       connection_request: 'connection_sent', connection_accepted: 'connection_accepted',
       message: 'dm_sent', profile_view: 'profile_viewed', reply_received: 'reply_received',
@@ -2540,13 +2420,8 @@ function renderLinkedInTracker() {
     '</tr>';
   }).join('') + '</tbody></table></div>') : '<div style="color:var(--text-muted);padding:20px;text-align:center">No activities yet. Parse LinkedIn data or add manually.</div>');
 
-  document.getElementById('li-performance').innerHTML = DEMO.liPerformance.map(function(p) {
-    return '<div class="li-row"><span style="flex:1;font-size:13px;color:var(--text-sec)">' + p.label + '</span><span style="font-size:14px;font-weight:600;color:' + (p.good ? 'var(--success)' : 'var(--warning)') + '">' + p.val + '</span></div>';
-  }).join('');
-
-  document.getElementById('li-followups').innerHTML = DEMO.followups.map(function(f) {
-    return '<div class="li-row"><div class="li-name"><strong>' + f.name + '</strong><span style="color:var(--text-muted);font-size:11px;display:block">' + f.company + '</span></div><div class="li-status" style="color:' + (f.due === 'Today' ? 'var(--danger)' : 'var(--warning)') + ';font-size:11px">' + f.due + '</div><button class="btn-sm btn-secondary" onclick="logLiActivity(\'follow_up\')">Follow Up</button></div>';
-  }).join('') || '<div style="color:var(--text-muted);padding:10px">No follow-ups due</div>';
+  document.getElementById('li-performance').innerHTML = '';
+  document.getElementById('li-followups').innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-muted)">No follow-ups</div>';
 }
 
 function logLiActivity(type) {
@@ -2556,7 +2431,7 @@ function logLiActivity(type) {
   var linkedinUrl = document.getElementById('quick-li-link').value.trim();
   if (!name) { alert('Enter a lead name'); return; }
   var notes = (company ? name + ' (' + company + ')' : name);
-  if (!useDemo && authToken && authToken !== 'demo-fallback-token') {
+  if (authToken) {
     api('/api/linkedin/activities', { method: 'POST', body: JSON.stringify({
       lead_name: name, company: company, linkedin_url: linkedinUrl,
       activity_type: mapActivityType(type), notes: notes, source: 'manual'
@@ -2568,12 +2443,12 @@ function logLiActivity(type) {
     note: 'Note Added', follow_up: 'Follow-up Sent'
   };
   var label = (name && company) ? titles[type] + ': ' + name + ' (' + company + ')' : (titles[type] || capitalize(type.replace(/_/g, ' ')));
-  DEMO.liFeed.unshift({ type: type, title: label, meta: 'Just now' });
-  if (type === 'connection_request') DEMO.liStats.connectionsSent++;
-  if (type === 'connection_accepted') DEMO.liStats.connectionsAccepted++;
-  if (type === 'message') DEMO.liStats.dmsSent++;
-  if (type === 'reply_received') DEMO.liStats.replies++;
-  if (type === 'meeting_booked') DEMO.liStats.meetings++;
+  liFeedCache.unshift({ type: type, title: label, meta: 'Just now' });
+  if (type === 'connection_request') liStatsCache.connectionsSent++;
+  if (type === 'connection_accepted') liStatsCache.connectionsAccepted++;
+  if (type === 'message') liStatsCache.dmsSent++;
+  if (type === 'reply_received') liStatsCache.replies++;
+  if (type === 'meeting_booked') liStatsCache.meetings++;
   document.getElementById('quick-li-name').value = '';
   document.getElementById('quick-li-title').value = '';
   document.getElementById('quick-li-company').value = '';
@@ -2595,8 +2470,7 @@ function logQuickCustom() {
   var linkedinUrl = document.getElementById('quick-li-link').value.trim();
   if (!name) { alert('Enter a lead name'); return; }
   var notes = title ? (company ? name + ' — ' + title + ' at ' + company : name + ' — ' + title) : (company ? name + ' (' + company + ')' : name);
-  if (!useDemo) {
-    api('/api/linkedin/activities', { method: 'POST', body: JSON.stringify({
+  api('/api/linkedin/activities', { method: 'POST', body: JSON.stringify({
       lead_name: name,
       company: company,
       linkedin_url: linkedinUrl,
@@ -2604,8 +2478,7 @@ function logQuickCustom() {
       notes: notes,
       source: 'manual'
     }) }).catch(function() {});
-  }
-  DEMO.liFeed.unshift({ type: 'note', title: notes, meta: 'Just now' });
+  liFeedCache.unshift({ type: 'note', title: notes, meta: 'Just now' });
   document.getElementById('quick-li-name').value = '';
   document.getElementById('quick-li-title').value = '';
   document.getElementById('quick-li-company').value = '';
@@ -2618,8 +2491,7 @@ function parseSmartDump() {
   var text = input.value.trim();
   if (!text) { alert('Paste some LinkedIn activity text first'); return; }
 
-  if (!useDemo) {
-    api('/api/ai/parse-linkedin', { method: 'POST', body: JSON.stringify({ text: text }) })
+      api('/api/ai/parse-linkedin', { method: 'POST', body: JSON.stringify({ text: text }) })
       .then(function(r) {
         // Items are saved to DB by the API; just reload the tracker
         loadLinkedInTracker();
@@ -2628,16 +2500,10 @@ function parseSmartDump() {
       .catch(function() {
         alert('Failed to parse LinkedIn dump. Please check your connection.');
         loadLinkedInTracker();
-      });
-  } else {
-    var lines = text.split('\n').filter(Boolean);
-    lines.slice(0, 5).forEach(function(line) {
-      DEMO.liFeed.unshift({ type: 'note', title: line.slice(0, 80), meta: 'Parsed just now' });
-    });
+        });
     loadLinkedInTracker();
     input.value = '';
   }
-}
 
 /* === ANALYTICS === */
 function loadAnalytics() {
@@ -2865,9 +2731,8 @@ function logManualActivity() {
   var notes = document.getElementById('manual-act-notes').value.trim();
   var title = capitalize(type.replace(/_/g, ' ')) + (lead ? ' — ' + lead : '') + (notes ? ': ' + notes : '');
   var icons = { email_sent: '📧', call: '📞', meeting: '📅', linkedin: '🔗', research: '🔍', other: '📌' };
-  DEMO.activities.unshift({ type: type, title: title, meta: 'Just now', icon: icons[type] || '📌' });
-  if (!useDemo) {
-    api('/api/activities', { method: 'POST', body: JSON.stringify({ type: type, lead: lead, notes: notes }) }).catch(function() {});
+  activityLogCache.unshift({ type: type, title: title, meta: 'Just now', icon: icons[type] || '📌' });
+  api('/api/activities', { method: 'POST', body: JSON.stringify({ type: type, lead: lead, notes: notes }) }).catch(function() {});
   }
   document.getElementById('manual-act-lead').value = '';
   document.getElementById('manual-act-notes').value = '';
@@ -2878,8 +2743,7 @@ function loadAdmin() {
   var healthDot = document.getElementById('health-dot');
   var healthText = document.getElementById('health-text');
   var healthDetails = document.getElementById('health-details');
-  if (!useDemo) {
-    api('/api/admin/system-health').then(function(r) {
+      api('/api/admin/system-health').then(function(r) {
       healthText.textContent = 'All Systems Operational';
       healthDetails.innerHTML = '<div>API: ✅ Online</div><div>Database: ✅ Connected</div><div>Auth: ✅ Active</div><div>Groq AI: ✅ Available</div><div>Last checked: ' + new Date().toLocaleString() + '</div>';
     }).catch(function(e) {
@@ -2887,12 +2751,6 @@ function loadAdmin() {
       healthDot.className = 'health-dot health-warn';
       healthDetails.innerHTML = '<div>API: ⚠️ Unreachable — showing demo</div>';
     });
-  } else {
-    healthDot.className = 'health-dot health-warn';
-    healthText.textContent = 'Demo Mode — Backend Unreachable';
-    healthDetails.innerHTML = '<div>API: ⚠️ Demo data active</div><div>Database: ⚠️ Not connected</div><div>All features shown with sample data</div>';
-  }
-}
 
 /* === API CONFIG === */
 function copyToken() {
@@ -2922,12 +2780,10 @@ function testConnection() {
 
 /* Delete LI activity */
 function deleteLiActivity(id) {
-  if (!useDemo) {
-    api('/api/linkedin/activities/' + id, { method: 'DELETE' }).catch(function() {});
+      api('/api/linkedin/activities/' + id, { method: 'DELETE' }).catch(function() {});
   }
-  DEMO.liFeed = DEMO.liFeed.filter(function(a, i) { return i !== id; });
+  liFeedCache = liFeedCache.filter(function(a, i) { return i !== id; });
   loadLinkedInTracker();
-}
 
 function liToggleAll(el) {
   var cbs = document.querySelectorAll('.li-checkbox');
@@ -2949,14 +2805,12 @@ function liDeleteSelected() {
   for (var i = 0; i < cbs.length; i++) ids.push(cbs[i].value);
   if (ids.length === 0) return;
   if (!confirm('Delete ' + ids.length + ' selected activity/activities?')) return;
-  if (!useDemo) {
-    api('/api/linkedin/activities/batch-delete', {
+      api('/api/linkedin/activities/batch-delete', {
       method: 'POST',
       body: JSON.stringify({ ids: ids })
     }).catch(function() {});
   }
   loadLinkedInTracker();
-}
 </script>
 
 <!-- Lead Detail Modal -->
@@ -2988,30 +2842,7 @@ function viewLead(leadId) {
       renderLeadModal(lead);
     })
     .catch(function() {
-      // Try DEMO data
-      var lead = null;
-      for (var i = 0; i < DEMO.leads.length; i++) {
-        if (DEMO.leads[i].id === leadId) { lead = DEMO.leads[i]; break; }
-      }
-      if (lead) {
-        // Enrich with lead fields
-        lead.first_name = lead.first_name || lead.name || '';
-        lead.last_name = lead.last_name || '';
-        lead.lead_score = lead.lead_score !== undefined ? lead.lead_score : lead.score;
-        lead.job_title = lead.job_title || lead.title || '';
-        lead.linkedin_url = lead.linkedin_url || '';
-        lead.website = lead.website || '';
-        lead.industry = lead.industry || '';
-        lead.location = lead.location || '';
-        lead.company_size = lead.company_size || '';
-        lead.source = lead.source || '';
-        lead.status = lead.status || '';
-        lead.icp_match = lead.icp_match || 0;
-        lead.score_reason = lead.score_reason || '';
-        renderLeadModal(lead);
-      } else {
-        body.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-muted)">Lead not found</div>';
-      }
+body.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-muted)">Lead not found</div>'
     });
 }
 
@@ -3049,11 +2880,49 @@ function renderLeadModal(lead) {
     '<div class="modal-field"><div class="mf-label">Location</div><div class="mf-value">' + escapeHtml(lead.location || '—') + '</div></div>' +
     '<div class="modal-field"><div class="mf-label">Company Size</div><div class="mf-value">' + escapeHtml(lead.company_size || '—') + '</div></div>' +
     '<div class="modal-field"><div class="mf-label">Source</div><div class="mf-value"><span class="badge ' + sourceBadge(lead.source) + '">' + sourceLabel + '</span></div></div>' +
-    '<div class="modal-field"><div class="mf-label">Status</div><div class="mf-value"><span class="badge ' + statusClass(lead.status) + '">' + statusLabel + '</span></div></div>' +
+    '<div class="modal-field"><div class="mf-label">Status</div><div class="mf-value"><select class="modal-status-select" id="modal-lead-status" onchange="saveLeadStatus(' + lead.id + ',this.value)" style="padding:4px 8px;border-radius:6px;background:var(--card);color:var(--text);border:1px solid var(--border);font-size:13px">' +
+      ['new','contacted','replied','interested','qualified','follow_up','meeting','closed','not_to_contact'].map(function(s) {
+        return '<option value="' + s + '" ' + (lead.status === s ? 'selected' : '') + '>' + s.replace(/_/g,' ').replace(/\w/g,function(c){return c.toUpperCase()}) + '</option>';
+      }).join('') + '</select></div></div>' +
     '<div class="modal-field"><div class="mf-label">Score Reason</div><div class="mf-value" style="font-size:13px;color:var(--text-sec)">' + escapeHtml(lead.score_reason || '—') + '</div></div>' +
     '<div class="modal-field"><div class="mf-label">ICP Match</div><div class="mf-value">' + (lead.icp_match ? Math.round(lead.icp_match*100) + '%' : '<span style="color:var(--text-muted)">—</span>') + '</div></div>' +
     '<div class="modal-field"><div class="mf-label">Created</div><div class="mf-value" style="font-size:13px;color:var(--text-sec)">' + dateCreated + '</div></div>' +
     '<div class="modal-field"><div class="mf-label">Updated</div><div class="mf-value" style="font-size:13px;color:var(--text-sec)">' + dateUpdated + '</div></div>';
+}
+
+function setLeadStatus(leadId, newStatus) {
+  _updateLeadStatus(leadId, newStatus, function() {
+    // Also refresh loadLeads to re-render the row if filtered
+    loadLeads();
+  });
+}
+
+function saveLeadStatus(leadId, newStatus) {
+  _updateLeadStatus(leadId, newStatus, function() {
+    closeLeadModal();
+    loadLeads();
+  });
+}
+
+function _updateLeadStatus(leadId, newStatus, onSuccess) {
+  api('/api/leads/' + leadId, { method: 'PUT', body: JSON.stringify({ status: newStatus }) })
+    .then(function(r) {
+      var badgeEl = document.getElementById('status-' + leadId);
+      if (badgeEl) {
+        badgeEl.className = 'badge ' + statusClass(newStatus);
+        badgeEl.textContent = capitalize(newStatus);
+      }
+      if (onSuccess) onSuccess();
+    })
+    .catch(function() {
+      // Demo mode — update locally
+var badgeEl = document.getElementById('status-' + leadId);
+      if (badgeEl) {
+        badgeEl.className = 'badge ' + statusClass(newStatus);
+        badgeEl.textContent = capitalize(newStatus);
+      }
+      if (onSuccess) onSuccess();
+    });
 }
 
 function closeLeadModal(e) {
