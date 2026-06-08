@@ -1004,6 +1004,7 @@ tr:last-child td{border-bottom:none}
           document.getElementById('gmail-preview').innerHTML = '';
         });
       }
+      });
       </script>
     </div>
     <div class="integration-card">
@@ -1215,8 +1216,6 @@ function showApp() {
     }).catch(function() {}).then(function() {
       showApp();
     });
-  } else {
-}
   }
 })();
 
@@ -2733,7 +2732,6 @@ function logManualActivity() {
   var icons = { email_sent: '📧', call: '📞', meeting: '📅', linkedin: '🔗', research: '🔍', other: '📌' };
   activityLogCache.unshift({ type: type, title: title, meta: 'Just now', icon: icons[type] || '📌' });
   api('/api/activities', { method: 'POST', body: JSON.stringify({ type: type, lead: lead, notes: notes }) }).catch(function() {});
-  }
   document.getElementById('manual-act-lead').value = '';
   document.getElementById('manual-act-notes').value = '';
   loadActivity();
@@ -2811,6 +2809,7 @@ function liDeleteSelected() {
     }).catch(function() {});
   }
   loadLinkedInTracker();
+}
 </script>
 
 <!-- Lead Detail Modal -->
