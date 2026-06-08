@@ -574,15 +574,16 @@ tr:last-child td{border-bottom:none}
       <div class="trend-chart" id="dash-trend-chart"></div>
       <div class="chart-legend" id="dash-trend-legend"></div>
     </div>
-    <div class="chart-container" style="display:flex;flex-direction:column;overflow:hidden">
+    <div class="chart-container" style="display:flex;flex-direction:column;overflow:hidden;max-height:340px">
       <div style="display:flex;justify-content:space-between;align-items:center;flex-shrink:0">
-        <span>📅 Upcoming Meetings <span style="font-weight:400;font-size:11px;color:var(--text-muted)">— Google Calendar</span></span>
+        <span>📅 Upcoming Meetings <span style="font-weight:400;font-size:11px;color:var(--text-muted)">— Google</span></span>
         <span id="mtg-week-count" style="font-size:10px;padding:2px 8px;background:var(--accent-glow);color:var(--accent);border-radius:20px">0</span>
       </div>
       <div id="dash-maton-meetings" class="scrollable-meetings" style="flex:1;min-height:0;margin-top:8px">
         <div style="padding:20px;text-align:center;color:var(--text-muted);font-size:13px">Loading meetings...</div>
       </div>
     </div>
+  </div>
 
   <!-- ═══ ROW 4: Two columns — Work Queue + AI Recs side by side ═══ -->
   <div class="grid-2 mb16">
@@ -605,24 +606,7 @@ tr:last-child td{border-bottom:none}
     </div>
   </div>
 
-  <!-- ═══ ROW 5: Three columns — Source perf + Outreach type + Recent activity ═══ -->
-  <div class="grid-3 mb16">
-    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px 20px">
-      <div class="section-title" style="margin:0 0 8px">📈 Lead Source Performance</div>
-      <div class="hbar-chart" id="dash-sources"></div>
-    </div>
-    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px 20px">
-      <div class="section-title" style="margin:0 0 8px">📊 Outreach Breakdown</div>
-      <div class="mini-donut" id="dash-outreach-type"></div>
-      <div id="dash-outreach-bars" style="margin-top:8px"></div>
-    </div>
-    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px 20px">
-      <div class="section-title" style="margin:0 0 8px">⚡ Recent Activity</div>
-      <div class="activity-feed" id="dash-li-feed" style="max-height:200px;overflow-y:auto"></div>
-    </div>
-  </div>
-
-  <!-- ═══ ROW 6: Three columns — HubSpot Pipeline + Follow-ups + Activity Timeline ═══ -->
+  <!-- ═══ ROW 5: Condensed Bottom Row ═══ -->
   <div class="grid-3 mb16">
     <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px 20px">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
@@ -632,12 +616,12 @@ tr:last-child td{border-bottom:none}
       <div id="dash-hubspot-summary" style="font-size:13px;color:var(--text-sec)">Loading...</div>
     </div>
     <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px 20px">
-      <div class="section-title" style="margin:0 0 8px">📋 Follow-ups Due</div>
-      <div id="dash-followups"></div>
+      <div class="section-title" style="margin:0 0 8px">📊 Outreach Breakdown</div>
+      <div id="dash-outreach-bars" style="margin-top:8px"></div>
     </div>
     <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px 20px">
       <div class="section-title" style="margin:0 0 8px">🕐 Activity Timeline</div>
-      <div class="timeline" style="max-height:200px;overflow-y:auto" id="dash-timeline"></div>
+      <div class="timeline" style="max-height:200px;overflow-y:auto;padding-right:6px" id="dash-timeline"></div>
     </div>
   </div>
 </div>
