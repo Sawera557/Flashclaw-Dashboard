@@ -398,23 +398,38 @@ def parse_linkedin_notes():
     urls_found = re.findall(r'(https?://(?:www\.)?linkedin\.com/[^\s)\]]+)', raw_text)
     urls_hint = '\n'.join(urls_found) if urls_found else '(none found by regex)'
 
-    prompt = f"""Parse these LinkedIn connection data entries into structured activities.
+    prompt = f"""Parse this LinkedIn activity markdown table into structured records.
 
-RAW DATA:
+The table has exactly 5 columns:
+| Name | Title | Activity | LinkedIn Link | Status |
+
+CRITICAL — Map the Activity column using this exact mapping:
+  "New message" → dm_sent
+  "Message replied" → reply_received
+  "Profile viewed" → profile_viewed
+  "Connection request" → connection_sent
+  "Connection accepted" → connection_accepted
+  "Job posting" → profile_viewed
+  Any other → connection_sent (default fallback)
+
+The Status column (e.g. "Waiting for response", "Connection accepted", "---") is
+supplementary context — put it in the "notes" field. If Status is "---" use an empty string.
+
+RAW TABLE:
 {raw_text[:4000]}
 
 PRE-EXTRACTED LINKEDIN URLS FROM DATA (assign to correct person):
 {urls_hint}
 
-For each person, extract: name, job title, company name, linkedin_url (profile URL),
-and activity type (connection_sent, connection_accepted, dm_sent, reply_received,
-interested, not_interested, meeting_booked, followup_sent, profile_viewed).
-
-The linkedin_url field is CRITICAL - include it for EVERY person. Look carefully at
-each row for a linkedin.com/in/... URL.
-
 Return ONLY valid JSON with a "people" key containing an array of objects:
-{{"people": [{{"name": "...", "title": "...", "company": "...", "linkedin_url": "https://linkedin.com/in/...", "activity_type": "connection_sent"}}]}}"""
+{{"people": [
+  {{"name": "Emily Chen", "title": "Marketing Manager", "company": "", "linkedin_url": "https://linkedin.com/in/emily-chen-12345", "activity_type": "dm_sent", "notes": "Waiting for response"}}
+]}}
+
+MUST-DO:
+- linkedin_url: take from LinkedIn Link column. If "---" leave as empty string.
+- Parse EVERY row in the table — do not skip any.
+- Use the Activity column to decide activity_type — do NOT use the Status column for this."""
 
     people = []
     if client:
@@ -434,16 +449,12 @@ Return ONLY valid JSON with a "people" key containing an array of objects:
         # Fallback: parse table format manually
         people = _parse_table_fallback(raw_text)
 
-    # Post-process: inject regex-extracted URLs for any person missing one
-    if people and urls_found:
-        url_idx = 0
-        for p in people:
-            if not p.get('linkedin_url') and url_idx < len(urls_found):
-                p['linkedin_url'] = urls_found[url_idx]
-                url_idx += 1
+    # Both the Groq prompt and fallback parser now handle URLs correctly.
+    # Skip the old sequential URL injection which could assign wrong URLs.
     for p in people:
-        if p.get('title') and not p.get('notes'):
-            p['notes'] = p['title']
+        # Preserve status-based notes from AI/fallback; fall back to title if nothing else
+        if not p.get('notes'):
+            p['notes'] = p.get('title', '')
 
     # Save each parsed person to the DB
     saved_count = 0
@@ -462,7 +473,7 @@ Return ONLY valid JSON with a "people" key containing an array of objects:
             'linkedin_url': url,
             'activity_type': activity_type,
             'activity_date': '',
-            'notes': p.get('title', ''),
+            'notes': p.get('notes', p.get('title', '')),
             'source': 'ai_dump',
             'created_at': now,
         }
@@ -478,59 +489,63 @@ Return ONLY valid JSON with a "people" key containing an array of objects:
 
 
 def _parse_table_fallback(raw_text):
-    """Parse a markdown table or pipe-delimited data without AI."""
-    status_words = {'connection sent', 'connection accepted', 'connected', 'pending',
-                    'invitation sent', 'accepted', 'not interested', 'interested'}
+    """Parse a markdown table with columns: Name | Title | Activity | LinkedIn Link | Status."""
+
+    # Exact Activity → activity_type mapping (matching the Groq prompt)
+    activity_map = {
+        'new message': 'dm_sent',
+        'message replied': 'reply_received', 'replied': 'reply_received',
+        'profile viewed': 'profile_viewed', 'profile view': 'profile_viewed',
+        'connection request': 'connection_sent', 'connection sent': 'connection_sent',
+        'connection accepted': 'connection_accepted',
+        'job posting': 'profile_viewed',
+    }
+
     people = []
     lines = raw_text.strip().split('\n')
     for line in lines:
         line = line.strip()
-        if not line or line.startswith('|---') or line.startswith('| -'):
+        # Skip separator and empty lines
+        if not line or line.startswith('|---') or line.startswith('| -') or line.startswith('|--'):
             continue
-        # Parse pipe-delimited rows
-        if line.startswith('|'):
-            parts = [p.strip() for p in line.split('|')]
-            parts = [p for p in parts if p]  # remove empty first/last from pipes
-            if len(parts) >= 3 and 'Name' not in parts[0] and 'Title' not in parts[0]:
-                name = parts[0]
-                title = parts[1] if len(parts) > 1 else ''
-                url = ''
-                company = ''
-                for p in parts:
-                    if p.startswith('http') or 'linkedin.com' in p.lower():
-                        url = p
-                        break
-                for p in parts[1:]:
-                    if (p.startswith('http') or p == name or p == title
-                        or p.lower() in status_words
-                        or 'linkedin' in p.lower()):
-                        continue
-                    company = p
-                    break
-                activity_type = 'connection_sent'
-                status_str = parts[-1].lower() if parts else ''
-                status_map = {
-                    'connection_sent': 'connection_sent', 'connection': 'connection_sent',
-                    'accepted': 'connection_accepted', 'connection_accepted': 'connection_accepted',
-                    'message': 'dm_sent', 'dm_sent': 'dm_sent', 'dm': 'dm_sent',
-                    'reply': 'reply_received', 'reply_received': 'reply_received',
-                    'meeting': 'meeting_booked', 'meeting_booked': 'meeting_booked',
-                    'interested': 'interested', 'not_interested': 'not_interested',
-                    'follow-up': 'followup_sent', 'followup_sent': 'followup_sent',
-                    'profile_view': 'profile_viewed', 'profile_viewed': 'profile_viewed',
-                }
-                for key, val in status_map.items():
-                    if key in status_str:
-                        activity_type = val
-                        break
-                people.append({
-                    'name': name,
-                    'title': title,
-                    'company': company,
-                    'linkedin_url': url,
-                    'activity_type': activity_type,
-                    'source': 'ai_dump',
-                })
+        if not line.startswith('|'):
+            continue
+
+        parts = [p.strip() for p in line.split('|')]
+        # Remove empty leading/trailing pipe artifacts
+        parts = [p for p in parts if p]
+
+        if len(parts) < 3:
+            continue
+
+        # Skip header row
+        if parts[0].lower() == 'name' or parts[0].lower() == '---':
+            continue
+
+        # Column positions: 0=Name, 1=Title, 2=Activity, 3=LinkedInLink, 4=Status
+        name = parts[0]
+        title = parts[1] if len(parts) > 1 else ''
+        activity_text = parts[2].lower() if len(parts) > 2 else ''
+        url = parts[3] if len(parts) > 3 and parts[3] not in ('---', '—', '') and 'linkedin.com' in parts[3].lower() else ''
+        status = parts[4] if len(parts) > 4 and parts[4] not in ('---', '—', '') else ''
+
+        # Map activity column text to activity_type
+        activity_type = 'connection_sent'  # default
+        for key, val in activity_map.items():
+            if key in activity_text:
+                activity_type = val
+                break
+
+        people.append({
+            'name': name,
+            'title': title,
+            'company': '',
+            'linkedin_url': url,
+            'activity_type': activity_type,
+            'notes': status,
+            'source': 'ai_dump',
+        })
+
     return people
 
 

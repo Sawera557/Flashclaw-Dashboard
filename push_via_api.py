@@ -8,7 +8,7 @@ import subprocess
 import sys
 import urllib.request
 
-API_KEY = os.environ.get("MATON_API_KEY", "v2.Gs5DQebwmjbpDqdzFtH55KGw7XL_qtep9p9ZQ-3kBQB76L5MdvD0uECj-HdhyePG3PRLJa_XNcFewluT3JHptE86LlvwJwTxfOs0JX-jY2T4HJMYuOo6Tsad")
+API_KEY = os.environ.get("MATON_API_KEY", "v2.CC4kibArJ4JXpJXxIi999bDMDCVFwXsKXGGS8VUCC_bC1pyh0-69OgU8hUkbzpnf5ik0Aw09krhOuS4Eb1x77pId2uRCgu86_-ewGkNfVO-7qRJqHrvfXH3J")
 REPO = "Sawera557/Flashclaw-Dashboard"
 BASE_URL = f"https://api.maton.ai/github/repos/{REPO}"
 
