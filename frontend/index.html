@@ -559,8 +559,8 @@ tr:last-child td{border-bottom:none}
   </div>
 
   <!-- ═══ ROW 2: Three-pillar — Pipeline + Weekly Activity + Meetings Today ═══ -->
-  <div class="grid-3 mb16">
-    <div class="chart-container">
+  <div class="grid-3 mb16" id="dash-core-row">
+    <div class="chart-container" id="dash-funnel-section">
       <div class="chart-title" style="display:flex;justify-content:space-between;align-items:center">
         <span>🔻 Pipeline Funnel</span>
         <span id="funnel-total" style="font-size:11px;color:var(--text-muted)"></span>
@@ -568,7 +568,7 @@ tr:last-child td{border-bottom:none}
       <div class="funnel-chart" id="dash-funnel"></div>
       <div id="funnel-stats" style="font-size:11px;color:var(--text-muted);margin-top:6px;text-align:center"></div>
     </div>
-    <div class="chart-container">
+    <div class="chart-container" id="dash-trend-section">
       <div class="chart-title" style="display:flex;justify-content:space-between;align-items:center">
         <span>📊 Activity Trend</span>
         <span style="font-size:11px;color:var(--text-muted);font-weight:400" id="trend-period-label">7 days</span>
@@ -576,7 +576,7 @@ tr:last-child td{border-bottom:none}
       <div class="trend-chart" id="dash-trend-chart"></div>
       <div class="chart-legend" id="dash-trend-legend"></div>
     </div>
-    <div class="chart-container" style="display:flex;flex-direction:column;overflow:hidden;max-height:340px">
+    <div class="chart-container" id="dash-meetings-section" style="display:flex;flex-direction:column;overflow:hidden;max-height:340px">
       <div style="display:flex;justify-content:space-between;align-items:center;flex-shrink:0">
         <span>📅 Upcoming Meetings <span style="font-weight:400;font-size:11px;color:var(--text-muted)">— Google</span></span>
         <span id="mtg-week-count" style="font-size:10px;padding:2px 8px;background:var(--accent-glow);color:var(--accent);border-radius:20px">0</span>
@@ -588,8 +588,8 @@ tr:last-child td{border-bottom:none}
   </div>
 
   <!-- ═══ ROW 4: Two columns — Work Queue + AI Recs side by side ═══ -->
-  <div class="grid-2 mb16">
-    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px 20px">
+  <div class="grid-2 mb16" id="dash-actions-row">
+    <div id="dash-queue-section" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px 20px">
       <div class="section-title" style="margin:0 0 12px">🎯 Today's Work Queue</div>
       <div id="dash-targets" style="display:grid;grid-template-columns:1fr 1fr;gap:12px"></div>
       <!-- Quick action buttons -->
@@ -599,7 +599,7 @@ tr:last-child td{border-bottom:none}
         <button class="btn-sm" onclick="showTab('linkedin-tracker')" style="background:var(--accent-glow);color:var(--accent);flex:1">🔗 LinkedIn</button>
       </div>
     </div>
-    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px 20px">
+    <div id="dash-recommendations-section" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px 20px">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
         <div class="section-title" style="margin:0">🤖 AI Recommended Actions</div>
         <span style="font-size:10px;color:var(--text-muted)">Groq LPU</span>
@@ -609,35 +609,35 @@ tr:last-child td{border-bottom:none}
   </div>
 
   <!-- ═══ ROW 5: Condensed Bottom Row ═══ -->
-  <div class="grid-3 mb16">
-    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px 20px">
+  <div class="grid-3 mb16" id="dash-summary-row">
+    <div id="dash-hubspot-section" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px 20px">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
         <div class="section-title" style="margin:0">🏢 HubSpot Pipeline</div>
         <span id="hs-pulse" style="width:8px;height:8px;border-radius:50%;background:var(--success);display:inline-block"></span>
       </div>
       <div id="dash-hubspot-summary" style="font-size:13px;color:var(--text-sec)">Loading...</div>
     </div>
-    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px 20px">
+    <div id="dash-outreach-section" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px 20px">
       <div class="section-title" style="margin:0 0 8px">📊 Outreach Breakdown</div>
       <div id="dash-outreach-bars" style="margin-top:8px"></div>
     </div>
-    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px 20px">
+    <div id="dash-timeline-section" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px 20px">
       <div class="section-title" style="margin:0 0 8px">🕐 Activity Timeline</div>
       <div class="timeline" style="max-height:200px;overflow-y:auto;padding-right:6px" id="dash-timeline"></div>
     </div>
   </div>
 
   <!-- ═══ ROW 6: Source Performance + Activity Feed + Follow-ups ═══ -->
-  <div class="grid-3 mb16">
-    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px 20px">
+  <div class="grid-3 mb16" id="dash-detail-row">
+    <div id="dash-sources-section" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px 20px">
       <div class="section-title" style="margin:0 0 8px">📈 Lead Source Performance</div>
       <div id="dash-sources" style="margin-top:8px"></div>
     </div>
-    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px 20px">
+    <div id="dash-feed-section" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px 20px">
       <div class="section-title" style="margin:0 0 8px">🔗 LinkedIn & Email Feed</div>
       <div id="dash-li-feed"></div>
     </div>
-    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px 20px">
+    <div id="dash-followups-section" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px 20px">
       <div class="section-title" style="margin:0 0 8px">⏰ Follow-ups Due</div>
       <div id="dash-followups"></div>
     </div>
@@ -659,12 +659,12 @@ tr:last-child td{border-bottom:none}
   <div class="section-title">ICP Filters</div>
   <div class="card mb16">
     <div class="form-row">
-      <div class="form-group"><label>Industry</label><input id="icp-industry" placeholder="e.g. SaaS, Fintech, Healthcare" value="SaaS"></div>
-      <div class="form-group"><label>Location</label><input id="icp-location" placeholder="e.g. San Francisco, Remote" value="San Francisco"></div>
+      <div class="form-group"><label>Industry</label><input id="icp-industry" placeholder="e.g. SaaS, Fintech, Healthcare"></div>
+      <div class="form-group"><label>Location</label><input id="icp-location" placeholder="e.g. San Francisco, Remote"></div>
     </div>
     <div class="form-row">
-      <div class="form-group"><label>Company Size</label><input id="icp-size" placeholder="e.g. 10-50, 51-200" value="10-200"></div>
-      <div class="form-group"><label>Job Title</label><input id="icp-title" placeholder="e.g. VP Sales, CRO" value="VP Sales"></div>
+      <div class="form-group"><label>Company Size</label><input id="icp-size" placeholder="e.g. 10-50, 51-200"></div>
+      <div class="form-group"><label>Job Title</label><input id="icp-title" placeholder="e.g. VP Sales, CRO"></div>
     </div>
     <div class="form-group"><label>Keywords</label><input id="icp-keywords" placeholder="e.g. AI, CRM, enterprise"></div>
   </div>
@@ -981,63 +981,7 @@ tr:last-child td{border-bottom:none}
 <!-- INTEGRATIONS -->
 <div class="tab-content" id="tab-integrations">
   <div class="section-title">Connected Services</div>
-  <div id="integrations-list">
-    <div class="integration-card">
-      <div class="int-icon">📧</div>
-      <div class="int-info"><h4>Gmail</h4><p>Send and track emails</p></div>
-      <span class="int-status" style="background:rgba(62,207,142,.15);color:var(--success)">Connected</span>
-      <span style="font-size:11px;color:var(--text-muted);display:block;margin-top:4px;">sawerakhadium557@gmail.com</span>
-      <div style="margin-top:8px;" id="gmail-preview"><span class="spinner"></span> Loading emails...</div>
-      <script>
-      setTimeout(function() {
-      if (typeof gmailLoaded === 'undefined') { gmailLoaded = true;
-        api('/api/gmail/emails?limit=3').then(function(d) {
-          if (!d || !d.emails) return;
-          var h = '<div style="font-size:12px;font-weight:600;margin:6px 0 4px">📬 Recent Emails</div>';
-          d.emails.forEach(function(e) {
-            h += '<div style="font-size:11px;padding:4px 0;border-bottom:1px solid var(--border)">';
-            h += '<b>' + e.from.split('<')[0].trim() + '</b>: ' + e.subject;
-            h += '<div style="color:var(--text-muted);font-size:10px">' + e.date + '</div></div>';
-          });
-          document.getElementById('gmail-preview').innerHTML = h;
-        }).catch(function() {
-          document.getElementById('gmail-preview').innerHTML = '';
-        });
-      }
-      });
-      </script>
-    </div>
-    <div class="integration-card">
-      <div class="int-icon">📧</div>
-      <div class="int-info"><h4>Gmail</h4><p>Send and track emails</p></div>
-      <span class="int-status" style="background:rgba(62,207,142,.15);color:var(--success)">Connected</span>
-    </div>
-    <div class="integration-card">
-      <div class="int-icon">📅</div>
-      <div class="int-info"><h4>Calendar</h4><p>Meeting scheduling</p></div>
-      <span class="int-status" style="background:rgba(62,207,142,.15);color:var(--success)">Connected</span>
-    </div>
-    <div class="integration-card">
-      <div class="int-icon">📈</div>
-      <div class="int-info"><h4>HubSpot</h4><p>CRM sync</p></div>
-      <span class="int-status" style="background:rgba(245,166,35,.15);color:var(--warning)">Pending</span>
-    </div>
-    <div class="integration-card">
-      <div class="int-icon">🚀</div>
-      <div class="int-info"><h4>Apollo.io</h4><p>B2B lead data</p></div>
-      <span class="int-status" style="background:rgba(62,207,142,.15);color:var(--success)">Connected</span>
-    </div>
-    <div class="integration-card">
-      <div class="int-icon">📧</div>
-      <div class="int-info"><h4>Hunter.io</h4><p>Email verification</p></div>
-      <span class="int-status" style="background:rgba(62,207,142,.15);color:var(--success)">Connected</span>
-    </div>
-    <div class="integration-card">
-      <div class="int-icon">🔥</div>
-      <div class="int-info"><h4>Firecrawl</h4><p>Web scraping</p></div>
-      <span class="int-status" style="background:rgba(245,166,35,.15);color:var(--warning)">Configured</span>
-    </div>
-  </div>
+  <div id="integrations-list"><div class="loading"><span class="spinner"></span> Loading integrations...</div></div>
 </div>
 
 <!-- API CONFIG -->
@@ -1068,10 +1012,7 @@ tr:last-child td{border-bottom:none}
     <table>
       <thead><tr><th>SDR</th><th>Leads Found</th><th>Emails Sent</th><th>Meetings</th><th>Conversion</th><th>Activity</th></tr></thead>
       <tbody id="admin-sdr-body">
-        <tr><td style="color:var(--text)">Sarah Johnson</td><td>342</td><td>1,287</td><td>31</td><td><span class="badge badge-high">9.1%</span></td><td><span class="health-dot health-ok"></span>Active</td></tr>
-        <tr><td style="color:var(--text)">Mike Chen</td><td>289</td><td>956</td><td>22</td><td><span class="badge badge-med">7.7%</span></td><td><span class="health-dot health-ok"></span>Active</td></tr>
-        <tr><td style="color:var(--text)">Alex Rivera</td><td>198</td><td>743</td><td>18</td><td><span class="badge badge-med">9.1%</span></td><td><span class="health-dot health-warn"></span>Away</td></tr>
-        <tr><td style="color:var(--text)">Emma Wilson</td><td>415</td><td>1,502</td><td>44</td><td><span class="badge badge-high">10.6%</span></td><td><span class="health-dot health-ok"></span>Active</td></tr>
+        <tr><td colspan="6" style="padding:24px;text-align:center;color:var(--text-muted)">Team performance data is unavailable.</td></tr>
       </tbody>
     </table>
   </div>
@@ -1261,6 +1202,7 @@ function showTab(name) {
   if (name === 'ai-agent') { /* chat already loaded */ }
   if (name === 'analytics') loadAnalytics();
   if (name === 'activity') loadActivity('weekly');
+  if (name === 'integrations') loadIntegrations();
   if (name === 'admin') loadAdmin();
   if (name === 'hubspot') loadHubSpot();
   if (name === 'meetings') loadMeetings();
@@ -1440,36 +1382,33 @@ function loadTimeframeData(days) {
     renderTimeframeMetrics(d);
     renderTimeframeTrend(d);
   }).catch(function(err) {
-    console.warn('Timeframe API fallback:', err);
-    // Use existing dashboard data as fallback
-    if (lastDashboardData) {
-      renderTimeframeFromDashboard(lastDashboardData, days);
-    }
+    console.warn('Timeframe data unavailable:', err);
+    setDashboardSectionVisible('dash-metrics', false);
+    setDashboardSectionVisible('dash-trend-section', false);
   });
 }
 
 function renderTimeframeMetrics(d) {
   var t = d.totals || {};
   var r = d.rates || {};
-  var labels = {
-    emails: 'Emails Sent', connections: 'Meetings Booked',
-    replies: 'Replies', leads: 'New Leads', enrichment: 'Enrichment Rate'
-  };
+  var available = 0;
 
-  setMetric('emails', t.emails_sent || 0, Math.round(t.emails_sent || 0) + ' sent');
-  setMetric('meetings', t.meetings_booked || 0, Math.round(t.meetings_booked || 0) + ' booked');
-  setMetric('connections', t.connections_sent || 0, Math.round(t.connections_sent || 0) + ' sent');
-  setMetric('replies', t.replies || 0, Math.round(t.replies || 0) + ' received');
-  setMetric('leads', t.new_leads || 0, String(t.total_leads || 0) + ' total');
-  setMetric('enrichment', (r.enrichment_rate || 0) + '%', Math.round(t.enriched_leads || 0) + ' enriched');
+  setMetric('emails', hasOwnField(t, 'emails_sent'), t.emails_sent, hasOwnField(t, 'emails_sent') ? t.emails_sent + ' sent' : '');
+  setMetric('meetings', hasOwnField(t, 'meetings_booked'), t.meetings_booked, hasOwnField(t, 'meetings_booked') ? t.meetings_booked + ' booked' : '');
+  setMetric('connections', hasOwnField(t, 'connections_sent'), t.connections_sent, hasOwnField(t, 'connections_sent') ? t.connections_sent + ' sent' : '');
+  setMetric('replies', hasOwnField(t, 'replies'), t.replies, hasOwnField(t, 'replies') ? t.replies + ' received' : '');
+  setMetric('leads', hasOwnField(t, 'new_leads'), t.new_leads, hasOwnField(t, 'total_leads') ? t.total_leads + ' total' : '');
+  setMetric('enrichment', hasOwnField(r, 'enrichment_rate'), hasOwnField(r, 'enrichment_rate') ? r.enrichment_rate + '%' : '', hasOwnField(t, 'enriched_leads') ? t.enriched_leads + ' enriched' : '');
+  setDashboardSectionVisible('dash-metrics', available > 0);
 
-  function setMetric(id, value, sub) {
+  function setMetric(id, visible, value, sub) {
     var card = document.querySelector('#dash-metrics .metric-card:nth-child(' + ({emails:1,meetings:2,connections:3,replies:4,leads:5,enrichment:6}[id]) + ')');
     if (!card) return;
-    var valEl = card.querySelector('.metric-value');
-    var subEl = card.querySelector('.metric-sub');
-    if (valEl) valEl.textContent = value;
-    if (subEl) subEl.textContent = sub;
+    card.style.display = visible ? '' : 'none';
+    if (!visible) return;
+    available++;
+    card.querySelector('.metric-value').textContent = value;
+    card.querySelector('.metric-sub').textContent = sub;
   }
 }
 
@@ -1479,6 +1418,8 @@ function renderTimeframeTrend(d) {
   if (!chartEl) return;
 
   var breakdown = d.daily_breakdown || [];
+  setDashboardSectionVisible('dash-trend-section', hasOwnField(d, 'daily_breakdown'));
+  updateDashboardRowVisibility('dash-core-row', ['dash-funnel-section', 'dash-trend-section', 'dash-meetings-section']);
   if (breakdown.length === 0) {
     chartEl.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-muted);font-size:13px">No activity data for this period</div>';
     return;
@@ -1517,34 +1458,6 @@ function renderTimeframeTrend(d) {
   }
 }
 
-function renderTimeframeFromDashboard(d, days) {
-  // Fallback: use recent_activities for trend chart
-  var activities = d.recent_activities || [];
-  var t = d.stats || {};
-  var r = d.rates || {};
-
-  setMetricVal(1, t.emails_sent || 0, 'sent');
-  setMetricVal(2, t.meetings_booked || 0, 'booked');
-  setMetricVal(3, t.connections_sent || 0, 'sent');
-  setMetricVal(4, t.replies_received || 0, 'received');
-  setMetricVal(5, t.new_today || 0, 'created');
-  setMetricVal(6, (r.enrichment_rate || 0) + '%', 'enriched');
-
-  function setMetricVal(idx, val, sub) {
-    var card = document.querySelector('#dash-metrics .metric-card:nth-child(' + idx + ')');
-    if (!card) return;
-    var valEl = card.querySelector('.metric-value');
-    var subEl = card.querySelector('.metric-sub');
-    if (valEl) valEl.textContent = val;
-    if (subEl) subEl.textContent = sub;
-  }
-
-  // Fallback trend chart
-  var chartEl = document.getElementById('dash-trend-chart');
-  if (chartEl && activities.length > 0) renderTimeframeTrend({daily_breakdown: activities.slice(0, 7).map(function(a) {
-    return {date: (a.timestamp||'').slice(0,10), emails_sent: 0, connections_sent: 0, meetings: 0};
-  })});
-}
 function loadDashboard() {
   var refreshBtn = document.getElementById('refresh-btn');
   if (refreshBtn) refreshBtn.textContent = '⏳';
@@ -1588,8 +1501,24 @@ function loadDashboard() {
     });
 }
 
+function hasOwnField(value, field) {
+  return value !== null && typeof value === 'object' && Object.prototype.hasOwnProperty.call(value, field);
+}
+
+function setDashboardSectionVisible(id, visible) {
+  var el = document.getElementById(id);
+  if (el) el.style.display = visible ? '' : 'none';
+}
+
+function updateDashboardRowVisibility(rowId, childIds) {
+  setDashboardSectionVisible(rowId, childIds.some(function(id) {
+    var el = document.getElementById(id);
+    return el && el.style.display !== 'none';
+  }));
+}
+
 function renderRealDashboard(d) {
-  if (!d || !d.stats) { renderDashboardDemo(); return; }
+  if (!d || typeof d !== 'object') { renderDashboardDemo(); return; }
 
   var stats = d.stats || {};
   var profile = d.sdr_profile || {};
@@ -1599,35 +1528,55 @@ function renderRealDashboard(d) {
   var pipeline = d.pipeline_snapshot || {};
   var recommendations = d.ai_recommendations || [];
   var meetings = d.maton_meetings || [];
+
+  setDashboardSectionVisible('dash-metrics', false);
+  setDashboardSectionVisible('sdr-bar', hasOwnField(d, 'sdr_profile'));
+  setDashboardSectionVisible('dash-stats', hasOwnField(d, 'stats'));
+  setDashboardSectionVisible('dash-funnel-section', hasOwnField(d, 'pipeline_snapshot'));
+  setDashboardSectionVisible('dash-trend-section', false);
+  setDashboardSectionVisible('dash-meetings-section', hasOwnField(d, 'maton_meetings'));
+  setDashboardSectionVisible('dash-queue-section', hasOwnField(d, 'today_queue'));
+  setDashboardSectionVisible('dash-recommendations-section', hasOwnField(d, 'ai_recommendations'));
+  setDashboardSectionVisible('dash-hubspot-section', hasOwnField(d, 'hubspot_summary'));
+  setDashboardSectionVisible('dash-outreach-section', hasOwnField(d, 'recent_activities'));
+  setDashboardSectionVisible('dash-timeline-section', hasOwnField(d, 'recent_activities'));
+  setDashboardSectionVisible('dash-sources-section', hasOwnField(d, 'source_performance'));
+  setDashboardSectionVisible('dash-feed-section', hasOwnField(d, 'recent_activities'));
+  setDashboardSectionVisible('dash-followups-section', hasOwnField(d, 'today_queue') && hasOwnField(queue, 'follow_ups_due'));
+  updateDashboardRowVisibility('dash-core-row', ['dash-funnel-section', 'dash-trend-section', 'dash-meetings-section']);
+  updateDashboardRowVisibility('dash-actions-row', ['dash-queue-section', 'dash-recommendations-section']);
+  updateDashboardRowVisibility('dash-summary-row', ['dash-hubspot-section', 'dash-outreach-section', 'dash-timeline-section']);
+  updateDashboardRowVisibility('dash-detail-row', ['dash-sources-section', 'dash-feed-section', 'dash-followups-section']);
+
   var now = new Date();
   var todayStr = now.toISOString().slice(0,10);
 
   // ── 1. SDR Identity Bar ──
   var sdrHtml =
-    '<div class="sdr-avatar">' + (profile.avatar || '?') + '</div>' +
+    '<div class="sdr-avatar">' + escapeHtml(hasOwnField(profile, 'avatar') ? String(profile.avatar) : '?') + '</div>' +
     '<div class="sdr-info">' +
-      '<div class="name">' + escapeHtml(profile.name || 'SDR') + '</div>' +
-      '<div class="role">' + escapeHtml(profile.role || 'SDR') + ' · Team of ' + (profile.team_size || 1) + '</div>' +
+      '<div class="name">' + escapeHtml(hasOwnField(profile, 'name') ? String(profile.name) : '—') + '</div>' +
+      '<div class="role">' + escapeHtml(hasOwnField(profile, 'role') ? String(profile.role) : '—') + (hasOwnField(profile, 'team_size') ? ' · Team of ' + profile.team_size : '') + '</div>' +
     '</div>' +
     '<div class="sdr-metrics">' +
-      '<div><div class="val" style="color:var(--accent)">🔥 ' + (profile.streak || 0) + '</div><div class="lbl">Day Streak</div></div>' +
-      '<div><div class="val" style="color:var(--success);font-size:13px">' + escapeHtml(profile.rank || 'New Recruit') + '</div><div class="lbl">Rank</div></div>' +
-      '<div><div class="val" style="color:var(--warning)">' + (profile.leads_generated || 0) + '</div><div class="lbl">Leads Gen.</div></div>' +
+      (hasOwnField(profile, 'streak') ? '<div><div class="val" style="color:var(--accent)">🔥 ' + profile.streak + '</div><div class="lbl">Day Streak</div></div>' : '') +
+      (hasOwnField(profile, 'rank') ? '<div><div class="val" style="color:var(--success);font-size:13px">' + escapeHtml(String(profile.rank)) + '</div><div class="lbl">Rank</div></div>' : '') +
+      (hasOwnField(profile, 'leads_generated') ? '<div><div class="val" style="color:var(--warning)">' + profile.leads_generated + '</div><div class="lbl">Leads Gen.</div></div>' : '') +
     '</div>';
   document.getElementById('sdr-bar').innerHTML = sdrHtml;
 
   // ── 2. KPI Cards (8 enhanced cards) ──
-  var enrichedPct = stats.total_leads > 0 ? Math.round((stats.enriched_leads||0)/stats.total_leads*100) : 0;
+  var enrichedPct = hasOwnField(stats, 'total_leads') && hasOwnField(stats, 'enriched_leads') && stats.total_leads > 0 ? Math.round(stats.enriched_leads/stats.total_leads*100) : null;
   var kpiCards = [
-    { label: '📇 Total Leads', value: stats.total_leads || 0, subtitle: (stats.new_today || 0) + ' new today', color: 'var(--accent)' },
-    { label: '🎯 New Today', value: stats.new_today || 0, subtitle: stats.total_leads > 0 ? Math.round(stats.new_today/stats.total_leads*100) + '% of total' : '', color: 'var(--accent)' },
-    { label: '✨ Enriched', value: stats.enriched_leads || 0, subtitle: 'of ' + (stats.total_leads || 0) + ' (' + enrichedPct + '%)', color: 'var(--success)' },
-    { label: '✉️ Emails Sent', value: stats.emails_sent || 0, subtitle: (stats.reply_rate || 0) + '% reply', color: '#5b8def' },
-    { label: '💬 Replies', value: stats.replies_received || 0, subtitle: (stats.positive_replies || 0) + ' positive', color: 'var(--warning)' },
-    { label: '📅 Meetings', value: stats.meetings_booked || 0, subtitle: (stats.conversion_rate || 0) + '% overall', color: 'var(--success)' },
-    { label: '💰 Pipeline', value: '$' + (stats.pipeline_value || 0).toLocaleString(), subtitle: 'value in pipeline', color: 'var(--accent)' },
-    { label: '🔥 Reply Rate', value: (stats.reply_rate || 0) + '%', subtitle: stats.total_leads > 0 ? (stats.replies_received||0) + '/' + (stats.total_leads||0) + ' leads' : 'no data', color: stats.reply_rate > 15 ? 'var(--success)' : stats.reply_rate > 5 ? 'var(--warning)' : 'var(--danger)' },
-  ];
+    hasOwnField(stats, 'total_leads') ? { label: '📇 Total Leads', value: stats.total_leads, subtitle: hasOwnField(stats, 'new_today') ? stats.new_today + ' new today' : '', color: 'var(--accent)' } : null,
+    hasOwnField(stats, 'new_today') ? { label: '🎯 New Today', value: stats.new_today, subtitle: hasOwnField(stats, 'total_leads') && stats.total_leads > 0 ? Math.round(stats.new_today/stats.total_leads*100) + '% of total' : '', color: 'var(--accent)' } : null,
+    hasOwnField(stats, 'enriched_leads') ? { label: '✨ Enriched', value: stats.enriched_leads, subtitle: enrichedPct === null ? '' : enrichedPct + '% of leads', color: 'var(--success)' } : null,
+    hasOwnField(stats, 'emails_sent') ? { label: '✉️ Emails Sent', value: stats.emails_sent, subtitle: hasOwnField(stats, 'reply_rate') ? stats.reply_rate + '% reply' : '', color: '#5b8def' } : null,
+    hasOwnField(stats, 'replies_received') ? { label: '💬 Replies', value: stats.replies_received, subtitle: hasOwnField(stats, 'positive_replies') ? stats.positive_replies + ' positive' : '', color: 'var(--warning)' } : null,
+    hasOwnField(stats, 'meetings_booked') ? { label: '📅 Meetings', value: stats.meetings_booked, subtitle: hasOwnField(stats, 'conversion_rate') ? stats.conversion_rate + '% conversion' : '', color: '#c44dff' } : null,
+    hasOwnField(stats, 'pipeline_value') ? { label: '💰 Pipeline', value: '$' + Number(stats.pipeline_value).toLocaleString(), subtitle: '', color: 'var(--success)' } : null
+  ].filter(Boolean);
+  setDashboardSectionVisible('dash-stats', kpiCards.length > 0);
   document.getElementById('dash-stats').innerHTML = kpiCards.map(function(c) {
     return '<div class="stat-card" style="animation:fadeInUp .3s ease"><div class="stat-label">' + c.label + '</div><div class="stat-value" style="color:' + c.color + '">' + c.value + '</div><div class="stat-change up">' + c.subtitle + '</div></div>';
   }).join('');
@@ -1735,11 +1684,14 @@ function renderRealDashboard(d) {
   } else {
     mtgListEl.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted);font-size:13px">📭 No upcoming meetings</div>';
   }// ── 7. Today's Work Queue (4 cards) ──
-  document.getElementById('dash-targets').innerHTML =
-    '<div class="grid-card" style="text-align:center;padding:16px"><div style="font-size:28px;font-weight:700;color:var(--danger)">'+(queue.follow_ups_due||0)+'</div><div style="font-size:11px;color:var(--text-muted)">Follow-ups Due</div></div>'+
-    '<div class="grid-card" style="text-align:center;padding:16px"><div style="font-size:28px;font-weight:700;color:var(--warning)">'+(queue.positive_replies_needing_response||0)+'</div><div style="font-size:11px;color:var(--text-muted)">Hot Replies</div></div>'+
-    '<div class="grid-card" style="text-align:center;padding:16px"><div style="font-size:28px;font-weight:700;color:var(--success)">'+(queue.meetings_today||0)+'</div><div style="font-size:11px;color:var(--text-muted)">Meetings Today</div></div>'+
-    '<div class="grid-card" style="text-align:center;padding:16px"><div style="font-size:28px;font-weight:700;color:var(--accent)">'+(queue.leads_needing_enrichment||0)+'</div><div style="font-size:11px;color:var(--text-muted)">Need Enrichment</div></div>';
+  document.getElementById('dash-targets').innerHTML = [
+    hasOwnField(queue, 'follow_ups_due') ? { value: queue.follow_ups_due, label: 'Follow-ups Due', color: 'var(--danger)' } : null,
+    hasOwnField(queue, 'positive_replies_needing_response') ? { value: queue.positive_replies_needing_response, label: 'Hot Replies', color: 'var(--warning)' } : null,
+    hasOwnField(queue, 'meetings_today') ? { value: queue.meetings_today, label: 'Meetings Today', color: 'var(--success)' } : null,
+    hasOwnField(queue, 'leads_needing_enrichment') ? { value: queue.leads_needing_enrichment, label: 'Need Enrichment', color: 'var(--accent)' } : null
+  ].filter(Boolean).map(function(item) {
+    return '<div class="grid-card" style="text-align:center;padding:16px"><div style="font-size:28px;font-weight:700;color:' + item.color + '">' + item.value + '</div><div style="font-size:11px;color:var(--text-muted)">' + item.label + '</div></div>';
+  }).join('');
 
   // ── 8. AI Recommended Actions ──
   document.getElementById('ai-rec-list').innerHTML = recommendations.length > 0 ?
@@ -1789,19 +1741,14 @@ function renderRealDashboard(d) {
     }).join('') :
     '<div style="padding:16px;color:var(--text-muted);font-size:13px;text-align:center">📭 Track your outreach to see activity here</div>');
 
-  // ── 12. HubSpot Summary (from pipeline snapshot) ──
+  // ── 12. HubSpot Summary ──
   var hsEl = document.getElementById('dash-hubspot-summary');
-  var hubDeals = pipeline.stages || [];
-  if (hubDeals.length > 0) {
-    var totalDealValue = 0, dealCount = 0;
-    hubDeals.forEach(function(s){ if(s.value) totalDealValue += s.value; dealCount += s.count; });
-    hsEl.innerHTML = '<div style="display:flex;gap:20px;flex-wrap:wrap">'+
-      '<div><div style="font-size:20px;font-weight:700;color:var(--accent)">'+dealCount+'</div><div style="font-size:11px;color:var(--text-muted)">Total Deals</div></div>'+
-      '<div><div style="font-size:20px;font-weight:700;color:var(--success)">$'+(totalDealValue||0).toLocaleString()+'</div><div style="font-size:11px;color:var(--text-muted)">Pipeline Value</div></div>'+
-      '<div><div style="font-size:20px;font-weight:700;color:var(--warning)">'+(stats.conversion_rate||0)+'%</div><div style="font-size:11px;color:var(--text-muted)">Conversion</div></div></div>';
-  } else {
-    hsEl.innerHTML = '<div style="padding:10px;color:var(--text-muted);font-size:13px;text-align:center">⏳ No HubSpot data synced yet</div>';
-  }
+  var hubspot = d.hubspot_summary || {};
+  hsEl.innerHTML = Object.keys(hubspot).length ?
+    '<div style="display:flex;gap:20px;flex-wrap:wrap">' + Object.keys(hubspot).map(function(key) {
+      return '<div><div style="font-size:20px;font-weight:700;color:var(--accent)">' + escapeHtml(String(hubspot[key])) + '</div><div style="font-size:11px;color:var(--text-muted)">' + escapeHtml(key.replace(/_/g, ' ')) + '</div></div>';
+    }).join('') + '</div>' :
+    '<div style="padding:10px;color:var(--text-muted);font-size:13px;text-align:center">No HubSpot data synced yet</div>';
 
   // ── 13. Follow-ups Due ──
   _setInner('dash-followups', queue.follow_ups_due > 0 ?
@@ -1858,17 +1805,11 @@ function renderMyDashboard(d) {
 
 
 function renderDashboardDemo() {
+  setDashboardSectionVisible('dash-metrics', false);
+  setDashboardSectionVisible('sdr-bar', false);
+  setDashboardSectionVisible('dash-stats', true);
   _setInner('dash-stats', '<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text-muted)">No dashboard records yet.</div>');
-  _setInner('dash-funnel', '<div style="padding:20px;text-align:center;color:var(--text-muted)">No pipeline data</div>');
-  _setInner('dash-trend-chart', '<div style="padding:20px;text-align:center;color:var(--text-muted);font-size:13px">No activity data</div>');
-  _setInner('dash-targets', '<div style="padding:20px;text-align:center;color:var(--text-muted)">No targets loaded</div>');
-  _setInner('ai-rec-list', '<div style="padding:20px;text-align:center;color:var(--text-muted)">No recommendations</div>');
-  _setInner('dash-timeline', '<div style="padding:20px;text-align:center;color:var(--text-muted)">No activity data</div>');
-  _setInner('dash-outreach-bars', '<div style="padding:20px;text-align:center;color:var(--text-muted)">No outreach data</div>');
-  _setInner('dash-hubspot-summary', '<div style="padding:20px;text-align:center;color:var(--text-muted)">No HubSpot data</div>');
-  _setInner('dash-sources', '<div style="padding:20px;text-align:center;color:var(--text-muted)">No source data</div>');
-  _setInner('dash-li-feed', '<div style="padding:20px;text-align:center;color:var(--text-muted)">No LinkedIn activity</div>');
-  _setInner('dash-followups', '<div style="padding:20px;text-align:center;color:var(--text-muted)">No follow-ups</div>');
+  ['dash-core-row', 'dash-actions-row', 'dash-summary-row', 'dash-detail-row'].forEach(function(id) { setDashboardSectionVisible(id, false); });
   updateRefreshTime();
 }
 
@@ -2112,24 +2053,15 @@ function generateEmail() {
 
   api('/api/ai/generate-email', { method: 'POST', body: JSON.stringify(payload) })
     .then(function(r) {
+      if (!r || !(r.body || r.email)) throw new Error('No generated email returned');
       subject.textContent = r.subject ? 'Subject: ' + r.subject : '';
-      output.textContent = r.body || r.email || r.message || 'Generated successfully';
+      output.style.color = '';
+      output.textContent = r.body || r.email;
     })
-    .catch(function() {
-      var subjects = {
-        'cold': 'Unlocking Growth at ' + (payload.company || 'Your Company'),
-        'followup': 'Following Up — ' + (payload.company || 'Your Company'),
-        'linkedin-dm': 'Hey ' + (payload.name || 'there') + ' — quick question',
-        'sequence': payload.name + ' — Part 1 of 3: Your Growth Stack'
-      };
-      var bodies = {
-        'cold': 'Hi ' + (payload.name || '{name}') + ',\n\nI\'ve been following ' + (payload.company || '{company}') + '\'s growth in the ' + (payload.industry || 'industry') + ' space and noticed your team is doing impressive work.\n\nWe help companies like yours streamline lead generation and automate outreach — cutting manual SDR work by 60% while increasing reply rates by 35%.\n\nWould you be open to a 15-minute call this week to explore if this could help ' + (payload.company || 'your team') + '?\n\nBest regards,\nKathy Roggers\nFlashlabs',
-        'followup': 'Hi ' + (payload.name || '{name}') + ',\n\nFollowing up on my previous email. I know you\'re busy, but I wanted to share a quick case study of how we helped a similar ' + (payload.industry || '') + ' company increase their pipeline by 3x in 60 days.\n\nWould 10 minutes next Tuesday work to show you how?\n\nBest regards,\nKathy Roggers\nFlashlabs',
-        'linkedin-dm': 'Hi ' + (payload.name || '{name}') + '! I came across your profile and was impressed by your work at ' + (payload.company || '{company}') + '. I help SDR teams automate lead gen — would you be open to a quick chat? 🚀',
-        'sequence': 'Hi ' + (payload.name || '{name}') + ',\n\nThis is part 1 of a 3-email series on how top SDR teams are hitting 200%+ of quota using AI-powered outreach.\n\n' + (payload.industry || 'Your') + ' companies that automate lead gen see 40% higher conversion rates.\n\nStay tuned for part 2 tomorrow.\n\nBest regards,\nKathy Roggers\nFlashlabs'
-      };
-      subject.textContent = subjects[currentEmailType] || 'Generated Email';
-      output.textContent = bodies[currentEmailType] || 'Hi ' + (payload.name || '{name}') + ',\n\nSample outreach email body...';
+    .catch(function(err) {
+      subject.textContent = '';
+      output.textContent = 'Email generation is unavailable. Please try again later.';
+      output.style.color = 'var(--danger)';
     });
 }
 
@@ -2141,7 +2073,7 @@ function copyEmail() {
 }
 
 function sendEmailFromGen() {
-  alert('Email queued for sending (demo mode)');
+  alert('Email sending is unavailable. No email was queued.');
 }
 
 /* === AI CHAT === */
@@ -2797,12 +2729,46 @@ function logManualActivity() {
   document.getElementById('manual-act-notes').value = '';
   loadActivity();
 }
+/* === INTEGRATIONS === */
+function loadIntegrations() {
+  var list = document.getElementById('integrations-list');
+  list.innerHTML = '<div class="loading"><span class="spinner"></span> Loading integrations...</div>';
+  api('/api/integrations').then(function(r) {
+    var records = Array.isArray(r) ? r : (r && Array.isArray(r.integrations) ? r.integrations : []);
+    if (!records.length) {
+      list.innerHTML = '<div style="padding:24px;text-align:center;color:var(--text-muted)">No integration records are available.</div>';
+      return;
+    }
+    list.innerHTML = records.map(function(item) {
+      return '<div class="integration-card"><div class="int-icon">🔌</div><div class="int-info"><h4>' +
+        escapeHtml(item.name || item.provider || 'Integration') + '</h4><p>' + escapeHtml(item.description || '') +
+        '</p></div>' + (item.status ? '<span class="int-status">' + escapeHtml(item.status) + '</span>' : '') + '</div>';
+    }).join('');
+  }).catch(function() {
+    list.innerHTML = '<div style="padding:24px;text-align:center;color:var(--text-muted)">Integration data is unavailable because no integrations endpoint is available.</div>';
+  });
+}
+
 /* === ADMIN === */
 function loadAdmin() {
   var healthDot = document.getElementById('health-dot');
   var healthText = document.getElementById('health-text');
   var healthDetails = document.getElementById('health-details');
-      api('/api/admin/system-health').then(function(r) {
+  var teamBody = document.getElementById('admin-sdr-body');
+  teamBody.innerHTML = '<tr><td colspan="6" style="padding:24px;text-align:center;color:var(--text-muted)"><span class="spinner"></span> Loading team performance...</td></tr>';
+  api('/api/admin/team-performance').then(function(r) {
+    var records = r && Array.isArray(r.team_performance) ? r.team_performance : [];
+    if (!records.length) throw new Error('No team performance source');
+    teamBody.innerHTML = records.map(function(item) {
+      return '<tr><td style="color:var(--text)">' + escapeHtml(item.name || item.sdr || '—') + '</td><td>' +
+        escapeHtml(String(item.leads_found ?? '—')) + '</td><td>' + escapeHtml(String(item.emails_sent ?? '—')) +
+        '</td><td>' + escapeHtml(String(item.meetings ?? '—')) + '</td><td>' + escapeHtml(String(item.conversion ?? '—')) +
+        '</td><td>' + escapeHtml(String(item.activity ?? '—')) + '</td></tr>';
+    }).join('');
+  }).catch(function() {
+    teamBody.innerHTML = '<tr><td colspan="6" style="padding:24px;text-align:center;color:var(--text-muted)">Team performance data is unavailable because no team-performance endpoint is available.</td></tr>';
+  });
+  api('/api/admin/system-health').then(function(r) {
       healthText.textContent = 'All Systems Operational';
       healthDetails.innerHTML = '<div>API: ✅ Online</div><div>Database: ✅ Connected</div><div>Auth: ✅ Active</div><div>Groq AI: ✅ Available</div><div>Last checked: ' + new Date().toLocaleString() + '</div>';
     }).catch(function(e) {
