@@ -1580,7 +1580,7 @@ function loadDashboard() {
       if (refreshBtn) refreshBtn.textContent = '🔄';
     })
     .catch(function() {
-      // Fallback: try loading legacy stats, then demo
+      // The API is unavailable, so render the dashboard empty state
       var p1 = Promise.resolve();
       var p2 = Promise.resolve();
       var p3 = Promise.resolve();
@@ -1858,7 +1858,7 @@ function renderMyDashboard(d) {
 
 
 function renderDashboardDemo() {
-  _setInner('dash-stats', '<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text-muted)">No dashboard data available. Login and connect your backend to see metrics.</div>');
+  _setInner('dash-stats', '<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text-muted)">No dashboard records yet.</div>');
   _setInner('dash-funnel', '<div style="padding:20px;text-align:center;color:var(--text-muted)">No pipeline data</div>');
   _setInner('dash-trend-chart', '<div style="padding:20px;text-align:center;color:var(--text-muted);font-size:13px">No activity data</div>');
   _setInner('dash-targets', '<div style="padding:20px;text-align:center;color:var(--text-muted)">No targets loaded</div>');
@@ -2808,7 +2808,7 @@ function loadAdmin() {
     }).catch(function(e) {
       healthText.textContent = 'System Status Unknown';
       healthDot.className = 'health-dot health-warn';
-      healthDetails.innerHTML = '<div>API: ⚠️ Unreachable — showing demo</div>';
+      healthDetails.innerHTML = '<div>API: ⚠️ Unreachable — dashboard data unavailable</div>';
     });
 
 /* === API CONFIG === */
