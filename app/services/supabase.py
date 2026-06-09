@@ -12,20 +12,20 @@ from supabase import create_client, Client
 
 logger = logging.getLogger(__name__)
 
-SUPABASE_URL = os.environ.get('SUPABASE_URL', 'https://zunkrrcnaaicpqkplnzw.supabase.co')
-SUPABASE_SERVICE_KEY = os.environ.get(
-    'SUPABASE_SERVICE_KEY',
-    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp1bmtycmNuYWFpY3Bxa3Bsbnp3Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MDYyMzI0MSwiZXhwIjoyMDk2MTk5MjQxfQ.DL54OfNnoQ9qwmUfypod_r722yjoGpsx-7AuBfDhj_g'
-)
+SUPABASE_URL = os.environ.get('SUPABASE_URL', '')
+SUPABASE_SERVICE_KEY = os.environ.get('SUPABASE_SERVICE_KEY', '')
 
 supabase: Client = None
 service_headers = None
 
-try:
-    supabase = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
-    logger.info("Supabase client initialized")
-except Exception as e:
-    logger.error(f"Failed to initialize Supabase: {e}")
+if not SUPABASE_URL or not SUPABASE_SERVICE_KEY:
+    logger.warning("Supabase is not configured; set SUPABASE_URL and SUPABASE_SERVICE_KEY in .env")
+else:
+    try:
+        supabase = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
+        logger.info("Supabase client initialized")
+    except Exception as e:
+        logger.error(f"Failed to initialize Supabase: {e}")
 
 # ── Helper: build filters ────────────────────────────────────────────
 
