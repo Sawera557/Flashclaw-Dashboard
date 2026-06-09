@@ -334,13 +334,22 @@ def batch_delete_leads():
     if not lead_ids:
         return jsonify({'error': 'No lead IDs provided'}), 400
 
-    for lid in lead_ids:
-        delete('email_activities', filters=[eq('lead_id', lid)])
-        delete('lead_activities', filters=[eq('lead_id', lid)])
-        delete('meetings', filters=[eq('lead_id', lid)])
-        delete('leads', filters=[eq('id', lid)])
+    validated_result = select(
+        'leads',
+        columns='id',
+        filters=[in_('id', lead_ids), eq('workspace_id', user['workspace_id'])],
+    )
+    validated_ids = [lead['id'] for lead in validated_result.data]
 
-    return jsonify({'success': True, 'deleted': len(lead_ids)})
+    if validated_ids:
+        for table in ('email_activities', 'lead_activities', 'meetings'):
+            delete(table, filters=[in_('lead_id', validated_ids)])
+        delete(
+            'leads',
+            filters=[in_('id', validated_ids), eq('workspace_id', user['workspace_id'])],
+        )
+
+    return jsonify({'success': True, 'deleted': len(validated_ids)})
 
 
 @leads_bp.route('/api/leads/hunt', methods=['POST'])
