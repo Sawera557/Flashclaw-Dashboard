@@ -1,6 +1,13 @@
 """HubSpot CRM routes — pipeline dashboard + owner drill-down."""
 
-import logging, os, requests
+import base64
+import hashlib
+import hmac
+import logging
+import os
+import time
+
+import requests
 from datetime import datetime, timezone
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
@@ -15,6 +22,30 @@ logger = logging.getLogger(__name__)
 
 SLACK_WEBHOOK_URL = os.getenv('SLACK_WEBHOOK_URL', '')
 HUBSPOT_PORTAL_ID = os.getenv('HUBSPOT_PORTAL_ID', '22606445')
+HUBSPOT_CLIENT_SECRET = os.getenv('HUBSPOT_CLIENT_SECRET', '')
+HUBSPOT_SIGNATURE_MAX_AGE_MS = 5 * 60 * 1000
+HUBSPOT_WEBHOOK_MAX_BYTES = 1024 * 1024
+HUBSPOT_WEBHOOK_MAX_EVENTS = 100
+
+
+def _valid_hubspot_signature(raw_body, method, url, signature, timestamp, now_ms=None):
+    """Validate a HubSpot v3 webhook signature against the raw request."""
+    if not HUBSPOT_CLIENT_SECRET or not signature or not timestamp:
+        return False
+
+    try:
+        timestamp_ms = int(timestamp)
+    except (TypeError, ValueError):
+        return False
+
+    now_ms = int(time.time() * 1000) if now_ms is None else now_ms
+    if abs(now_ms - timestamp_ms) > HUBSPOT_SIGNATURE_MAX_AGE_MS:
+        return False
+
+    source = method.encode() + url.encode() + raw_body + timestamp.encode()
+    digest = hmac.new(HUBSPOT_CLIENT_SECRET.encode(), source, hashlib.sha256).digest()
+    expected = base64.b64encode(digest).decode()
+    return hmac.compare_digest(expected, signature)
 
 
 def _detect_activity_type(event):
@@ -239,21 +270,30 @@ def hubspot_webhook_activity():
     if request.method == 'GET':
         return jsonify({'ok': True, 'message': 'HubSpot webhook endpoint is live'})
     
+    raw_body = request.get_data(cache=True)
+    if len(raw_body) > HUBSPOT_WEBHOOK_MAX_BYTES:
+        return jsonify({'ok': False, 'error': 'Webhook payload too large'}), 413
+    if not _valid_hubspot_signature(
+        raw_body,
+        request.method,
+        request.url,
+        request.headers.get('X-HubSpot-Signature-v3', ''),
+        request.headers.get('X-HubSpot-Request-Timestamp', ''),
+    ):
+        return jsonify({'ok': False, 'error': 'Invalid HubSpot webhook signature'}), 401
+
     try:
-        payload = request.get_json(force=True, silent=True)
-        if not payload:
-            payload = request.get_data(as_text=True) or '[]'
-            import json as _json
-            payload = _json.loads(payload)
-        
+        payload = request.get_json(force=True, silent=False)
         events = payload if isinstance(payload, list) else [payload]
+        if len(events) > HUBSPOT_WEBHOOK_MAX_EVENTS:
+            return jsonify({'ok': False, 'error': 'Too many webhook events'}), 413
+
         sent = 0
-        
         if SLACK_WEBHOOK_URL and events:
-            sent = len(events)
             _send_batched_slack(events)
-        
+            sent = len(events)
+
         return jsonify({'ok': True, 'received': len(events), 'batched_to_slack': sent})
-    except Exception as e:
+    except Exception:
         logger.exception('hubspot_webhook_activity')
-        return jsonify({'ok': False, 'error': str(e)}), 500
+        return jsonify({'ok': False, 'error': 'Invalid webhook payload'}), 400
