@@ -11,7 +11,7 @@ from datetime import datetime, timedelta, timezone
 from flask import Blueprint, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 
-from app.services.supabase import supabase, select, select_one, insert, update, delete, eq, gte, lte, in_
+from app.services.supabase import supabase, select_one, eq
 from app.services.maton_calendar import get_events
 
 logger = logging.getLogger(__name__)
@@ -493,6 +493,9 @@ def _build_pipeline_snapshot(workspace_id):
     ]
     stages.sort(key=lambda x: x['count'], reverse=True)
 
+    if not stages:
+        return {}
+
     return {
         'source': 'leads',
         'total_deals': sum(s['count'] for s in stages),
@@ -565,6 +568,10 @@ def _build_ai_recommendations(workspace_id, user_id, stats, queue):
     today_email_result = supabase.table('email_activities').select('id').eq('workspace_id', workspace_id).eq('user_id', user_id).gte('created_at', today_start_iso).execute()
     today_email = len(today_email_result.data)
 
+    has_dashboard_records = any(stats.values()) or any(queue.values()) or bool(sources_data) or today_li > 0 or today_email > 0
+    if not has_dashboard_records:
+        return []
+
     if today_li == 0 and today_email == 0:
         recommendations.append({
             'action': 'Start your outreach',
@@ -594,194 +601,6 @@ def _build_ai_recommendations(workspace_id, user_id, stats, queue):
     return recommendations
 
 
-# ── Seed Demo Dashboard Data ─────────────────────────────────────────
-
-
-def _seed_dashboard_data(user):
-    """Seed demo meeting and email activity data if none exists."""
-    workspace_id = user['workspace_id']
-
-    try:
-        existing_meetings = supabase.table('meetings').select('id').eq('workspace_id', workspace_id).limit(1).execute()
-        if existing_meetings.data:
-            return  # Already seeded
-    except Exception:
-        pass  # Table may not exist, that's OK
-
-    # Fetch leads
-    leads_result = supabase.table('leads').select('*').eq('workspace_id', workspace_id).execute()
-    leads = leads_result.data
-    if not leads:
-        return
-
-    now = datetime.now(timezone.utc)
-
-    # Demo meetings
-    demo_meetings = []
-
-    if len(leads) > 4:
-        demo_meetings.append({
-            'lead_id': leads[4]['id'],
-            'title': 'Demo: CloudSecure AI platform',
-            'meeting_type': 'demo',
-            'scheduled_at': (now + timedelta(hours=3)).isoformat(),
-            'duration_minutes': 30,
-            'status': 'scheduled',
-        })
-    else:
-        demo_meetings.append({
-            'lead_id': leads[0]['id'],
-            'title': 'Demo: CloudSecure AI platform',
-            'meeting_type': 'demo',
-            'scheduled_at': (now + timedelta(hours=3)).isoformat(),
-            'duration_minutes': 30,
-            'status': 'scheduled',
-        })
-
-    if len(leads) > 3:
-        demo_meetings.append({
-            'lead_id': leads[3]['id'],
-            'title': 'Discovery call — Ecommerce Scale',
-            'meeting_type': 'discovery',
-            'scheduled_at': (now + timedelta(days=1, hours=10)).isoformat(),
-            'duration_minutes': 45,
-            'status': 'scheduled',
-        })
-    else:
-        demo_meetings.append({
-            'lead_id': leads[0]['id'],
-            'title': 'Discovery call — Ecommerce Scale',
-            'meeting_type': 'discovery',
-            'scheduled_at': (now + timedelta(days=1, hours=10)).isoformat(),
-            'duration_minutes': 45,
-            'status': 'scheduled',
-        })
-
-    if len(leads) > 2:
-        demo_meetings.append({
-            'lead_id': leads[2]['id'],
-            'title': 'Follow-up: HealthTech AI',
-            'meeting_type': 'followup',
-            'scheduled_at': (now - timedelta(days=2)).isoformat(),
-            'duration_minutes': 30,
-            'status': 'completed',
-            'notes': 'Interested in pilot program. Follow up next week.',
-        })
-    else:
-        demo_meetings.append({
-            'lead_id': leads[0]['id'],
-            'title': 'Follow-up: HealthTech AI',
-            'meeting_type': 'followup',
-            'scheduled_at': (now - timedelta(days=2)).isoformat(),
-            'duration_minutes': 30,
-            'status': 'completed',
-            'notes': 'Interested in pilot program. Follow up next week.',
-        })
-
-    for m in demo_meetings:
-        m['workspace_id'] = workspace_id
-        m['user_id'] = user['id']
-
-    for m in demo_meetings:
-        try:
-            insert('meetings', m)
-        except Exception as e:
-            logger.warning(f'Could not seed meeting: {e}')
-
-    # Demo email activities
-    demo_emails = []
-
-    lead0 = leads[0]
-    demo_emails.append({
-        'lead_id': lead0['id'],
-        'subject': 'Quick question about TechStartup.io',
-        'recipient': 'sarah.chen@techstartup.io',
-        'status': 'sent',
-        'sent_at': (now - timedelta(days=5)).isoformat(),
-        'email_type': 'cold',
-    })
-    demo_emails.append({
-        'lead_id': lead0['id'],
-        'subject': 'Re: Quick question about TechStartup.io',
-        'recipient': 'sarah.chen@techstartup.io',
-        'status': 'replied',
-        'sent_at': (now - timedelta(days=4)).isoformat(),
-        'replied_at': (now - timedelta(days=4, hours=6)).isoformat(),
-        'reply_sentiment': 'neutral',
-        'email_type': 'followup',
-    })
-
-    if len(leads) > 3:
-        demo_emails.append({
-            'lead_id': leads[3]['id'],
-            'subject': 'Growth opportunities for Ecommerce Scale',
-            'recipient': 'jwilson@ecommercescale.com',
-            'status': 'replied',
-            'sent_at': (now - timedelta(days=2)).isoformat(),
-            'replied_at': (now - timedelta(days=1)).isoformat(),
-            'reply_sentiment': 'positive',
-            'email_type': 'cold',
-        })
-
-    if len(leads) > 4:
-        demo_emails.append({
-            'lead_id': leads[4]['id'],
-            'subject': 'Security solutions for CloudSecure',
-            'recipient': 'aisha@cloudsecure.dev',
-            'status': 'sent',
-            'sent_at': (now - timedelta(hours=12)).isoformat(),
-            'email_type': 'cold',
-        })
-
-    if len(leads) > 1:
-        demo_emails.append({
-            'lead_id': leads[1]['id'],
-            'subject': 'Fintech Pro — partnership opportunity',
-            'recipient': 'marcus@fintechpro.com',
-            'status': 'sent',
-            'sent_at': (now - timedelta(hours=6)).isoformat(),
-            'email_type': 'cold',
-        })
-
-    for e in demo_emails:
-        e['workspace_id'] = workspace_id
-        e['user_id'] = user['id']
-
-    for e in demo_emails:
-        try:
-            insert('email_activities', e)
-        except Exception as e_err:
-            logger.warning(f'Could not seed email activity: {e_err}')
-
-    # Demo lead activities
-    import random
-    demo_lead_activities = []
-
-    demo_lead_activities.append({
-        'lead_id': leads[0]['id'],
-        'activity_type': 'enrichment',
-        'description': 'Enriched Sarah Chen — added company size and industry',
-    })
-    demo_lead_activities.append({
-        'lead_id': leads[0]['id'],
-        'activity_type': 'score',
-        'description': 'Scored Sarah Chen at 85 — strong ICP match',
-    })
-    if len(leads) > 4:
-        demo_lead_activities.append({
-            'lead_id': leads[4]['id'],
-            'activity_type': 'status_change',
-            'description': 'Changed Aisha Patel status to meeting_booked',
-        })
-
-    for a in demo_lead_activities:
-        a['workspace_id'] = workspace_id
-        a['user_id'] = user['id']
-        a['created_at'] = (now - timedelta(hours=random.randint(1, 72))).isoformat()
-        insert('lead_activities', a)
-
-    logger.info('Seeded demo dashboard data')
-
 
 # ── Main Endpoint ────────────────────────────────────────────────────
 
@@ -796,12 +615,6 @@ def dashboard_summary():
         return jsonify({'error': 'User not found'}), 404
 
     workspace_id = user['workspace_id']
-
-    # Seed demo data on first run if empty
-    try:
-        _seed_dashboard_data(user)
-    except Exception:
-        pass
 
     # Build each section independently so one failure doesn't crash everything
     stats = {}
