@@ -1110,6 +1110,7 @@ const API_BASE = 'https://stroke-safer-rental-davis.trycloudflare.com';
 let authToken = localStorage.getItem('lhai_token') || null;
 let liStatsCache = {};
 let liFeedCache = [];
+let liTrackerLoadState = { statsAvailable: false, activitiesAvailable: false, statsError: false, activitiesError: false };
 let activityLogCache = [];
 let activeStreamReader = null;
 let currentEmailType = 'cold';
@@ -2278,23 +2279,37 @@ function displayParsedPeople(people, container) {
 
 /* === LINKEDIN TRACKER === */
 function loadLinkedInTracker() {
-  api('/api/linkedin/stats').then(function(s) { if (s) var ls = s; }).catch(function() {}).then(function() {
-    api('/api/linkedin/activities?per_page=100').then(function(a) {
-      if (a && a.activities) {
-        liFeedCache = a.activities.map(function(act) {
-          return {
-            _id: act.id,
-            name: act.lead_name,
-            company: act.company,
-            linkedin_url: act.linkedin_url,
-            title: act.notes,
-            type: act.activity_type,
-            created_at: act.created_at
-          };
-        });
-      }
-      renderLinkedInTracker();
-    }).catch(function() { renderLinkedInTracker(); });
+  liTrackerLoadState.statsError = false;
+  liTrackerLoadState.activitiesError = false;
+
+  var statsRequest = api('/api/linkedin/stats').then(function(s) {
+    if (!s) throw new Error('LinkedIn stats unavailable');
+    liStatsCache = s;
+    liTrackerLoadState.statsAvailable = true;
+  }).catch(function() {
+    liTrackerLoadState.statsError = true;
+  });
+
+  var activitiesRequest = api('/api/linkedin/activities?per_page=100').then(function(a) {
+    if (!a || !Array.isArray(a.activities)) throw new Error('LinkedIn activities unavailable');
+    liFeedCache = a.activities.map(function(act) {
+        return {
+          _id: act.id,
+          name: act.lead_name,
+          company: act.company,
+          linkedin_url: act.linkedin_url,
+          title: act.notes,
+          type: act.activity_type,
+          created_at: act.created_at
+        };
+      });
+    liTrackerLoadState.activitiesAvailable = true;
+  }).catch(function() {
+    liTrackerLoadState.activitiesError = true;
+  });
+
+  Promise.all([statsRequest, activitiesRequest]).then(function() {
+    renderLinkedInTracker();
   });
 }
 
@@ -2362,12 +2377,17 @@ function deleteLiActivity(activityId) {
 
 function renderLinkedInTracker() {
   var ls = liStatsCache || {};
-  document.getElementById('li-stats').innerHTML = [
-    { label: 'Connections Sent', val: ls.connections_sent || ls.connectionsSent || 0, color: 'var(--accent)' },
-    { label: 'Accepted', val: ls.accepted || ls.connectionsAccepted || 0, color: 'var(--success)' },
-    { label: 'DMs Sent', val: ls.dms || ls.dmsSent || 0, color: 'var(--accent)' },
-    { label: 'Replies', val: ls.replies || 0, color: 'var(--warning)' },
-    { label: 'Meetings', val: ls.meetings || 0, color: 'var(--success)' }
+  var statsUnavailable = !liTrackerLoadState.statsAvailable;
+  var statsNotice = liTrackerLoadState.statsError
+    ? '<div style="grid-column:1/-1;padding:10px;border:1px solid var(--warning);border-radius:var(--radius-sm);color:var(--warning);font-size:12px">' +
+      (statsUnavailable ? 'LinkedIn stats are currently unavailable.' : 'Could not refresh LinkedIn stats. Showing cached values.') + '</div>'
+    : '';
+  document.getElementById('li-stats').innerHTML = statsNotice + [
+    { label: 'Connections Sent', val: statsUnavailable ? '—' : (ls.connections_sent || 0), color: 'var(--accent)' },
+    { label: 'Accepted', val: statsUnavailable ? '—' : (ls.accepted || 0), color: 'var(--success)' },
+    { label: 'DMs Sent', val: statsUnavailable ? '—' : (ls.dms || 0), color: 'var(--accent)' },
+    { label: 'Replies', val: statsUnavailable ? '—' : (ls.replies || 0), color: 'var(--warning)' },
+    { label: 'Meetings', val: statsUnavailable ? '—' : (ls.meetings || 0), color: 'var(--success)' }
   ].map(function(s) {
     return '<div class="li-stat-card"><div class="val" style="color:' + s.color + '">' + s.val + '</div><div class="lbl">' + s.label + '</div></div>';
   }).join('');
@@ -2394,7 +2414,12 @@ function renderLinkedInTracker() {
     { val: 'followup_sent', icon: '🔄', label: 'Follow-up' }
   ];
 
-  document.getElementById('li-feed').innerHTML = '<div style="margin-bottom:8px;display:flex;gap:8px;align-items:center"><label style="font-size:12px;color:var(--text-sec);display:flex;align-items:center;gap:4px;cursor:pointer"><input type="checkbox" id="li-select-all" onchange="liToggleAll(this)"> Select All</label><button class="btn-sm btn-danger" onclick="liDeleteSelected()" id="li-delete-selected" style="display:none">🗑️ Delete Selected (<span id="li-selected-count">0</span>)</button></div>' + (feed.length ? ('<div class="table-container" style="overflow-x:auto"><table><thead><tr><th style="padding:8px 10px;font-size:11px;width:30px"></th><th style="padding:8px 10px;font-size:11px">Name</th><th style="padding:8px 10px;font-size:11px">Title</th><th style="padding:8px 10px;font-size:11px">Activity</th><th style="padding:8px 10px;font-size:11px">LinkedIn</th><th style="padding:8px 10px;font-size:11px">Status</th><th style="padding:8px 10px;font-size:11px">Actions</th></tr></thead><tbody>' + feed.map(function(a) {
+  var activitiesUnavailable = !liTrackerLoadState.activitiesAvailable;
+  var activitiesNotice = liTrackerLoadState.activitiesError
+    ? '<div style="margin-bottom:8px;padding:10px;border:1px solid var(--warning);border-radius:var(--radius-sm);color:var(--warning);font-size:12px">' +
+      (activitiesUnavailable ? 'LinkedIn activities are currently unavailable.' : 'Could not refresh LinkedIn activities. Showing cached values.') + '</div>'
+    : '';
+  document.getElementById('li-feed').innerHTML = activitiesNotice + '<div style="margin-bottom:8px;display:flex;gap:8px;align-items:center"><label style="font-size:12px;color:var(--text-sec);display:flex;align-items:center;gap:4px;cursor:pointer"><input type="checkbox" id="li-select-all" onchange="liToggleAll(this)"> Select All</label><button class="btn-sm btn-danger" onclick="liDeleteSelected()" id="li-delete-selected" style="display:none">🗑️ Delete Selected (<span id="li-selected-count">0</span>)</button></div>' + (activitiesUnavailable ? '<div style="color:var(--text-muted);padding:20px;text-align:center">Activity feed unavailable.</div>' : (feed.length ? ('<div class="table-container" style="overflow-x:auto"><table><thead><tr><th style="padding:8px 10px;font-size:11px;width:30px"></th><th style="padding:8px 10px;font-size:11px">Name</th><th style="padding:8px 10px;font-size:11px">Title</th><th style="padding:8px 10px;font-size:11px">Activity</th><th style="padding:8px 10px;font-size:11px">LinkedIn</th><th style="padding:8px 10px;font-size:11px">Status</th><th style="padding:8px 10px;font-size:11px">Actions</th></tr></thead><tbody>' + feed.map(function(a) {
     var curIcon = '+';
     var curLabel = (a.type || '').replace(/_/g, ' ');
     for (var i = 0; i < statusOptions.length; i++) {
@@ -2417,13 +2442,14 @@ function renderLinkedInTracker() {
         '<button class="btn-sm btn-danger" onclick="deleteLiActivity(' + a._id + ')" title="Delete Activity">🗑️</button>' +
       '</td>' +
     '</tr>';
-  }).join('') + '</tbody></table></div>') : '<div style="color:var(--text-muted);padding:20px;text-align:center">No activities yet. Parse LinkedIn data or add manually.</div>');
+  }).join('') + '</tbody></table></div>') : '<div style="color:var(--text-muted);padding:20px;text-align:center">No activities yet. Parse LinkedIn data or add manually.</div>'));
 
   document.getElementById('li-performance').innerHTML = '';
   document.getElementById('li-followups').innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-muted)">No follow-ups</div>';
 }
 
 function logLiActivity(type) {
+  type = mapActivityType(type);
   var name = document.getElementById('quick-li-name').value.trim();
   var title = document.getElementById('quick-li-title').value.trim();
   var company = document.getElementById('quick-li-company').value.trim();
@@ -2433,21 +2459,21 @@ function logLiActivity(type) {
   if (authToken) {
     api('/api/linkedin/activities', { method: 'POST', body: JSON.stringify({
       lead_name: name, company: company, linkedin_url: linkedinUrl,
-      activity_type: mapActivityType(type), notes: notes, source: 'manual'
+      activity_type: type, notes: notes, source: 'manual'
     }) }).then(function() { signalDataChanged(); }).catch(function() {});
   }
   var titles = {
-    connection_request: 'Connection Request', connection_accepted: 'Connection Accepted', message: 'Message Sent',
-    profile_view: 'Profile View', reply_received: 'Reply Received', meeting_booked: 'Meeting Booked',
-    note: 'Note Added', follow_up: 'Follow-up Sent'
+    connection_sent: 'Connection Request', connection_accepted: 'Connection Accepted', dm_sent: 'Message Sent',
+    profile_viewed: 'Profile View', reply_received: 'Reply Received', meeting_booked: 'Meeting Booked',
+    interested: 'Note Added', followup_sent: 'Follow-up Sent'
   };
   var label = (name && company) ? titles[type] + ': ' + name + ' (' + company + ')' : (titles[type] || capitalize(type.replace(/_/g, ' ')));
   liFeedCache.unshift({ type: type, title: label, meta: 'Just now' });
-  if (type === 'connection_request') liStatsCache.connectionsSent++;
-  if (type === 'connection_accepted') liStatsCache.connectionsAccepted++;
-  if (type === 'message') liStatsCache.dmsSent++;
-  if (type === 'reply_received') liStatsCache.replies++;
-  if (type === 'meeting_booked') liStatsCache.meetings++;
+  if (type === 'connection_sent') liStatsCache.connections_sent = (liStatsCache.connections_sent || 0) + 1;
+  if (type === 'connection_accepted') liStatsCache.accepted = (liStatsCache.accepted || 0) + 1;
+  if (type === 'dm_sent') liStatsCache.dms = (liStatsCache.dms || 0) + 1;
+  if (type === 'reply_received') liStatsCache.replies = (liStatsCache.replies || 0) + 1;
+  if (type === 'meeting_booked') liStatsCache.meetings = (liStatsCache.meetings || 0) + 1;
   document.getElementById('quick-li-name').value = '';
   document.getElementById('quick-li-title').value = '';
   document.getElementById('quick-li-company').value = '';
@@ -2458,7 +2484,7 @@ function logLiActivity(type) {
 function mapActivityType(type) {
   var m = { connection_request: 'connection_sent', message: 'dm_sent', connection_accepted: 'connection_accepted',
     profile_view: 'profile_viewed', reply_received: 'reply_received', meeting_booked: 'meeting_booked',
-    note: 'dm_sent', follow_up: 'followup_sent' };
+    note: 'interested', follow_up: 'followup_sent' };
   return m[type] || type;
 }
 
