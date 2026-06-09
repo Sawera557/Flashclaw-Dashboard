@@ -121,6 +121,19 @@ class DashboardEmptyStateTests(unittest.TestCase):
         self.assertNotIn('sample', renderer.lower())
         self.assertNotIn('demo mode', renderer.lower())
 
+    def test_frontend_contains_no_static_operational_records_or_outreach_fallbacks(self):
+        source = (Path(__file__).parents[1] / 'frontend/index.html').read_text()
+
+        for value in ('sawerakhadium557@gmail.com', 'Sarah Johnson', 'Mike Chen', 'Email queued for sending (demo mode)', 'Sample outreach email body'):
+            self.assertNotIn(value, source)
+        for field_id in ('icp-industry', 'icp-location', 'icp-size', 'icp-title'):
+            field = source.split(f'id="{field_id}"', 1)[1].split('>', 1)[0]
+            self.assertNotIn(' value=', field)
+        self.assertIn("api('/api/integrations')", source)
+        self.assertIn("api('/api/admin/team-performance')", source)
+        self.assertIn('Email generation is unavailable.', source)
+        self.assertIn("setDashboardSectionVisible('dash-hubspot-section', hasOwnField(d, 'hubspot_summary'))", source)
+
 
 spec = importlib.util.spec_from_file_location(
     'cleanup_dashboard_demo_data',
