@@ -159,7 +159,13 @@ def create_lead():
 
     # Check for duplicate by email
     if data.get('email'):
-        existing = select_one('leads', filters=[eq('email', data['email'].strip().lower())])
+        existing = select_one(
+            'leads',
+            filters=[
+                eq('email', data['email'].strip().lower()),
+                eq('workspace_id', user['workspace_id']),
+            ],
+        )
         if existing:
             return jsonify({'error': 'Lead with this email already exists', 'lead': _lead_to_dict(existing)}), 409
 
@@ -396,7 +402,7 @@ def hunt_leads():
         logger.exception('hunt_leads application defect')
         return jsonify({'error': 'Internal server error', 'code': 'internal_error'}), 500
 
-    # Pre-load existing emails in this workspace to avoid UNIQUE constraint failures
+    # Pre-load existing emails in this workspace for workspace-local deduplication
     existing_emails = set()
     emails_result = supabase.table('leads').select('email').neq('email', '').is_('email', 'not', 'null').eq('workspace_id', user['workspace_id']).execute()
     for row in emails_result.data:

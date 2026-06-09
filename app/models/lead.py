@@ -4,6 +4,9 @@ from app import db
 
 class Lead(db.Model):
     __tablename__ = 'leads'
+    __table_args__ = (
+        db.UniqueConstraint('workspace_id', 'email', name='uq_leads_workspace_email'),
+    )
 
     id = db.Column(db.Integer, primary_key=True)
     workspace_id = db.Column(db.Integer, db.ForeignKey('workspaces.id'), nullable=False, index=True)
@@ -11,7 +14,7 @@ class Lead(db.Model):
 
     first_name = db.Column(db.String(100), default='')
     last_name = db.Column(db.String(100), default='')
-    email = db.Column(db.String(255), unique=True, index=True, nullable=True)
+    email = db.Column(db.String(255), index=True, nullable=True)
     company = db.Column(db.String(255), default='')
     job_title = db.Column(db.String(255), default='')
     phone = db.Column(db.String(50), default='')
