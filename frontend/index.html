@@ -1160,9 +1160,26 @@ function api(path, opts) {
   opts = opts || {};
   return fetch(API_BASE + path, { method: opts.method || 'GET', headers: opts.headers || getHeaders(), body: opts.body })
     .then(function(r) {
-      if (r.status === 401) { authToken = null; localStorage.removeItem('lhai_token'); logout(); throw new Error('Unauthorized'); }
-      if (!r.ok) return r.text().then(function(t) { throw new Error(t || r.statusText); });
-      return r.json();
+      return r.text().then(function(text) {
+        var data = {};
+        if (text) {
+          try { data = JSON.parse(text); }
+          catch (parseError) { data = { error: 'Request failed' }; }
+        }
+        if (!r.ok) {
+          var err = new Error(data.error || data.message || r.statusText || 'Request failed');
+          err.status = r.status;
+          err.data = data;
+          Object.keys(data).forEach(function(key) { err[key] = data[key]; });
+          if (r.status === 401 && data.code !== 'provider_invalid_key') {
+            authToken = null;
+            localStorage.removeItem('lhai_token');
+            logout();
+          }
+          throw err;
+        }
+        return data;
+      });
     });
 }
 
@@ -1931,8 +1948,16 @@ function runHunt() {
   api('/api/leads/hunt', { method: 'POST', body: JSON.stringify(payload) })
     .then(function(r) {
       var leads = r.leads || [];
-      statusEl.textContent = '✅ Hunt complete! Found ' + leads.length + ' leads';
-      statusEl.style.color = 'var(--success)';
+      var sourceErrors = r.source_errors || [];
+      if (sourceErrors.length) {
+        var failedSources = sourceErrors.map(function(e) { return e.source || e.provider; }).join(', ');
+        var retry = sourceErrors.filter(function(e) { return e.retry_after; }).map(function(e) { return ' Retry after ' + e.retry_after + '.'; }).join('');
+        statusEl.textContent = '⚠️ Partial success: found ' + leads.length + ' leads; ' + failedSources + ' failed.' + retry;
+        statusEl.style.color = 'var(--warning)';
+      } else {
+        statusEl.textContent = '✅ Hunt complete! Found ' + leads.length + ' leads';
+        statusEl.style.color = 'var(--success)';
+      }
       var timeStr = new Date().toLocaleString();
       document.getElementById('recent-hunts').innerHTML = '<div style="color:var(--text)">Latest hunt: ' + payload.sources.join(', ') + ' — ' + timeStr + '</div>';
       if (leads.length > 0) {
@@ -1946,8 +1971,18 @@ function runHunt() {
           '<div class="pipeline-bar"><div class="pl-label">Low (&lt;40)</div><div class="pl-track"><div class="pl-fill pl-proposal" style="width:' + Math.round(low/total*100) + '%">' + low + '</div></div></div>';
       }
     })
-    .catch(function() {
-      statusEl.textContent = '❌ Hunt failed — check backend connection';
+    .catch(function(err) {
+      var provider = err.provider ? ' (' + err.provider + ')' : '';
+      var retry = err.retry_after ? ' Retry after ' + err.retry_after + '.' : '';
+      if (err.code === 'provider_quota_exhausted' || err.status === 429) {
+        statusEl.textContent = '⏳ API quota exhausted' + provider + '.' + retry;
+      } else if (err.code === 'provider_invalid_key' || err.status === 401 || err.status === 403) {
+        statusEl.textContent = '🔑 Invalid API key' + provider + '. Update the provider credentials and try again.';
+      } else if (err.code === 'provider_unavailable' || err.status === 502 || err.status === 503) {
+        statusEl.textContent = '⚠️ Provider temporarily unavailable' + provider + '.' + retry;
+      } else {
+        statusEl.textContent = '❌ Hunt failed: ' + (err.message || 'Unexpected application error');
+      }
       statusEl.style.color = 'var(--danger)';
     });
 }

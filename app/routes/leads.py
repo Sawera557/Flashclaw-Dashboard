@@ -362,12 +362,30 @@ def hunt_leads():
         return jsonify({'error': 'At least one source is required'}), 400
 
     # Run real hunt across selected sources
-    from app.services.lead_sources import run_hunt
+    from app.services.lead_sources import ProviderError, ProviderQuotaError, run_hunt
     try:
-        found_leads = run_hunt(sources, icp, limit=limit)
-    except Exception as e:
-        logger.exception('hunt_leads')
-        return jsonify({'error': f'Hunt failed: {str(e)}'}), 502
+        hunt_result = run_hunt(sources, icp, limit=limit)
+        found_leads = hunt_result['leads']
+        source_errors = hunt_result['source_errors']
+    except ProviderQuotaError as error:
+        response = {'error': 'API quota exhausted', 'code': error.code, 'provider': error.provider}
+        if error.retry_after:
+            response['retry_after'] = error.retry_after
+        return jsonify(response), 429
+    except ProviderError as error:
+        response = {'error': error.safe_message, 'code': error.code, 'provider': error.provider}
+        if error.retry_after:
+            response['retry_after'] = error.retry_after
+        if error.code == 'provider_invalid_key':
+            status = error.upstream_status if error.upstream_status in (401, 403) else 401
+        elif error.code == 'provider_unavailable':
+            status = 503 if error.upstream_status == 503 else 502
+        else:
+            status = 502
+        return jsonify(response), status
+    except Exception:
+        logger.exception('hunt_leads application defect')
+        return jsonify({'error': 'Internal server error', 'code': 'internal_error'}), 500
 
     # Pre-load existing emails in this workspace to avoid UNIQUE constraint failures
     existing_emails = set()
@@ -424,9 +442,10 @@ def hunt_leads():
             errors += 1
 
     return jsonify({
-        'status': 'completed',
+        'status': 'partial' if source_errors else 'completed',
         'leads_found': len(saved_leads),
         'leads': saved_leads,
+        'source_errors': source_errors,
     })
 
 
