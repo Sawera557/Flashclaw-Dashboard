@@ -14,6 +14,7 @@ def create_app(config_name='dev'):
 
     # Load config
     config = config_by_name.get(config_name, config_by_name['dev'])
+    config.validate()
     app.config.from_object(config)
 
     # Initialize extensions
