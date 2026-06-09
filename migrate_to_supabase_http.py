@@ -7,14 +7,18 @@ Usage:
   1. python migrate_to_supabase_http.py --print-sql  (prints SQL for table creation)
   2. Paste that SQL into Supabase SQL Editor and run it
   3. python migrate_to_supabase_http.py --import-data
-     (uses SUPABASE_URL + SUPABASE_SERVICE_KEY from env or args)
+     (uses SUPABASE_URL + SUPABASE_SERVICE_KEY from .env)
 """
 
 import json, os, sys, uuid
 from datetime import datetime
 
-SUPABASE_URL = "https://zunkrrcnaaicpqkplnzw.supabase.co"
-SERVICE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp1bmtycmNuYWFpY3Bxa3Bsbnp3Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MDYyMzI0MSwiZXhwIjoyMDk2MTk5MjQxfQ.DL54OfNnoQ9qwmUfypod_r722yjoGpsx-7AuBfDhj_g"
+from dotenv import load_dotenv
+
+load_dotenv(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env"), override=True)
+
+SUPABASE_URL = os.environ.get("SUPABASE_URL", "")
+SERVICE_KEY = os.environ.get("SUPABASE_SERVICE_KEY", "")
 
 TABLE_ORDER = [
     'workspaces', 'users', 'leads', 'linkedin_activities',
@@ -154,7 +158,7 @@ ALTER TABLE meetings ENABLE ROW LEVEL SECURITY;
 
 def print_sql():
     print("=" * 60)
-    print("STEP 1: Go to https://supabase.com/dashboard/project/zunkrrcnaaicpqkplnzw/sql/new")
+    print("STEP 1: Open the SQL Editor for the Supabase project configured in .env")
     print("STEP 2: Paste the SQL below into the SQL Editor")
     print("STEP 3: Click 'Run'")
     print("STEP 4: Come back here and run: python migrate_to_supabase_http.py --import-data")
@@ -165,6 +169,9 @@ def print_sql():
 
 def import_data():
     """Import all data from local SQLite to Supabase via REST API."""
+    if not SUPABASE_URL or not SERVICE_KEY:
+        raise RuntimeError("SUPABASE_URL and SUPABASE_SERVICE_KEY must be configured in .env")
+
     import httpx
     
     # Load the export

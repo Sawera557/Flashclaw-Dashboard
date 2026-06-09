@@ -8,12 +8,18 @@ import subprocess
 import sys
 import urllib.request
 
-API_KEY = os.environ.get("MATON_API_KEY", "v2.CC4kibArJ4JXpJXxIi999bDMDCVFwXsKXGGS8VUCC_bC1pyh0-69OgU8hUkbzpnf5ik0Aw09krhOuS4Eb1x77pId2uRCgu86_-ewGkNfVO-7qRJqHrvfXH3J")
+from dotenv import load_dotenv
+
+load_dotenv(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env"), override=True)
+
+API_KEY = os.environ.get("MATON_API_KEY", "")
 REPO = "Sawera557/Flashclaw-Dashboard"
 BASE_URL = f"https://api.maton.ai/github/repos/{REPO}"
 
 def gh_api(method, path, data=None):
     """Call GitHub API through Maton proxy."""
+    if not API_KEY:
+        raise RuntimeError("MATON_API_KEY is not configured in .env")
     url = f"{BASE_URL}{path}"
     body = json.dumps(data).encode() if data else None
     req = urllib.request.Request(url, data=body, method=method)

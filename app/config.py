@@ -1,17 +1,12 @@
 import os
+from pathlib import Path
+
 from dotenv import load_dotenv
 
-_env_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '.env')
-load_dotenv(_env_path)
 
-# Read MATON_API_KEY directly from .env to override inherited stale shell value
-import re as _re
-with open(_env_path) as _f:
-    for _line in _f:
-        _m = _re.match(r'^MATON_API_KEY=(.+)$', _line.strip())
-        if _m:
-            os.environ['MATON_API_KEY'] = _m.group(1)
-            break
+# Load every local setting from the single project-level .env file.
+ENV_FILE = Path(__file__).resolve().parent.parent / '.env'
+load_dotenv(ENV_FILE, override=True)
 
 
 class Config:
